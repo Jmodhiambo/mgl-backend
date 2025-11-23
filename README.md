@@ -46,8 +46,11 @@ source venv/bin/activate  # Windows: `venv\Scripts\activate`
 # Install dependencies
 pip install -r requirements.txt
 
+# Create all tables defined in the model
+alembic upgrade head
+
 # Start the FastAPI server
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 ---
