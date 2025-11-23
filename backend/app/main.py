@@ -30,9 +30,9 @@ app.include_router(events.router, prefix="/api/v1", tags=["Events"])
 async def startup_event():
     """Automatically create the database tables if they don't exist."""
     logger.info("Starting up MGLTickets...")
-    logger.info(f"Models detected by SQLAlchemy: {Base.metadata.tables.keys()}")
-    Base.metadata.create_all(bind=engine)
-    logger.info("MGLTickets started.")
+    # Removing create_all() since we have alembic to handle schema creation
+    # Base.metadata.create_all(bind=engine)
+    # logger.info("MGLTickets started.")
 
 @app.on_event("shutdown")
 async def shutdown_event():
