@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.logging_config import configure_logging, logger
 from app.core.logging_middleware import LoggingMiddleware
 from app.api.routes import auth, events
-from app.db.session import Base, engine
+from app.db.session import engine
 from app.db.models import *
 
 configure_logging() # Initialize logging configuration
@@ -18,8 +18,10 @@ app = FastAPI()
 app.add_middleware(LoggingMiddleware)
 
 # Mount Static Files
-# Static files for serving uploaded event flyers
-app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
+# Static files for serving uploaded event flyers and profile images
+app.mount("/uploads/events", StaticFiles(directory="app/uploads/events"), name="event_uploads")
+app.mount("/uploads/profiles", StaticFiles(directory="app/uploads/profiles"), name="profile_uploads")
+
 
 # Routes
 app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
