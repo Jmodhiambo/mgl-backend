@@ -16,6 +16,7 @@ def create_event_repo(event_data: EventCreatWithFlyer) -> EventOut:
             venue=event_data.venue,
             start_time=event_data.start_time,
             end_time=event_data.end_time,
+            original_filename=event_data.original_filename,
             flyer_url=event_data.flyer_url,
             organizer_id=event_data.organizer_id,
         )

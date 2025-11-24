@@ -18,6 +18,7 @@ class EventOut(BaseModelEAT):
     venue: str
     start_time: datetime
     end_time: datetime
+    original_filename: str
     flyer_url: str
     status: str
     created_at: datetime
@@ -32,7 +33,6 @@ class EventOut(BaseModelEAT):
 class EventCreate(BaseModelEAT):
     """Schema for creating a new Event."""
     title: str
-    organizer_id: int
     description: Optional[str] = None
     venue: str
     start_time: datetime
@@ -41,7 +41,10 @@ class EventCreate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class EventCreatWithFlyer(EventCreate):
+class EventCreateWithFlyer(EventCreate):
+    """Schema for creating a new Event with a flyer."""
+    organizer_id: int
+    original_filename: str
     flyer_url: str
 
 class EventUpdate(BaseModelEAT):

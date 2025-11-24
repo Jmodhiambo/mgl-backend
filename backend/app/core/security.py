@@ -9,6 +9,7 @@ from jose import jwt, JWTError
 
 from app.services.user_services import get_user_by_id_service
 from app.core.config import SECRET_KEY, ALGORITHM
+from app.schemas.user import UserOut
 
 # FastAPI security scheme
 bearer_scheme = HTTPBearer()
@@ -28,7 +29,7 @@ def create_access_token(user_id: int, expires_minutes: int = 60) -> str:
 def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-) -> dict:
+) -> UserOut:
     """
     Extract token from Authorization header, decode it, load user,
     and attach user to request.state.
@@ -58,4 +59,22 @@ def get_current_user(
     # Attach user to request state - picked up by logging middleware
     request.state.user = user
 
+    return user
+
+def require_organizer(user=Depends(get_current_user)) -> UserOut:
+    """Require user to be at least an organizer to access this route."""
+    if user.role not in ("organizer", "admin", "superadmin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an organizer or admin to access this route.")
+    return user
+
+def require_admin(user=Depends(get_current_user)) -> UserOut:
+    """Require user to be an admin to access this route."""
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an admin to access this route.")
+    return user
+
+def require_superadmin(user=Depends(get_current_user)) -> UserOut:
+    """Require user to be a superadmin to access this route."""
+    if user.role != "superadmin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be a superadmin to access this route.")
     return user

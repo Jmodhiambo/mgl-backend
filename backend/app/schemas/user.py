@@ -7,7 +7,7 @@ from typing import Optional
 from app.schemas.base import BaseModelEAT
 # from app.schemas.event import EventOut
 
-class UserOut(BaseModelEAT):
+class User(BaseModelEAT):
     """Schema for outputting User data."""
     id: int
     name: str
@@ -23,9 +23,31 @@ class UserOut(BaseModelEAT):
     class Config:
         from_attributes = True
 
+class OrganizerInfo(User):
+    """Schema for outputting Organizer data."""
+    bio: Optional[str] = None
+    organization_name: Optional[str] = None
+    website: Optional[str] = None
+    profile_picture: Optional[str] = None
+    address: Optional[str] = None
+    area_of_specialty: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserOut(User):
+    """Schema for outputting User data."""
+    organizer_info: Optional["OrganizerInfo"] = None
+
+    class Config:
+        from_attributes = True
+
 class UserOutWithPWD(UserOut):
     """Schema for outputting User data with password."""
     password_hash: str
+
+    class Config:
+        from_attributes = True
 
 class UserCreate(BaseModelEAT):
     """Schema for creating a new User."""
