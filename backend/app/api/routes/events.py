@@ -9,7 +9,7 @@ import app.services.event_services as event_services
 import app.services.user_services as user_services
 
 from app.core.security import get_current_user, require_organizer
-from app.utils.flyer import save_flyer_and_get_url
+from app.utils.images import save_flyer_and_get_url
 
 
 router = APIRouter()
@@ -35,6 +35,7 @@ async def get_latest_events(): # user=Depends(get_current_user)
             "venue": "123 Main Street, Springfield",
             "start_time": "2025-11-21T18:00:00",
             "end_time": "2025-11-21T21:00:00",
+            "original_filename": "flyer1.png",
             "flyer_url": "http://example.com/flyer1.png",
             "status": "active",
             "created_at": "2025-10-21T14:30:00",

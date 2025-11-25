@@ -7,11 +7,13 @@ __pycache__/
 .venv
 
 # Ignore everything in the uploads and logs folders
-backend/app/uploads/*
+backend/app/uploads/events/*
+backend/app/uploads/profiles/*
 backend/app/logs/*
 
 # But keep this one file to ensure the folders exists in git
-!backend/app/uploads/.gitkeep
+!backend/app/uploads/events/.gitkeep
+!backend/app/uploads/profiles/.gitkeep
 !backend/app/logs/.gitkeep
 
 

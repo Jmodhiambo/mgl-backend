@@ -41,5 +41,4 @@ async def shutdown_event():
     logger.info("Closing database connections...")
     engine.dispose()
     logger.info("Shutting down MGLTickets...")
-
 # Register handlers globally

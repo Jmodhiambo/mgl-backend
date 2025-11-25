@@ -4,10 +4,10 @@
 from app.db.models.event import Event
 from app.db.session import get_session
 from typing import Optional
-from app.schemas.event import EventOut, EventCreatWithFlyer, EventCreate, EventUpdate
+from app.schemas.event import EventOut, EventCreateWithFlyer, EventCreate, EventUpdate
 from datetime import datetime
 
-def create_event_repo(event_data: EventCreatWithFlyer) -> EventOut:
+def create_event_repo(event_data: EventCreateWithFlyer) -> EventOut:
     """Create a new event in the database."""
     with get_session() as session:
         new_event = Event(
