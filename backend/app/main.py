@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.core.logging_config import configure_logging, logger
 from app.core.logging_middleware import LoggingMiddleware
-from app.api.routes import auth, events
+from app.core.route_registery import register_routes
 from app.db.session import engine
 from app.db.models import *
 
@@ -23,9 +23,8 @@ app.mount("/uploads/events", StaticFiles(directory="app/uploads/events"), name="
 app.mount("/uploads/profiles", StaticFiles(directory="app/uploads/profiles"), name="profile_uploads")
 
 
-# Routes
-app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
-app.include_router(events.router, prefix="/api/v1", tags=["Events"])
+# Register routes from app.core.route_registery
+register_routes(app)
 
 # Auto-create tables in the database
 @app.on_event("startup")

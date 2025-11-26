@@ -5,6 +5,7 @@ from uuid import uuid4
 import os
 import aiofiles
 from fastapi import UploadFile, HTTPException, status
+from app.core.logging_config import logger
 
 # Upload directories
 EVENTS_UPLOAD_DIR = "app/uploads/events"
@@ -26,6 +27,7 @@ async def validate_file(image: UploadFile, allowed_exts: set[str]) -> None:
     ext = os.path.splitext(image.filename)[1].lower()
 
     if ext not in allowed_exts:
+        logger.error(f"Invalid file type: {ext}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid file type. Allowed types: " + ", ".join(allowed_exts),
@@ -34,6 +36,7 @@ async def validate_file(image: UploadFile, allowed_exts: set[str]) -> None:
     # Check file size (UploadFile does not expose size, so read chunk)
     contents = await image.read()
     if len(contents) > MAX_FILE_SIZE:
+        logger.error("File size exceeds the maximum allowed size (5MB).")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File size exceeds the maximum allowed size (5MB)."
@@ -55,8 +58,11 @@ async def save_image_and_get_url(image: UploadFile, url_prefix: str, upload_dir:
     url = f"/uploads/{url_prefix}/{unique_filename}"
 
     # Save image to the specified path
+    logger.info(f"Saving image to {file_path}")
     async with aiofiles.open(file_path, "wb") as buffer:
         await buffer.write(await image.read())
+
+    logger.info(f"Saved image to {file_path}")
 
     return url
 
@@ -80,7 +86,11 @@ async def delete_image(image_url: str, upload_dir: str) -> bool:
 
     if os.path.exists(file_path):
         os.remove(file_path)
+        logger.info(f"Deleted image from {file_path}")
         return True
+    
+    logger.warning(f"Image {file_path} not found for deletion")
+    
     return False
 
 async def delete_event_flyer(flyer_url: str) -> bool:

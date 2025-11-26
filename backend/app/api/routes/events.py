@@ -8,7 +8,7 @@ from app.schemas.event import EventOut, EventCreate, EventCreateWithFlyer
 import app.services.event_services as event_services
 import app.services.user_services as user_services
 
-from app.core.security import get_current_user, require_organizer
+from app.core.security import get_current_user, require_organizer, require_admin
 from app.utils.images import save_flyer_and_get_url
 
 
@@ -84,35 +84,35 @@ async def create_event(
     return event_services.create_event_service(event_with_flyer)
 
 @router.put("/events/{event_id}", response_model=EventOut)
-async def update_event(event_id: int, event_data: EventOut, user=Depends(get_current_user)):
+async def update_event(event_id: int, event_data: EventOut, user=Depends(require_organizer)):
     """
     Update an event by its ID.
     """
     return event_services.update_event_service(event_id, event_data)
 
 @router.post("/events/{event_id}/approve", response_model=EventOut)
-async def approve_event(event_id: int, user=Depends(get_current_user)):
+async def approve_event(event_id: int, user=Depends(require_admin)):
     """
     Approve an event by its ID.
     """
     return event_services.approve_event_service(event_id)
 
 @router.post("/events/{event_id}/reject", response_model=EventOut)
-async def reject_event(event_id: int, user=Depends(get_current_user)):
+async def reject_event(event_id: int, user=Depends(require_admin)):
     """
     Reject an event by its ID.
     """
     return event_services.reject_event_service(event_id)
 
 @router.delete("/events/{event_id}", response_model=EventOut)
-async def delete_event(event_id: int, user=Depends(get_current_user)):
+async def delete_event(event_id: int, user=Depends(require_admin)):
     """
     Delete an event by its ID.
     """
     return event_services.delete_event_service(event_id)
 
 @router.put("/events/{event_id}/status/{status}", response_model=EventOut)
-async def update_event_status(event_id: int, status: str, user=Depends(get_current_user)):
+async def update_event_status(event_id: int, status: str, user=Depends(require_admin)):
     """
     Update the status of an event by its ID.
     """
