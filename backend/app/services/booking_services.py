@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Booking services for MGLTickets."""
 
-from core.logging_config import logger
+from datetime import datetime
+from app.core.logging_config import logger
 import app.db.repositories.booking_repo as booking_repo
 from app.schemas.booking import BookingCreate, BookingUpdate
 from typing import Optional
@@ -29,6 +30,16 @@ def update_booking_service(booking_id: int, booking_data: BookingUpdate) -> Opti
     booking = booking_repo.update_booking_repo(booking_id, booking_data)
     if booking:
         logger.info(f"Updated booking: {booking}")
+    else:
+        logger.warning(f"Booking with ID {booking_id} not found for update")
+    return booking
+
+def update_booking_status_service(booking_id: int, status: str) -> Optional[dict]:
+    """Service to update the status of an existing booking."""
+    logger.info("Updating booking status", extra={"extra": {"booking_id": booking_id}})
+    booking = booking_repo.update_booking_status_repo(booking_id, status)
+    if booking:
+        logger.info(f"Updated booking status: {booking}")
     else:
         logger.warning(f"Booking with ID {booking_id} not found for update")
     return booking
@@ -74,7 +85,7 @@ def list_recent_bookings_service(limit: int = 10) -> list[dict]:
     logger.info("Listing recent bookings", extra={"extra": {"limit": limit}})
     return booking_repo.list_recent_bookings_repo(limit)
 
-def list_bookings_in_date_range_service(start_date: str, end_date: str) -> list[dict]:
+def list_bookings_in_date_range_service(start_date: datetime, end_date: datetime) -> list[dict]:
     """Service to list bookings within a specific date range."""
     logger.info("Listing bookings in date range", extra={"extra": {"start_date": start_date, "end_date": end_date}})
     return booking_repo.list_bookings_in_date_range_repo(start_date, end_date)

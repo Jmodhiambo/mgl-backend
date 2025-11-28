@@ -47,7 +47,7 @@ class Event(Base):
     organizer: Mapped["User"] = relationship("User", back_populates="events")
 
     # Foreign key relationship to Booking (bookings)
-    bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="event")
+    # bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="event")
     ticket_types: Mapped[list["TicketType"]] = relationship("TicketType", back_populates="event")    
 
     def __repr__(self) -> str:

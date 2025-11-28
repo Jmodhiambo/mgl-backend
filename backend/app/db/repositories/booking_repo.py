@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Repository for Booking model operations."""
 
+from datetime import datetime
 from app.db.session import get_session
 from typing import Optional
 from app.db.models.booking import Booking
@@ -36,6 +37,17 @@ def update_booking_repo(booking_id: int, booking_data: BookingUpdate) -> Optiona
         booking.quantity = booking_data.quantity
         booking.status = booking_data.status
         booking.total_price = booking_data.total_price
+        session.commit()
+        session.refresh(booking)
+        return BookingOut.model_validate(booking)
+    
+def update_booking_status_repo(booking_id: int, status: str) -> Optional[BookingOut]:
+    """Update the status of an existing booking in the database."""
+    with get_session() as session:
+        booking = session.get(Booking, booking_id)
+        if not booking:
+            return None
+        booking.status = status
         session.commit()
         session.refresh(booking)
         return BookingOut.model_validate(booking)
@@ -86,7 +98,7 @@ def list_recent_bookings_repo(limit: int = 10) -> list[BookingOut]:
         bookings = session.query(Booking).order_by(Booking.created_at.desc()).limit(limit).all()
         return [BookingOut.model_validate(booking) for booking in bookings]
     
-def list_bookings_in_date_range_repo(start_date: str, end_date: str) -> list[BookingOut]:
+def list_bookings_in_date_range_repo(start_date: datetime, end_date: datetime) -> list[BookingOut]:
     """List all bookings within a specific date range."""
     with get_session() as session:
         bookings = session.query(Booking).filter(Booking.created_at >= start_date, Booking.created_at <= end_date).all()

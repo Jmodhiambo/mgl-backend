@@ -32,7 +32,7 @@ def list_ticket_instances() -> list[dict]:
     logger.info("Listing all TicketInstances")
     return ti_repo.list_ticket_instances_repo()
 
-def list_ticket_instances_in_date_range(start_date: str, end_date: str) -> list[dict]:
+def list_ticket_instances_in_date_range(start_date: datetime, end_date: datetime) -> list[dict]:
     """List TicketInstances created within a specific date range."""
     logger.info(f"Listing TicketInstances from {start_date} to {end_date}")
     return ti_repo.list_ticket_instances_in_date_range_repo(start_date, end_date)

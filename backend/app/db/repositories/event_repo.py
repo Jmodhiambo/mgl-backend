@@ -73,6 +73,26 @@ def approve_event_repo(event_id: int) -> Optional[EventOut]:
             return EventOut.model_validate(event)
         return None
     
+def activate_event_repo(event_id: int) -> bool:
+    """Activate an event."""
+    with get_session() as session:
+        event = session.query(Event).filter(Event.id == event_id).first()
+        if event:
+            event.is_active = True
+            session.commit()
+            return True
+        return False
+    
+def deactivate_event_repo(event_id: int) -> bool:
+    """Deactivate an event."""
+    with get_session() as session:
+        event = session.query(Event).filter(Event.id == event_id).first()
+        if event:
+            event.is_active = False
+            session.commit()
+            return True
+        return False
+    
 def reject_event_repo(event_id: int) -> bool:
     """Reject an event."""
     with get_session() as session:
@@ -123,6 +143,12 @@ def search_events_by_title_repo(keyword: str) -> list[EventOut]:
     with get_session() as session:
         events = session.query(Event).filter(Event.title.ilike(f"%{keyword}%")).all()
         return [EventOut.model_validate(event) for event in events]
+    
+def count_events_by_organizer_repo(organizer_id: int) -> int:
+    """Count the number of events organized by a specific user."""
+    with get_session() as session:
+        count = session.query(Event).filter(Event.organizer_id == organizer_id).count()
+        return count
 
 def count_events_repo() -> int:
     """Count the total number of events in the database."""
@@ -133,7 +159,7 @@ def count_events_repo() -> int:
 def get_latest_events_repo(limit: int = 5) -> list[EventOut]:
     """Get the latest added events."""
     with get_session() as session:
-        events = session.query(Event).order_by(Event.created_at.desc()).limit(limit).all()
+        events = session.query(Event).filter(Event.approved == True).order_by(Event.created_at.desc()).limit(limit).all()
         return [EventOut.model_validate(event) for event in events]
     
 def get_events_by_status_repo(status: str) -> list[EventOut]:
@@ -157,7 +183,7 @@ def get_events_without_bookings_repo() -> list[EventOut]:
 def search_events_by_venue_repo(venue: str) -> list[EventOut]:
     """Get events by venue."""
     with get_session() as session:
-        events = session.query(Event).filter(Event.venue.ilike(f"%{venue}%")).all()
+        events = session.query(Event).filter(Event.approved == True, Event.venue.ilike(f"%{venue}%")).all()
         return [EventOut.model_validate(event) for event in events]
     
 def get_events_created_after_repo(date: datetime) -> list[EventOut]:

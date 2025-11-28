@@ -63,8 +63,8 @@ def get_current_user(
 
 def require_organizer(user=Depends(get_current_user)) -> UserOut:
     """Require user to be at least an organizer to access this route."""
-    if user.role not in ("organizer", "admin", "superadmin"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an organizer or admin to access this route.")
+    if user.role != "organizer":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an organizer to access this route.")
     return user
 
 def require_admin(user=Depends(get_current_user)) -> UserOut:

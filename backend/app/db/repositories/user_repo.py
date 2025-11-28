@@ -7,7 +7,7 @@ from app.db.session import get_session
 from typing import Optional
 from app.schemas.user import UserOut, UserOutWithPWD
 
-def create_user_repo(name: str, email: str, password_hash: str, phone_number: str, role: str = "attendee") -> UserOut:
+def create_user_repo(name: str, email: str, password_hash: str, phone_number: str) -> UserOut:
     """Create a new user in the database."""
     with get_session() as session:
         new_user = User(
@@ -15,7 +15,6 @@ def create_user_repo(name: str, email: str, password_hash: str, phone_number: st
             email=email,
             password_hash=password_hash,
             phone_number=phone_number,
-            role=role
         )
         session.add(new_user)
         session.commit()

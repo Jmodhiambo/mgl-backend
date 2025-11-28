@@ -45,6 +45,16 @@ async def approve_event_service(event_id: int) -> dict:
     logger.info(f"Approving event with ID: {event_id}")
     return event_repo.approve_event_repo(event_id)
 
+async def activate_event_service(event_id: int) -> dict:
+    """Activate an event."""
+    logger.info(f"Activating event with ID: {event_id}")
+    return event_repo.activate_event_repo(event_id)
+
+async def deactivate_event_service(event_id: int) -> dict:
+    """Deactivate an event."""
+    logger.info(f"Deactivating event with ID: {event_id}")
+    return event_repo.deactivate_event_repo(event_id)
+
 async def reject_event_service(event_id: int) -> dict:
     """Reject an event."""
     logger.info(f"Rejecting event with ID: {event_id}")
@@ -74,6 +84,11 @@ async def search_events_by_title_service(title: str) -> list[dict]:
     """Search events by title."""
     logger.info(f"Searching events by title: {title}")
     return event_repo.search_events_by_title_repo(title)
+
+async def count_events_by_organizer_service(organizer_id: int) -> int:
+    """Count events by organizer ID."""
+    logger.info(f"Counting events for organizer with ID: {organizer_id}")
+    return event_repo.count_events_by_organizer_repo(organizer_id)
 
 async def count_events_service() -> int:
     """Count total number of events."""

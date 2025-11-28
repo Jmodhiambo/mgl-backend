@@ -1,47 +1,21 @@
 #!/usr/bin/env python3
-"""Events routes for MGLTickets."""
+"""Event routes for MGLTickets."""
 
-from fastapi import APIRouter, Depends, UploadFile, File, Body, HTTPException, status
-from typing import Optional
-
-from app.schemas.event import EventOut, EventCreate, EventCreateWithFlyer
+from fastapi import APIRouter, Depends
+from app.schemas.event import EventOut
 import app.services.event_services as event_services
-import app.services.user_services as user_services
-
-from app.core.security import get_current_user, require_organizer, require_admin
-from app.utils.images import save_flyer_and_get_url
-
+from datetime import datetime
+from app.core.security import get_current_user
 
 router = APIRouter()
 
+
 @router.get("/events", response_model=list[EventOut])
-async def get_all_events(user=Depends(get_current_user)):
+async def get_all_approved_events(user=Depends(get_current_user)):
     """
     Get all events.
     """
-    return event_services.get_all_events_service()
-
-@router.get("/events/test", response_model=list[EventOut])
-async def get_latest_events(): # user=Depends(get_current_user)
-    """
-    Test the route.
-    """
-    return [
-        {
-            "id": 1,
-            "title": "Exciting Music Festival Tonight",
-            "organizer_id": 42,
-            "description": "A fantastic show with live bands and food trucks.",
-            "venue": "123 Main Street, Springfield",
-            "start_time": "2025-11-21T18:00:00",
-            "end_time": "2025-11-21T21:00:00",
-            "original_filename": "flyer1.png",
-            "flyer_url": "http://example.com/flyer1.png",
-            "status": "active",
-            "created_at": "2025-10-21T14:30:00",
-            "updated_at": "2025-11-21T12:00:00"
-        }
-    ]
+    return event_services.get_approved_events_service()
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
@@ -51,76 +25,65 @@ async def get_event_by_id(event_id: int, user=Depends(get_current_user)):
     """
     return event_services.get_event_by_id_service(event_id)
 
-@router.post("/events", response_model=EventOut)
-async def create_event(
-    event_data: EventCreate,
-    flyer: UploadFile = File(...),
-    organizer_id: Optional[int] = Body(None, description="Admin can specify the organizer id"), 
-    user=Depends(require_organizer)
-):
-    """
-    Create a new event.
-    If organizer_id is provided (admin creating for someone), use it.
-    """
-    if organizer_id:  # Check if organizer exists
-        organizer = user_services.get_user_by_id_service(organizer_id)
-        if not organizer or organizer.role != "organizer":
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organizer not found.")
-        
-        if user.role not in ("admin", "superadmin"): # Only admins and superadmins can create events for other organizers
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an admin or superadmin to create an event for another organizer.")
-    
-    # Save flyer
-    flyer_url = await save_flyer_and_get_url(flyer)
 
-    # Prepare event data for service layer
-    event_dict = event_data.dict()
-    event_dict["flyer_url"] = flyer_url
-    event_dict["original_filename"] = flyer.filename
-    event_dict["organizer_id"] = organizer_id if organizer_id else user.id
+@router.get("/events/latest", response_model=list[EventOut])
+async def get_latest_events(limit: int = 10, user=Depends(get_current_user)):
+    """
+    Get the latest added events.
+    """
+    return event_services.get_latest_events_service(limit)
 
-    event_with_flyer = EventCreateWithFlyer(**event_dict)
 
-    return event_services.create_event_service(event_with_flyer)
+@router.get("/events/search/title", response_model=list[EventOut])
+async def search_events_by_title(title: str, user=Depends(get_current_user)):
+    """
+    Search events by title.
+    """
+    return event_services.search_events_by_title_service(title)
 
-@router.put("/events/{event_id}", response_model=EventOut)
-async def update_event(event_id: int, event_data: EventOut, user=Depends(require_organizer)):
-    """
-    Update an event by its ID.
-    """
-    return event_services.update_event_service(event_id, event_data)
 
-@router.post("/events/{event_id}/approve", response_model=EventOut)
-async def approve_event(event_id: int, user=Depends(require_admin)):
+@router.get("/events/search/venue", response_model=list[EventOut])
+async def search_events_by_venue(venue: str, user=Depends(get_current_user)):
     """
-    Approve an event by its ID.
+    Search events by venue.
     """
-    return event_services.approve_event_service(event_id)
+    return event_services.search_events_by_venue_service(venue)
 
-@router.post("/events/{event_id}/reject", response_model=EventOut)
-async def reject_event(event_id: int, user=Depends(require_admin)):
-    """
-    Reject an event by its ID.
-    """
-    return event_services.reject_event_service(event_id)
 
-@router.delete("/events/{event_id}", response_model=EventOut)
-async def delete_event(event_id: int, user=Depends(require_admin)):
+@router.get("/events/search/country", response_model=list[EventOut])
+async def get_events_by_country(country: str, user=Depends(get_current_user)):
     """
-    Delete an event by its ID.
+    Get events by country.
     """
-    return event_services.delete_event_service(event_id)
+    return event_services.get_events_by_country_service(country)
 
-@router.put("/events/{event_id}/status/{status}", response_model=EventOut)
-async def update_event_status(event_id: int, status: str, user=Depends(require_admin)):
-    """
-    Update the status of an event by its ID.
-    """
-    return event_services.update_event_status_service(event_id, status)
 
-@router.get("/events/status/{status}", response_model=list[EventOut])
-async def get_events_by_status(status: str, user=Depends(get_current_user)):
+@router.get("/events/date-range", response_model=list[EventOut])
+async def get_events_in_date_range(start_date: datetime, end_date: datetime, user=Depends(get_current_user)):
     """
-    Get events by their status.
+    Get all events within a specific date range.
     """
-    return event_services.get_events_by_status_service(status)
+    return event_services.get_events_in_date_range_service(start_date, end_date)
+
+
+@router.get("/events/sorted/start-time", response_model=list[EventOut])
+async def get_events_sorted_by_start_time(ascending: bool = True, user=Depends(get_current_user)):
+    """
+    Get events sorted by start time.
+    """
+    return event_services.get_events_sorted_by_start_time_service(ascending)
+
+
+@router.get("/events/sorted/end-time", response_model=list[EventOut])
+async def get_events_sorted_by_end_time(ascending: bool = True, user=Depends(get_current_user)):
+    """
+    Get events sorted by end time.
+    """
+    return event_services.get_events_sorted_by_end_time_service(ascending)
+
+@router.get("/events/count", response_model=int)
+async def get_total_events(user=Depends(get_current_user)):
+    """
+    Get the total number of events.
+    """
+    return event_services.count_events_service()
