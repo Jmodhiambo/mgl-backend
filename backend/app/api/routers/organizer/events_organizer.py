@@ -12,7 +12,6 @@ from app.utils.images import save_flyer_and_get_url
 
 router = APIRouter()
 
-
 @router.post("/events", response_model=EventOut)
 async def create_event(
     event_data: EventCreate,

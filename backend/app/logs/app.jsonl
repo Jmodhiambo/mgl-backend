@@ -1373,3 +1373,357 @@
 {"timestamp": "2025-11-28 03:19:53,800", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
 {"timestamp": "2025-11-28 03:20:38,712", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
 {"timestamp": "2025-11-28 03:20:38,715", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:28:44,812", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:29:00,665", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/"}
+{"timestamp": "2025-11-30 02:29:00,665", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 404, "path": "/"}
+{"timestamp": "2025-11-30 02:29:02,971", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/favicon.ico"}
+{"timestamp": "2025-11-30 02:29:02,974", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 404, "path": "/favicon.ico"}
+{"timestamp": "2025-11-30 02:29:17,724", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/"}
+{"timestamp": "2025-11-30 02:29:17,727", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 404, "path": "/"}
+{"timestamp": "2025-11-30 02:29:48,660", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 02:29:48,660", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 02:29:48,876", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:29:50,769", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:36:44,682", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:36:44,682", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:36:54,540", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:39:17,176", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 02:39:17,177", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 02:39:17,629", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:39:18,231", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:43:35,434", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:43:35,435", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:13,202", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:13,204", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:44:13,204", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:16,212", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:22,252", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:44:22,253", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:26,085", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:26,087", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:44:26,087", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:44:30,140", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:45:43,502", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 02:45:43,503", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 02:45:43,910", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:45:44,496", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:52:33,781", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:52:33,783", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:52:44,596", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:52:44,605", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:52:44,606", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:52:52,091", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:52:52,092", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:52:52,094", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:52:55,438", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:08,223", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:08,224", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:17,052", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:17,058", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:17,059", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:21,889", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:21,890", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:21,890", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:25,658", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:26,983", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:26,983", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:32,912", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:33,358", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:33,359", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:38,417", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:38,422", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:38,423", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:44,271", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:44,273", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:44,273", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:48,377", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:48,379", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:48,379", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:54,151", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:54,153", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:54,154", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:59,656", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:55:59,657", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:55:59,658", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:56:42,153", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:02,819", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:57:02,820", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:14,234", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:14,236", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:57:14,236", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:19,901", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:22,975", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:57:22,976", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:26,585", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:28,013", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:57:28,014", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:31,526", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:35,939", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 02:57:35,939", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:38,795", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 02:57:54,171", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 02:57:54,172", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 02:57:54,624", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 02:57:55,153", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:00:23,892", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:00:23,893", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:27,286", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:28,710", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:00:28,710", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:32,264", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:32,266", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:00:32,266", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:36,436", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:36,450", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:00:36,451", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:44,332", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:44,333", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:00:44,334", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:00:49,647", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:02,295", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:02,296", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:05,331", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:12,708", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:12,709", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:17,507", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:17,509", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:17,510", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:20,993", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:20,995", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:20,995", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:24,318", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:28,262", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:28,262", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:31,685", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:34,311", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:34,312", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:37,181", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:44,973", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:44,974", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:47,944", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:52,874", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:01:52,875", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:01:56,498", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:04,660", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:04,661", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:08,920", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:08,922", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:08,922", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:15,700", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:15,702", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:15,703", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:20,218", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:24,493", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:24,494", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:28,185", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:28,186", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:28,187", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:31,751", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:31,753", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:31,755", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:35,775", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:35,777", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:35,777", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:40,158", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:40,161", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:02:40,162", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:44,020", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:02:46,990", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 03:02:46,991", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 03:02:47,449", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:02:47,916", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:12:16,963", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:12:16,969", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:25,358", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:25,362", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:12:25,363", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:31,461", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:33,865", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:12:33,867", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:39,189", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:39,191", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:12:39,191", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:45,793", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:45,805", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:12:45,811", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:51,155", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:12:57,374", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:12:57,375", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:11,782", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:12,445", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:13:12,447", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:18,059", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:19,470", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:13:19,473", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:25,776", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:25,778", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:13:25,779", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:29,808", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:41,849", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:13:41,849", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:49,661", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:49,685", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:13:49,690", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:58,261", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:13:58,262", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:13:58,263", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:14:03,287", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:15:35,800", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:15:35,801", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:18,590", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:18,592", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:16:18,593", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:24,125", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:30,922", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:16:30,926", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:37,712", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:44,369", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:16:44,370", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:55,522", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:16:57,259", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:16:57,260", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:03,177", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:03,879", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:03,880", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:10,192", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:10,196", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:10,197", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:14,616", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:19,739", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:19,741", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:27,050", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:27,329", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:27,330", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:33,679", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:33,715", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:33,717", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:41,674", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:41,677", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:41,679", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:47,782", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:50,288", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:17:50,291", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:17:54,372", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:02,509", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:18:02,510", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:10,449", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:10,451", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:18:10,453", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:15,279", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:17,019", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:18:17,021", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:21,551", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:27,531", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:18:27,534", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:34,060", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:34,062", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:18:34,062", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:39,176", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:42,215", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:18:42,217", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:18:46,600", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:21:41,589", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:21:41,590", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:21:49,408", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:21:56,066", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:21:56,067", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:01,745", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:05,905", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:22:05,906", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:10,844", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:16,920", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:22:16,922", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:26,296", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:36,962", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:22:36,965", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:45,689", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:45,691", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:22:45,692", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:53,121", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:53,125", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:22:53,128", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:22:58,975", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:23:07,058", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 03:23:07,059", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 03:23:07,717", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:23:08,454", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:25:35,375", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:25:35,376", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:25:42,933", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:25:44,545", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:25:44,547", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:25:58,535", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:25:58,537", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:25:58,538", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:04,539", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:04,544", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:26:04,545", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:12,389", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:12,391", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:26:12,392", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:16,983", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:20,330", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:26:20,331", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:25,721", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:25,723", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:26:25,724", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:30,034", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:26:35,376", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 03:26:35,377", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 03:26:36,024", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:26:36,543", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:27:50,606", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:27:50,610", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:27:55,068", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:01,236", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:01,237", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:08,437", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:08,520", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:08,524", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:19,353", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:19,359", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:19,361", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:26,463", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:26,465", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:26,465", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:30,677", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:35,871", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:35,872", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:42,617", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:42,620", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:42,621", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:49,468", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:28:49,471", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:28:49,472", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:00,593", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:00,741", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:29:00,743", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:07,738", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:07,740", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:29:07,742", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:13,862", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:13,864", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:29:13,865", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:18,013", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:29:30,939", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 03:29:30,940", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 03:29:31,626", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:29:32,153", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:30:33,250", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:30:33,253", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:30:49,597", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:36:05,538", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/docs"}
+{"timestamp": "2025-11-30 03:36:05,540", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/docs"}
+{"timestamp": "2025-11-30 03:36:06,133", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:36:06,634", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/openapi.json"}
+{"timestamp": "2025-11-30 03:37:28,734", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Closing database connections..."}
+{"timestamp": "2025-11-30 03:37:28,737", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Shutting down MGLTickets..."}
+{"timestamp": "2025-11-30 03:37:33,667", "level": "INFO", "logger": "MGLTicketsLogger", "module": "main", "user_id": "unknown", "role": "unknown", "message": "Starting up MGLTickets..."}
+{"timestamp": "2025-11-30 03:37:50,947", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/api/v1/events/test"}
+{"timestamp": "2025-11-30 03:37:50,948", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 403, "path": "/api/v1/events/test"}
+{"timestamp": "2025-11-30 03:37:58,762", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/api/v1/users/1"}
+{"timestamp": "2025-11-30 03:37:58,839", "level": "INFO", "logger": "MGLTicketsLogger", "module": "user_services", "user_id": "unknown", "role": "unknown", "message": "Getting user by ID..."}
+{"timestamp": "2025-11-30 03:38:23,504", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/api/v1/users/1"}
+{"timestamp": "2025-11-30 03:38:23,508", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/api/v1/users/1"}
+{"timestamp": "2025-11-30 03:38:23,509", "level": "INFO", "logger": "MGLTicketsLogger", "module": "user_services", "user_id": "unknown", "role": "unknown", "message": "Getting user by ID..."}
+{"timestamp": "2025-11-30 03:38:23,517", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/api/v1/users/1"}
