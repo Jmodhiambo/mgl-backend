@@ -1,19 +1,43 @@
 #!/usr/bin/env python3
 """FastAPI entrypoint for MGLTickets."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.logging_config import configure_logging, logger
 from app.core.logging_middleware import LoggingMiddleware
 from app.core.route_registery import register_routes
 from app.db.session import engine
-from app.db.models import *
+from app.db import models
 
 configure_logging() # Initialize logging configuration
 
-app = FastAPI()
+# Lifespan (startup/shutdown)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for FastAPI app."""
+    logger.info("Starting up MGLTickets...")
+    yield
+    logger.info("Shutting down MGLTickets...")
+    engine.dispose()
+    logger.info("MGLTickets shut down.")
+
+app = FastAPI(lifespan=lifespan)
 
 # Middlewares
+# Enable CORS Middleware
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,  # Adjust this to your needs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Add logging middleware
 app.add_middleware(LoggingMiddleware)
 
@@ -25,19 +49,3 @@ app.mount("/uploads/profiles", StaticFiles(directory="app/uploads/profiles"), na
 
 # Register routes from app.core.route_registery
 register_routes(app)
-
-# Auto-create tables in the database
-@app.on_event("startup")
-async def startup_event():
-    """Automatically create the database tables if they don't exist."""
-    logger.info("Starting up MGLTickets...")
-    # Removing create_all() since we have alembic to handle schema creation
-    # Base.metadata.create_all(bind=engine)
-    # logger.info("MGLTickets started.")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Closing database connections...")
-    engine.dispose()
-    logger.info("Shutting down MGLTickets...")
-# Register handlers globally

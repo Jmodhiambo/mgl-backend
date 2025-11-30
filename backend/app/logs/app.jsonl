@@ -1727,3 +1727,6 @@
 {"timestamp": "2025-11-30 03:38:23,508", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/api/v1/users/1"}
 {"timestamp": "2025-11-30 03:38:23,509", "level": "INFO", "logger": "MGLTicketsLogger", "module": "user_services", "user_id": "unknown", "role": "unknown", "message": "Getting user by ID..."}
 {"timestamp": "2025-11-30 03:38:23,517", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/api/v1/users/1"}
+{"timestamp": "2025-11-30 05:47:45,585", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Incoming request", "method": "GET", "path": "/api/v1/users/1"}
+{"timestamp": "2025-11-30 05:47:50,673", "level": "INFO", "logger": "MGLTicketsLogger", "module": "user_services", "user_id": "unknown", "role": "unknown", "message": "Getting user by ID..."}
+{"timestamp": "2025-11-30 05:47:59,487", "level": "INFO", "logger": "MGLTicketsLogger", "module": "logging_middleware", "user_id": "unknown", "role": "unknown", "message": "Outgoing response", "status": 200, "path": "/api/v1/users/1"}
