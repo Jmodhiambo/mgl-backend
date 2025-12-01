@@ -58,7 +58,11 @@ uvicorn app.main:app --reload
 ## Frontend Setup
 
 ```bash
-cd ../frontend
+# Clone the repo
+git clone https://github.com/jmodhiambo/mgl-frontend.git
+cd mgl-frontend
+
+# Install dependencies
 npm install
 npm run dev
 ```
