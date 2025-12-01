@@ -36,8 +36,8 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/jmodhiambo/mgltickets.git
-cd mgltickets/backend
+git clone https://github.com/jmodhiambo/mgl-backend.git
+cd mgl-backend
 
 # Create virtual environment
 python -m venv venv

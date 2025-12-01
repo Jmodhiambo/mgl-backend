@@ -23,3 +23,7 @@ backend/app/logs/*
 
 # Environment variables file
 .env
+
+# Log files
+*.jsonl
+*.log
