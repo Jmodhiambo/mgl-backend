@@ -27,3 +27,6 @@ SQLALCHEMY_ECHO: bool = config("SQLALCHEMY_ECHO", cast=bool, default=False)
 # Other secrets
 SECRET_KEY: str = config("SECRET_KEY", cast=Secret)
 ALGORITHM: str = config("ALGORITHM", default="HS256")
+
+# Frontend URL
+FRONTEND_URL: str = config("FRONTEND_URL", default="http://localhost:5173")

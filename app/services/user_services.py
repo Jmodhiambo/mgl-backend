@@ -6,6 +6,7 @@ from typing import Optional
 from datetime import datetime
 from passlib.hash import argon2
 from app.core.logging_config import logger
+from app.core.security import create_access_token, decode_access_token
 
 
 def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
@@ -29,6 +30,12 @@ def register_user_service(name: str, email: str, password: str, phone_number: st
     user = user_repo.create_user_repo(name, email, password_hash, phone_number)
 
     logger.info(f"User {user.name} with ID {user.id} registered successfully.")
+
+    # Generate and set access token for email verification or immediate access
+    access_token = create_access_token(user.id)
+
+    # I will work on email sending later
+
 
     return user
 
@@ -137,25 +144,42 @@ def deactivate_user_service(user_id: int) -> Optional[dict]:
     logger.info(f"Deactivating a user account with ID: {user_id}")
     return user_repo.deactivate_user_repo(user_id)
 
-def activate_user_service(user_id: int) -> Optional[dict]:
-    """Activate a user account."""
-    logger.info(f"Activating user account with ID: {user_id}")
-    return user_repo.activate_user_repo(user_id)
+def reactivate_user_service(user_id: int) -> Optional[dict]:
+    """Reactivate a user account."""
+    logger.info(f"Reactivating user account with ID: {user_id}")
+    return user_repo.reactivate_user_repo(user_id)
 
-def update_user_password_service(user_id: int, new_password: str) -> dict:
+def update_user_password_service(user_id: int, new_password: str) -> None:
     """Update a user's password."""
     if len(new_password) < 8:
         logger.warning("Password must be at least 8 characters long.")
         raise ValueError("Password must be at least 8 characters long.")
     
     user = user_repo.get_user_with_password_by_id_repo(user_id)
+    if not user:
+        logger.error(f"User with ID {user_id} not found.")
+        raise ValueError("User not found.")
+
     if argon2.verify(new_password, user.password_hash):
         logger.warning("New password cannot be the same as the current password.")
         raise ValueError("New password cannot be the same as the current password.")
 
     logger.info(f"Updating password of user with ID: {user_id}")
     new_password_hash = argon2.hash(new_password)
-    return user_repo.update_user_password_repo(user_id, new_password_hash)
+    user_repo.update_user_password_repo(user_id, new_password_hash)
+
+def change_user_password_service(user_id: int, old_password: str, new_password: str) -> None:
+    """Change a user's password."""
+    user = user_repo.get_user_with_password_by_id_repo(user_id)
+    if not argon2.verify(old_password, user.password_hash):
+        logger.warning(f"Old password is incorrect for user with ID: {user_id}.")
+        raise ValueError("Old password is incorrect.")
+    
+    update_user_password_service(user_id, new_password)
+    logger.info(f"Password changed successfully for user with ID: {user_id}")
+
+    # Send email notification about password change
+    # send_password_change_email_success(user_id)
 
 def count_users_by_role_service(role: str) -> int:
     """Count users by their role."""
@@ -172,14 +196,23 @@ def list_active_users_service() -> list[dict]:
     logger.info("Listing active users...")
     return user_repo.list_active_users_repo()
 
-def verify_user_email_service(user_id: int) -> dict:
+def verify_user_email_service(user_id: int, token: str) -> dict:
     """Verify a user's email."""
-    logger.info("Verifying email of user with ID: {user_id}")
+    payload = decode_access_token(token)
+    token_user_id = payload.get("id")
+    if token_user_id != user_id:
+        logger.error("Token user ID does not match the provided user ID.")
+        raise ValueError("Invalid token for the specified user.")
+    
+    # Send email verification email success to user
+    # send_email_verification_email_success(user_id)
+
+    logger.info(f"Verifying email of user with ID: {user_id}")
     return user_repo.verify_user_email_repo(user_id)
 
 def unverify_user_email_service(user_id: int) -> dict:
     """Unverify a user's email."""
-    logger.info("Unverifying email of user with ID: {user_id}")
+    logger.info(f"Unverifying email of user with ID: {user_id}")
     return user_repo.unverify_user_email_repo(user_id)
 
 def list_verified_users_service() -> list[dict]:

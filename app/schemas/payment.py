@@ -18,7 +18,7 @@ class PaymentOut(BaseModelEAT):
     callback_payload: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    booking: BookingOut
+    # booking: BookingOut
 
     class Config:
         from_attributes = True

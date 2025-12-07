@@ -32,7 +32,6 @@ class TicketInstanceCreate(BaseModelEAT):
     booking_id: int
     ticket_type_id: int
     user_id: int
-    code: str
     status: Optional[str] = "issued"  # Default status is issued
     issued_to: Optional[str] = None
 

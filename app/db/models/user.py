@@ -48,19 +48,19 @@ class User(Base):
     organization_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     """Name of the organizer's business or organization."""
 
-    website: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    website_url: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     """Link to organizer's website."""
 
-    profile_picture: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    profile_picture_url: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     """URL to organizer's profile image."""
 
-    address: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    """Organizer's business or event address."""
+    social_media_links: Mapped[Optional[list[str]]] = mapped_column(String(500), nullable=True)
+    """JSON string containing social media links."""
 
     tax_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     """Tax identification number for legal or payout purposes."""
 
-    area_of_specialty: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    area_of_expertise: Mapped[Optional[list[str]]] = mapped_column(String(200), nullable=True)
     """The type of events the organizer specializes in (e.g., Music, Workshops)."""
 
     # Relationships

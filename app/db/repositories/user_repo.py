@@ -103,25 +103,23 @@ def update_user_contact_repo(user_id: int, new_email: Optional[str] = None, new_
             return UserOut.model_validate(user)
         return None
     
-def update_user_password_repo(user_id: int, new_password_hash: str) -> Optional[UserOut]:
+def update_user_password_repo(user_id: int, new_password_hash: str) -> None:
     """Change the password of a user."""
     with get_session() as session:
         user = session.query(User).filter(User.id == user_id).first()
         if user:
             user.password_hash = new_password_hash
             session.commit()
-            session.refresh(user)
-            return UserOut.model_validate(user)
-        return None
-    
+        # No need to refresh since we are not returning the user object
+ 
 def get_users_by_role_repo(role: str) -> list[UserOut]:
     """Retrieve all users with a specific role."""
     with get_session() as session:
         users = session.query(User).filter(User.role == role).all()
         return [UserOut.model_validate(user) for user in users]
     
-def activate_user_repo(user_id: int) -> Optional[UserOut]:
-    """Activate a user account."""
+def reactivate_user_repo(user_id: int) -> Optional[UserOut]:
+    """Reactivate a user account."""
     with get_session() as session:
         user = session.query(User).filter(User.id == user_id).first()
         if user:

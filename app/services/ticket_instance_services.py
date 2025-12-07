@@ -46,3 +46,8 @@ def get_ticket_instances_by_status(status: str) -> list[dict]:
     """List TicketInstances filtered by their status."""
     logger.info(f"Listing TicketInstances with status: {status}")
     return ti_repo.get_ticket_instances_by_status_repo(status)
+
+def get_ticket_instance_by_seat_number(seat_number: str) -> Optional[dict]:
+    """Retrieve a TicketInstance by its seat number."""
+    logger.info(f"Retrieving TicketInstance with seat number: {seat_number}")
+    return ti_repo.get_ticket_instance_by_seat_number_repo(seat_number)

@@ -25,6 +25,7 @@ class TicketInstance(Base):
     code: Mapped[str] = mapped_column(String(100), unique=True, nullable=False) # Unique ticket code or QR code
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")  # e.g., active, used, cancelled
     issued_to: Mapped[Optional[str]] = mapped_column(String(150), nullable=True, default=None)  # Name of the ticket holder
+    seat_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

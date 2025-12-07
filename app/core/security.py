@@ -7,7 +7,6 @@ from fastapi import Request, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 
-from app.services.user_services import get_user_by_id_service
 from app.core.config import SECRET_KEY, ALGORITHM
 from app.schemas.user import UserOut
 
@@ -26,6 +25,14 @@ def create_access_token(user_id: int, expires_minutes: int = 60) -> str:
 
     return jwt.encode(payload, str(SECRET_KEY), algorithm=ALGORITHM)
 
+def decode_access_token(token: str) -> dict:
+    """Decode and verify a JWT."""
+    try:
+        payload = jwt.decode(token, str(SECRET_KEY), algorithms=[ALGORITHM])
+        return payload
+    except JWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from e
+
 def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
@@ -34,6 +41,8 @@ def get_current_user(
     Extract token from Authorization header, decode it, load user,
     and attach user to request.state.
     """
+    from app.services.user_services import get_user_by_id_service
+    
     # Extract token from Authorization header which is credetials in this case
     token = credentials.credentials
 
@@ -41,11 +50,7 @@ def get_current_user(
         request.state.user = None
         return None
 
-    try:
-        payload = jwt.decode(token, str(SECRET_KEY), algorithms=[ALGORITHM])
-       
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+    payload = decode_access_token(token)
     
     user_id = payload.get("id")
     if not user_id:

@@ -29,7 +29,6 @@ class OrganizerInfo(UserOut):
     organization_name: Optional[str] = None
     website: Optional[str] = None
     profile_picture: Optional[str] = None
-    address: Optional[str] = None
     area_of_specialty: Optional[str] = None
 
     class Config:
@@ -63,10 +62,30 @@ class UserUpdate(BaseModelEAT):
     """Schema for updating an existing User."""
     name: Optional[str] = None
     email: Optional[EmailStr] = None
-    password: Optional[str] = None
     phone_number: Optional[str] = None
     role: Optional[str] = None
-    is_verified: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
+
+class UserPasswordChange(BaseModelEAT):
+    """Schema for updating an existing User."""
+    old_password: str
+    new_password: str
+
+    class Config:
+        from_attributes = True
+
+class UserPasswordUpdate(BaseModelEAT):
+    """Schema for updating an existing User's password."""
+    new_password: str
+
+    class Config:
+        from_attributes = True
+
+class UserEmailVerification(BaseModelEAT):
+    """Schema for verifying a User's email."""
+    token: str
 
     class Config:
         from_attributes = True

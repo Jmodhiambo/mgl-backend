@@ -6,7 +6,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app.services.user_services import (
     get_user_by_email_service,
-    authenticate_user_service
+    authenticate_user_service,
+    register_user_service
 )
 from app.core.security import (
     create_access_token,
@@ -15,6 +16,17 @@ from app.core.security import (
 
 router = APIRouter()
 
+@router.post("/register")
+async def register_user(request: Request):
+    """
+    Register a new user.
+    """
+    user_data = await request.json()
+    user = register_user_service(user_data)
+    return {
+        "message": "User registered successfully",
+        "user_id": user.id,
+    }
 
 @router.post("/login")
 async def login(form: OAuth2PasswordRequestForm = Depends()):

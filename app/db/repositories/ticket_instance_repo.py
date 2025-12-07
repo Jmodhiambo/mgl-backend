@@ -85,3 +85,13 @@ def get_ticket_instances_by_status_repo(status: str) -> list[TicketInstanceOut]:
             TicketInstance.status == status
         ).all()
         return [TicketInstanceOut.model_validate(ti) for ti in ticket_instances]
+    
+def get_ticket_instance_by_seat_number_repo(seat_number: str) -> Optional[TicketInstanceOut]:
+    """Retrieve a TicketInstance by its seat number."""
+    with get_session() as session:
+        ticket_instance = session.query(TicketInstance).filter(
+            TicketInstance.seat_number == seat_number
+        ).first()
+        if ticket_instance:
+            return TicketInstanceOut.model_validate(ticket_instance)
+        return None
