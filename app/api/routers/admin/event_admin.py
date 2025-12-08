@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Events routes for MGLTickets."""
+"""Events admin routes for MGLTickets."""
 
 from fastapi import APIRouter, Depends, UploadFile, File, Body, HTTPException, status
 from typing import Optional

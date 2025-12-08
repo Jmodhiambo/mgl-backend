@@ -2,6 +2,8 @@
 """Booking services for MGLTickets."""
 
 from datetime import datetime
+
+from fastapi import HTTPException, status
 from app.core.logging_config import logger
 import app.db.repositories.booking_repo as booking_repo
 from app.schemas.booking import BookingCreate, BookingUpdate
@@ -34,15 +36,25 @@ def update_booking_service(booking_id: int, booking_data: BookingUpdate) -> Opti
         logger.warning(f"Booking with ID {booking_id} not found for update")
     return booking
 
-def update_booking_status_service(booking_id: int, status: str) -> Optional[dict]:
+def update_booking_status_service(booking_id: int, status: str) -> None:
     """Service to update the status of an existing booking."""
     logger.info("Updating booking status", extra={"extra": {"booking_id": booking_id}})
-    booking = booking_repo.update_booking_status_repo(booking_id, status)
-    if booking:
+    booking_repo.update_booking_status_repo(booking_id, status)
+
+    # Retrieve the updated booking for logging
+    booking = booking_repo.get_booking_by_id_repo(booking_id)
+    if booking.status == status:
         logger.info(f"Updated booking status: {booking}")
     else:
-        logger.warning(f"Booking with ID {booking_id} not found for update")
-    return booking
+        logger.warning(f"Status update for booking ID {booking_id} failed")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking update failed")
+    
+def get_total_bookings_by_user_service(user_id: int) -> int:
+    """Service to get the total number of bookings for a specific user."""
+    logger.info("Getting total bookings for user", extra={"extra": {"user_id": user_id}})
+    total = booking_repo.get_total_bookings_by_user_repo(user_id)
+    logger.info(f"Total bookings for user {user_id}: {total}")
+    return total
 
 def delete_booking_service(booking_id: int) -> bool:
     """Service to delete a booking."""

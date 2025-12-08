@@ -6,7 +6,6 @@ from typing import Optional
 from app.schemas.user import UserEmailVerification, UserOut, UserCreate, UserUpdate, UserPasswordChange, UserPasswordUpdate
 from app.core.security import get_current_user
 from app.services.user_services import (
-    register_user_service,
     get_user_by_id_service,
     update_user_contact_service,
     update_user_password_service,
@@ -17,18 +16,6 @@ from app.services.user_services import (
 )
 
 router = APIRouter()
-
-@router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def register_user(user_data: UserCreate):
-    """
-    Register a new user.
-    """
-    return register_user_service(
-        user_data.name,
-        user_data.email,
-        user_data.password,
-        user_data.phone_number
-    )
 
 @router.get("/users/{user_id}", response_model=Optional[UserOut], status_code=status.HTTP_200_OK)
 async def get_user_by_id(user_id: int): #, user=Depends(get_current_user)

@@ -41,7 +41,7 @@ def update_booking_repo(booking_id: int, booking_data: BookingUpdate) -> Optiona
         session.refresh(booking)
         return BookingOut.model_validate(booking)
     
-def update_booking_status_repo(booking_id: int, status: str) -> Optional[BookingOut]:
+def update_booking_status_repo(booking_id: int, status: str) -> None:
     """Update the status of an existing booking in the database."""
     with get_session() as session:
         booking = session.get(Booking, booking_id)
@@ -49,8 +49,13 @@ def update_booking_status_repo(booking_id: int, status: str) -> Optional[Booking
             return None
         booking.status = status
         session.commit()
-        session.refresh(booking)
-        return BookingOut.model_validate(booking)
+        # No need to return anything for status update
+
+def get_total_bookings_by_user_repo(user_id: int) -> int:
+    """Get the total number of bookings for a specific user."""
+    with get_session() as session:
+        total = session.query(Booking).filter(Booking.user_id == user_id).count()
+        return total
     
 def delete_booking_repo(booking_id: int) -> bool:
     """Delete a booking from the database."""

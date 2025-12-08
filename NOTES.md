@@ -16,3 +16,5 @@ There are many API calls that return data that is not being used in the frontend
 Moreover, if certain fields are not used in the frontend, modify the service and repository layers to exclude those fields from the response. This will help streamline data transfer and improve efficiency.
 
 Work on user email verification functionality in the backend (service layer). Implement email token generation, sending verification emails, and verifying tokens when users click on the verification link.
+
+Work on the logout functionality in the frontend to ensure that JWT tokens are properly deleted from client storage upon logout.
