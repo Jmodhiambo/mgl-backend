@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Organizzer TicketType API routes."""
+"""Organizer TicketType API routes."""
 
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends

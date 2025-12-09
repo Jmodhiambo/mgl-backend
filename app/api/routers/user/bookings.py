@@ -3,14 +3,14 @@
 
 from fastapi import APIRouter, Depends, status, HTTPException
 from app.schemas.booking import BookingOut, BookingCreate, BookingUpdate
-from app.core.security import get_current_user
+from app.core.security import require_user
 import app.services.booking_services as booking_services
 
 
 router = APIRouter()
 
 @router.post("/users/{user_id}/bookings", response_model=list[BookingOut], status_code=status.HTTP_201_CREATED)
-async def create_bookings(user_id: int, booking: BookingCreate, user=Depends(get_current_user)):
+async def create_bookings(user_id: int, booking: BookingCreate, user=Depends(require_user)):
     """
     Create a new booking.
     """
@@ -20,7 +20,7 @@ async def create_bookings(user_id: int, booking: BookingCreate, user=Depends(get
 
 
 @router.get("/users/{user_id}/bookings", response_model=list[BookingOut], status_code=status.HTTP_200_OK)
-async def list_bookings(user_id: int, user=Depends(get_current_user)):
+async def list_bookings(user_id: int, user=Depends(require_user)):
     """
     List all bookings for a specific user.
     """
@@ -29,7 +29,7 @@ async def list_bookings(user_id: int, user=Depends(get_current_user)):
     return booking_services.list_bookings_by_user_service(user_id)
 
 @router.get("/users/{user_id}/bookings/{booking_id}", response_model=BookingOut, status_code=status.HTTP_200_OK)
-async def get_booking_by_id(user_id: int, booking_id: int, user=Depends(get_current_user)):
+async def get_booking_by_id(user_id: int, booking_id: int, user=Depends(require_user)):
     """
     Get a specific booking by its ID.
     """
@@ -38,7 +38,7 @@ async def get_booking_by_id(user_id: int, booking_id: int, user=Depends(get_curr
     return booking_services.get_booking_by_id_service(booking_id)
 
 @router.put("/users/{user_id}/bookings/{booking_id}", response_model=BookingOut, status_code=status.HTTP_200_OK)
-async def update_booking_by_id(user_id: int, booking_id: int, booking: BookingUpdate, user=Depends(get_current_user)):
+async def update_booking_by_id(user_id: int, booking_id: int, booking: BookingUpdate, user=Depends(require_user)):
     """
     Update an existing booking.
     """
@@ -47,7 +47,7 @@ async def update_booking_by_id(user_id: int, booking_id: int, booking: BookingUp
     return booking_services.update_booking_service(booking_id, booking)
 
 @router.patch("/users/{user_id}/bookings/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def cancel_booking_by_id(user_id: int, booking_id: int, user=Depends(get_current_user)):
+async def cancel_booking_by_id(user_id: int, booking_id: int, user=Depends(require_user)):
     """
     Delete (Mark as Cancelled) a specific booking by its ID.
     """
@@ -56,7 +56,7 @@ async def cancel_booking_by_id(user_id: int, booking_id: int, user=Depends(get_c
     booking_services.update_booking_status_service(booking_id, "Cancelled")
 
 @router.get("/users/{user_id}/bookings/status/{booking_status}", response_model=list[BookingOut], status_code=status.HTTP_200_OK)
-async def list_bookings_by_status(user_id: int, booking_status: str, user=Depends(get_current_user)):
+async def list_bookings_by_status(user_id: int, booking_status: str, user=Depends(require_user)):
     """
     List all bookings with a specific status for a specific user.
     """
@@ -65,7 +65,7 @@ async def list_bookings_by_status(user_id: int, booking_status: str, user=Depend
     return booking_services.list_bookings_status_by_user_service(user_id, booking_status)
 
 @router.get("/users/{user_id}/bookings/count", response_model=int, status_code=status.HTTP_200_OK)
-async def get_total_bookings(user_id: int, user=Depends(get_current_user)):
+async def get_total_bookings(user_id: int, user=Depends(require_user)):
     """
     Get the total number of bookings for a specific user.
     """

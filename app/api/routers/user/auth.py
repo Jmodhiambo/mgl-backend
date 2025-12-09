@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Auth routes for MGLTickets."""
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.user import UserCreate, UserOut
@@ -13,7 +13,7 @@ from app.services.user_services import (
 )
 from app.core.security import (
     create_access_token,
-    get_current_user,
+    require_user,
 )
 
 router = APIRouter()
@@ -61,7 +61,7 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     }
 
 @router.post("/refresh")
-async def refresh_token(user=Depends(get_current_user)):
+async def refresh_token(user=Depends(require_user)):
     """
     Generate a fresh JWT for an authenticated user.
     """
@@ -76,7 +76,7 @@ async def refresh_token(user=Depends(get_current_user)):
 
 
 @router.post("/logout")
-async def logout(user=Depends(get_current_user)):
+async def logout(user=Depends(require_user)):
     """
     'Logout' by instructing client to delete the token.
     JWT invalidation is client-side unless you use a blacklist.

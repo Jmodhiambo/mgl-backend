@@ -34,6 +34,7 @@ class TicketInstanceCreate(BaseModelEAT):
     user_id: int
     status: Optional[str] = "issued"  # Default status is issued
     issued_to: Optional[str] = None
+    seat_number: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -42,6 +43,7 @@ class TicketInstanceUpdate(BaseModelEAT):
     """Schema for updating an existing TicketInstance."""
     status: Optional[str] = None
     issued_to: Optional[str] = None
+    seat_number: Optional[int] = None
     used_at: Optional[datetime] = None
 
     class Config:

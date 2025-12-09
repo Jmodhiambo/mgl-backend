@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Event routes for MGLTickets."""
 
-from fastapi import Request, APIRouter, Depends
+from fastapi import APIRouter, Depends
 from app.schemas.event import EventOut
 import app.services.event_services as event_services
 from datetime import datetime
-from app.core.security import get_current_user
+from app.core.security import require_user
 
 from typing import Optional
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/events", response_model=list[EventOut])
-async def get_all_approved_events(user=Depends(get_current_user)):
+async def get_all_approved_events(user=Depends(require_user)):
     """
     Get all events.
     """
@@ -21,7 +21,7 @@ async def get_all_approved_events(user=Depends(get_current_user)):
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
-async def get_event_by_id(event_id: int, user=Depends(get_current_user)):
+async def get_event_by_id(event_id: int, user=Depends(require_user)):
     """
     Get an event by its ID.
     """
@@ -29,7 +29,7 @@ async def get_event_by_id(event_id: int, user=Depends(get_current_user)):
 
 
 @router.get("/events/latest", response_model=list[EventOut])
-async def get_latest_events(limit: int = 10, user=Depends(get_current_user)):
+async def get_latest_events(limit: int = 10, user=Depends(require_user)):
     """
     Get the latest added events.
     """
@@ -43,7 +43,7 @@ async def search_events(
     country: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    user=Depends(get_current_user)
+    user=Depends(require_user)
 ):
     """
     Search events by different parameters.
@@ -73,7 +73,7 @@ async def get_events_sorted_by_start_time(
     start_time: Optional[str] = None,
     end_time: Optional[str] = None,
     ascending: bool = True,
-    user=Depends(get_current_user)
+    user=Depends(require_user)
 ):
     """
     Get events sorted by start time.
@@ -93,7 +93,7 @@ async def get_events_sorted_by_start_time(
     return []
 
 @router.get("/events/count", response_model=int)
-async def get_total_events(user=Depends(get_current_user)):
+async def get_total_events(user=Depends(require_user)):
     """
     Get the total number of events.
     """

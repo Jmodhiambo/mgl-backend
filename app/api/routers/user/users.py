@@ -7,7 +7,7 @@ from app.schemas.user import UserEmailVerification, UserOut, UserCreate, UserUpd
 from app.core.security import get_current_user
 from app.services.user_services import (
     get_user_by_id_service,
-    update_user_contact_service,
+    update_user_info_service,
     update_user_password_service,
     deactivate_user_service,
     reactivate_user_service,
@@ -31,7 +31,7 @@ async def update_user_contact(user_id: int, user_data: UserUpdate, user=Depends(
     """
     if user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this user.")
-    return update_user_contact_service(user_id, user_data)
+    return update_user_info_service(user_id, user_data)
 
 @router.patch("/users/{user_id}/password", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_user_password(user_id: int, password: UserPasswordUpdate, user=Depends(get_current_user)):

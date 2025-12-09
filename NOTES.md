@@ -18,3 +18,5 @@ Moreover, if certain fields are not used in the frontend, modify the service and
 Work on user email verification functionality in the backend (service layer). Implement email token generation, sending verification emails, and verifying tokens when users click on the verification link.
 
 Work on the logout functionality in the frontend to ensure that JWT tokens are properly deleted from client storage upon logout.
+
+Work on TicketInstance especially the service and repository layers to ensure that ticket instances are correctly created, updated, and retrieved based on seat numbers and qr codes generated. Also look more into ticket type creation.

@@ -22,32 +22,7 @@ class UserOut(BaseModelEAT):
 
     class Config:
         from_attributes = True
-
-class OrganizerInfo(UserOut):
-    """Schema for outputting Organizer data."""
-    bio: Optional[str] = None
-    organization_name: Optional[str] = None
-    website: Optional[str] = None
-    profile_picture: Optional[str] = None
-    area_of_specialty: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class OrganizerOut(UserOut):
-    """Schema for outputting User data."""
-    organizer_info: Optional["OrganizerInfo"] = None
-
-    class Config:
-        from_attributes = True
-
-class UserOutWithPWD(UserOut):
-    """Schema for outputting User data with password."""
-    password_hash: str
-
-    class Config:
-        from_attributes = True
-
+    
 class UserCreate(BaseModelEAT):
     """Schema for creating a new User."""
     name: str
@@ -64,6 +39,60 @@ class UserUpdate(BaseModelEAT):
     email: Optional[EmailStr] = None
     phone_number: Optional[str] = None
     role: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class OrganizerCreate(BaseModelEAT):
+    """Schema for creating a new Organizer."""
+    bio: Optional[str] = None
+    organization_name: Optional[str] = None
+    website_url: Optional[str] = None
+    social_media_links: Optional[list[str]] = None
+    area_of_expertise: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class OrganizerUpdate(UserUpdate):
+    """Schema for updating an existing Organizer."""
+    bio: Optional[str] = None
+    organization_name: Optional[str] = None
+    website_url: Optional[str] = None
+    social_media_links: Optional[list[str]] = None
+    area_of_expertise: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class OrganizerInfo(BaseModelEAT):
+    """Schema for outputting Organizer data."""
+    bio: Optional[str] = None
+    organization_name: Optional[str] = None
+    website_url: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+    social_media_links: Optional[list[str]] = None
+    area_of_expertise: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class OrganizerOut(UserOut):
+    """Schema for outputting User data."""
+    organizer_info: Optional["OrganizerInfo"] = None
+
+    class Config:
+        from_attributes = True
+
+class UserPublic(OrganizerOut):
+    """Schema for public User data. Includes organizer info if applicable."""
+    class Config:
+        from_attributes = True
+
+class UserOutWithPWD(UserOut):
+    """Schema for outputting User data with password."""
+    password_hash: str
 
     class Config:
         from_attributes = True

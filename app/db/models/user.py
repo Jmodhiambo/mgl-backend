@@ -25,7 +25,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=False)
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
-    role: Mapped[str] = mapped_column(String(50), nullable=True, default="user")  # attendee, organizer, admin
+    role: Mapped[str] = mapped_column(String(50), nullable=True, default="user")  # user, organizer, admin
     is_verified: Mapped[bool] = mapped_column(nullable=False, default=False)
 
     # Timestamps

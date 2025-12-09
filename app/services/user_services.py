@@ -76,63 +76,30 @@ def search_users_by_name_service(name_query: str) -> list[dict]:
     logger.info(f"Searching users by name: {name_query}")
     return user_repo.search_users_by_name_repo(name_query)
 
-def promote_user_to_admin_service(user_id: int) -> dict:
+def update_user_role_service(user_id: int, new_role: str) -> dict:
     """Promote a user to admin role."""
     user = user_repo.get_user_by_id_repo(user_id)
     if not user:
-        logger.error("User not found.")
-        raise ValueError("User not found.")
-    if user.role == "admin":
-        logger.error(f"User sith ID {user_id} is already an admin.")
-        raise ValueError("User is already an admin.")
+        logger.error(f"User not found. Updating role for user with ID {user_id} failed.")
+        raise ValueError("User not found. Please try again.")
+    if user.role == new_role:
+        logger.error(f"{new_role.title()} with ID {user_id} is already {new_role}.")
+        raise ValueError(f"User is already {new_role}.")
     
-    logger.info(f"Promoting user with ID {user_id} to admin.")
-    return user_repo.update_user_role_repo(user_id, "admin")
+    logger.info(f"Updating role of user with ID {user_id} to {new_role}.")
+    return user_repo.update_user_role_repo(user_id, new_role)
 
-def demote_user_from_admin_service(user_id: int) -> dict:
-    """Demote a user from admin role."""
-    user = user_repo.get_user_by_id_repo(user_id)
-    if not user:
-        logger.error("User not found.")
-        raise ValueError("User not found.")
-    
-    if user.role == "user":
-        logger.error(f"User sith ID {user_id} is not an admin.")
-        raise ValueError("User is not an admin.")
-    
-    logger.info(f"Demoting user with ID {user_id} from admin.")
-    return user_repo.update_user_role_repo(user_id, "attendee")
 
-def promote_user_to_organizer_service(user_id: int) -> dict:
-    """Promote a user to organizer role."""
-    logger.info(f"Promoting user with ID {user_id} to organizer.")
-    return user_repo.update_user_role_repo(user_id, "organizer")
-
-def demote_user_from_organizer_service(user_id: int) -> dict:
-    """Demote a user from organizer role."""
-    logger.info(f"Demoting user with ID {user_id} from organizer.")
-    return user_repo.update_user_role_repo(user_id, "attendee")
-
-def promote_organizer_to_admin_service(user_id: int) -> dict:
-    """Promote an organizer to admin role."""
-    logger.info(f"Promoting organizer with ID {user_id} to admin.")
-    return user_repo.update_user_role_repo(user_id, "admin")
-
-def demote_admin_to_organizer_service(user_id: int) -> dict:
-    """Demote an admin to organizer role."""
-    logger.info(f"Demoting admin with ID {user_id} from admin.")
-    return user_repo.update_user_role_repo(user_id, "organizer")
-
-def update_user_contact_service(user_id: int, new_email: Optional[str], new_phone_number: Optional[str]) -> dict:
+def update_user_info_service(user_id: int, info: dict) -> dict:
     """Update a user's contact information."""
     logger.info(f"Updating contact information of user with ID: {user_id}")
-    if new_email:
-        if '@' not in new_email or '.' not in new_email:
+    if info.get("email"):
+        if '@' not in info["email"] or '.' not in info["email"]:
             raise ValueError("Invalid email format.")
-        if user_repo.get_user_by_email_repo(new_email):
+        if user_repo.get_user_by_email_repo(info["email"]):
             raise ValueError("Email already exists! Please use a different email.")
     
-    return user_repo.update_user_contact_repo(user_id, new_email, new_phone_number)
+    return user_repo.update_user_info_repo(user_id, info)
 
 def delete_user_service(user_id: int) -> bool:
     """Delete a user by ID."""

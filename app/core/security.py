@@ -8,7 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 
 from app.core.config import SECRET_KEY, ALGORITHM
-from app.schemas.user import UserOut
+from app.schemas.user import UserOut, UserPublic
 
 # FastAPI security scheme
 bearer_scheme = HTTPBearer()
@@ -36,7 +36,7 @@ def decode_access_token(token: str) -> dict:
 def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-) -> UserOut:
+) -> UserPublic:
     """
     Extract token from Authorization header, decode it, load user,
     and attach user to request.state.
@@ -66,20 +66,26 @@ def get_current_user(
 
     return user
 
-def require_organizer(user=Depends(get_current_user)) -> UserOut:
+def require_user(user=Depends(get_current_user)) -> UserOut:
+    """Require user to be authenticated to access this route."""
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required to access this route.")
+    return user
+
+def require_organizer(user=Depends(get_current_user)) -> UserPublic:
     """Require user to be at least an organizer to access this route."""
     if user.role != "organizer":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an organizer to access this route.")
     return user
 
-def require_admin(user=Depends(get_current_user)) -> UserOut:
+def require_admin(user=Depends(get_current_user)) -> UserPublic:
     """Require user to be an admin to access this route."""
     if user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an admin to access this route.")
     return user
 
-def require_superadmin(user=Depends(get_current_user)) -> UserOut:
+def require_superadmin(user=Depends(get_current_user)) -> UserPublic:
     """Require user to be a superadmin to access this route."""
-    if user.role != "superadmin":
+    if user.role != "sysadmin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be a superadmin to access this route.")
     return user

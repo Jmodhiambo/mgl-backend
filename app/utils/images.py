@@ -72,10 +72,10 @@ async def save_flyer_and_get_url(flyer: UploadFile) -> str:
         flyer, "events", EVENTS_UPLOAD_DIR, EVENT_ALLOWED_EXTENSIONS
     )
 
-async def save_profile_and_get_url(profile: UploadFile) -> str:
+async def save_profile_picture_and_get_url(profile_picture: UploadFile) -> str:
     """Save profile picture and return the URL."""
     return await save_image_and_get_url(
-        profile, "profiles", PROFILES_UPLOAD_DIR, PROFILE_ALLOWED_EXTENSIONS
+        profile_picture, "profiles", PROFILES_UPLOAD_DIR, PROFILE_ALLOWED_EXTENSIONS
     )
 
 
@@ -97,6 +97,6 @@ async def delete_event_flyer(flyer_url: str) -> bool:
     """Delete the flyer from the server."""
     return await delete_image(flyer_url, EVENTS_UPLOAD_DIR)
 
-async def delete_profile(profile_url: str) -> bool:
+async def delete_profile_picture(profile_picture_url: str) -> bool:
     """Delete the profile picture from the server."""
-    return await delete_image(profile_url, PROFILES_UPLOAD_DIR)
+    return await delete_image(profile_picture_url, PROFILES_UPLOAD_DIR)
