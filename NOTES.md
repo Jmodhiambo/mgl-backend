@@ -20,3 +20,5 @@ Work on user email verification functionality in the backend (service layer). Im
 Work on the logout functionality in the frontend to ensure that JWT tokens are properly deleted from client storage upon logout.
 
 Work on TicketInstance especially the service and repository layers to ensure that ticket instances are correctly created, updated, and retrieved based on seat numbers and qr codes generated. Also look more into ticket type creation.
+
+Implement early bird ticket type functionality in the backend (service and repository layers). This includes setting up the necessary database models, services, and API endpoints to handle early bird ticket types.

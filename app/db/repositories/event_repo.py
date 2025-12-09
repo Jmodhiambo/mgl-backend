@@ -72,27 +72,7 @@ def approve_event_repo(event_id: int) -> Optional[EventOut]:
             session.commit()
             return EventOut.model_validate(event)
         return None
-    
-def activate_event_repo(event_id: int) -> bool:
-    """Activate an event."""
-    with get_session() as session:
-        event = session.query(Event).filter(Event.id == event_id).first()
-        if event:
-            event.is_active = True
-            session.commit()
-            return True
-        return False
-    
-def deactivate_event_repo(event_id: int) -> bool:
-    """Deactivate an event."""
-    with get_session() as session:
-        event = session.query(Event).filter(Event.id == event_id).first()
-        if event:
-            event.is_active = False
-            session.commit()
-            return True
-        return False
-    
+ 
 def reject_event_repo(event_id: int) -> bool:
     """Reject an event."""
     with get_session() as session:

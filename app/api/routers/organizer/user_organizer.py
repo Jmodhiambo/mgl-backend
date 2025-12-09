@@ -2,7 +2,7 @@
 """Organizer User API routes."""
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, status, UploadFile
+from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut
 import app.services.user_services as user_services
 from app.core.security import require_organizer, require_user
@@ -14,7 +14,7 @@ router = APIRouter()
 async def upgrade_user_to_organizer(
     user_id: int,
     data: OrganizerCreate,
-    profile_picture: Optional[UploadFile] = None,
+    profile_picture: Optional[UploadFile] = File(None),
     user=Depends(require_user)
 ):
     """Promote a regular user to an organizer."""
@@ -48,7 +48,7 @@ async def get_organizer_profile(user_id: int, user=Depends(require_organizer)):
 async def update_organizer_profile(
     user_id: int,
     data: OrganizerUpdate,
-    profile_picture: Optional[UploadFile] = None,
+    profile_picture: Optional[UploadFile] = File(None),
     current_user=Depends(require_organizer)
 ):
     """Update the profile of the current organizer."""

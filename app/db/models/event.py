@@ -27,7 +27,7 @@ class Event(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     original_filename: Mapped[str] = mapped_column(String(200), nullable=False, default=None)
     flyer_url: Mapped[str] = mapped_column(String(500), nullable=False, default=None)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")  # e.g., upcoming, ongoing, completed, cancelled
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")  # e.g., upcoming, ongoing, completed, cancelled, deleted
     approved: Mapped[bool] = mapped_column(nullable=False, default=False)
     rejected: Mapped[bool] = mapped_column(nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(

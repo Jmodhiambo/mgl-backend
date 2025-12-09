@@ -45,16 +45,6 @@ async def approve_event_service(event_id: int) -> dict:
     logger.info(f"Approving event with ID: {event_id}")
     return event_repo.approve_event_repo(event_id)
 
-async def activate_event_service(event_id: int) -> dict:
-    """Activate an event."""
-    logger.info(f"Activating event with ID: {event_id}")
-    return event_repo.activate_event_repo(event_id)
-
-async def deactivate_event_service(event_id: int) -> dict:
-    """Deactivate an event."""
-    logger.info(f"Deactivating event with ID: {event_id}")
-    return event_repo.deactivate_event_repo(event_id)
-
 async def reject_event_service(event_id: int) -> dict:
     """Reject an event."""
     logger.info(f"Rejecting event with ID: {event_id}")

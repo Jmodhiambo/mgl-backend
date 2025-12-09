@@ -5,7 +5,6 @@ from datetime import datetime
 from pydantic import EmailStr
 from typing import Optional
 from app.schemas.base import BaseModelEAT
-# from app.schemas.event import EventOut
 
 class UserOut(BaseModelEAT):
     """Schema for outputting User data."""
@@ -18,7 +17,6 @@ class UserOut(BaseModelEAT):
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    # events: Optional[list["EventOut"]] = []
 
     class Config:
         from_attributes = True
@@ -50,7 +48,7 @@ class OrganizerCreate(BaseModelEAT):
     organization_name: Optional[str] = None
     website_url: Optional[str] = None
     social_media_links: Optional[list[str]] = None
-    area_of_expertise: Optional[str] = None
+    area_of_expertise: Optional[list[str]] = None
 
     class Config:
         from_attributes = True
@@ -61,7 +59,7 @@ class OrganizerUpdate(UserUpdate):
     organization_name: Optional[str] = None
     website_url: Optional[str] = None
     social_media_links: Optional[list[str]] = None
-    area_of_expertise: Optional[str] = None
+    area_of_expertise: Optional[list[str]] = None
 
     class Config:
         from_attributes = True
@@ -73,7 +71,7 @@ class OrganizerInfo(BaseModelEAT):
     website_url: Optional[str] = None
     profile_picture_url: Optional[str] = None
     social_media_links: Optional[list[str]] = None
-    area_of_expertise: Optional[str] = None
+    area_of_expertise: Optional[list[str]] = None
 
     class Config:
         from_attributes = True
