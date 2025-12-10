@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Database connection and session management for MGLTickets."""
+"""Async database connection and session management for MGLTickets."""
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
-from collections.abc import Generator
-from contextlib import contextmanager
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from app.core.config import DATABASE_URL, SQLALCHEMY_ECHO
 
-engine = create_engine(DATABASE_URL, echo=SQLALCHEMY_ECHO)
+# Use async driver in DATABASE_URL, e.g., postgresql+asyncpg://user:pass@host/db
+async_engine = create_async_engine(DATABASE_URL, echo=SQLALCHEMY_ECHO)
 
-SessionLocal = sessionmaker(
-    bind=engine,
-    class_=Session,
+# Async session factory
+AsyncSessionLocal = sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
     autocommit=False,
     autoflush=False,
 )
@@ -21,15 +23,17 @@ class Base(DeclarativeBase):
     """Base class for all ORM models."""
     pass
 
-@contextmanager
-def get_session() -> Generator[Session, None, None]:
-    """Provide a transactional scope around a series of operations."""
-    session: Session = SessionLocal()
+@asynccontextmanager
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Provide a transactional scope around async operations."""
+    session: AsyncSession = AsyncSessionLocal()
     try:
-        yield session
-        session.commit()
+        yield session  # Give the session to the caller
+        await session.commit()
     except Exception:
-        session.rollback()
+        await session.rollback()
         raise
     finally:
-        session.close()
+        await session.close()
+
+get_session = get_async_session

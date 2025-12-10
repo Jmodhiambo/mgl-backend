@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Repository for Booking model operations."""
+"""Async repository for Booking model operations."""
 
 from datetime import datetime
-from app.db.session import get_session
 from typing import Optional
+from sqlalchemy import select, func
+from app.db.session import get_async_session
 from app.db.models.booking import Booking
 from app.schemas.booking import BookingOut, BookingCreate, BookingUpdate
 
-def create_booking_repo(booking_data: BookingCreate) -> BookingOut:
+
+async def create_booking_repo(booking_data: BookingCreate) -> BookingOut:
     """Create a new booking in the database."""
-    with get_session() as session:
+    async with get_async_session() as session:
         new_booking = Booking(
             user_id=booking_data.user_id,
             ticket_type_id=booking_data.ticket_type_id,
@@ -18,93 +20,138 @@ def create_booking_repo(booking_data: BookingCreate) -> BookingOut:
             status="pending"
         )
         session.add(new_booking)
-        session.commit()
-        session.refresh(new_booking)
+        await session.commit()
+        await session.refresh(new_booking)
         return BookingOut.model_validate(new_booking)
 
-def get_booking_by_id_repo(booking_id: int) -> Optional[BookingOut]:
+
+async def get_booking_by_id_repo(booking_id: int) -> Optional[BookingOut]:
     """Retrieve a booking by its ID."""
-    with get_session() as session:
-        booking = session.get(Booking, booking_id)
+    async with get_async_session() as session:
+        booking = await session.get(Booking, booking_id)
         return BookingOut.model_validate(booking) if booking else None
-    
-def update_booking_repo(booking_id: int, booking_data: BookingUpdate) -> Optional[BookingOut]:
-    """Update an existing booking in the database."""
-    with get_session() as session:
-        booking = session.get(Booking, booking_id)
+
+
+async def update_booking_repo(booking_id: int, booking_data: BookingUpdate) -> Optional[BookingOut]:
+    """Update an existing booking."""
+    async with get_async_session() as session:
+        booking = await session.get(Booking, booking_id)
         if not booking:
             return None
+
         booking.quantity = booking_data.quantity
         booking.status = booking_data.status
         booking.total_price = booking_data.total_price
-        session.commit()
-        session.refresh(booking)
+
+        await session.commit()
+        await session.refresh(booking)
         return BookingOut.model_validate(booking)
-    
-def update_booking_status_repo(booking_id: int, status: str) -> None:
-    """Update the status of an existing booking in the database."""
-    with get_session() as session:
-        booking = session.get(Booking, booking_id)
+
+
+async def update_booking_status_repo(booking_id: int, status: str) -> None:
+    """Update only the status of a booking."""
+    async with get_async_session() as session:
+        booking = await session.get(Booking, booking_id)
         if not booking:
             return None
-        booking.status = status
-        session.commit()
-        # No need to return anything for status update
 
-def get_total_bookings_by_user_repo(user_id: int) -> int:
-    """Get the total number of bookings for a specific user."""
-    with get_session() as session:
-        total = session.query(Booking).filter(Booking.user_id == user_id).count()
-        return total
-    
-def delete_booking_repo(booking_id: int) -> bool:
-    """Delete a booking from the database."""
-    with get_session() as session:
-        booking = session.get(Booking, booking_id)
+        booking.status = status
+        await session.commit()
+
+
+async def get_total_bookings_by_user_repo(user_id: int) -> int:
+    """Count total bookings for a user."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count()).select_from(Booking).where(Booking.user_id == user_id)
+        )
+        return result.scalar_one()
+
+
+async def delete_booking_repo(booking_id: int) -> bool:
+    """Delete a booking."""
+    async with get_async_session() as session:
+        booking = await session.get(Booking, booking_id)
         if not booking:
             return False
-        session.delete(booking)
-        session.commit()
+
+        await session.delete(booking)
+        await session.commit()
         return True
-    
-def list_bookings_repo() -> list[BookingOut]:
-    """List all bookings in the database."""
-    with get_session() as session:
-        bookings = session.query(Booking).all()
+
+
+async def list_bookings_repo() -> list[BookingOut]:
+    """List all bookings."""
+    async with get_async_session() as session:
+        result = await session.execute(select(Booking))
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
-    
-def list_bookings_by_user_repo(user_id: int) -> list[BookingOut]:
+
+
+async def list_bookings_by_user_repo(user_id: int) -> list[BookingOut]:
     """List all bookings for a specific user."""
-    with get_session() as session:
-        bookings = session.query(Booking).filter(Booking.user_id == user_id).all()
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(Booking.user_id == user_id)
+        )
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
-    
-def list_all_bookings_by_status_repo(status: str) -> list[BookingOut]:
-    """List all bookings with a specific status in the database."""
-    with get_session() as session:
-        bookings = session.query(Booking).filter(Booking.status == status).all()
+
+
+async def list_all_bookings_by_status_repo(status: str) -> list[BookingOut]:
+    """List all bookings matching a specific status."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(Booking.status == status)
+        )
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
-    
-def list_bookings_status_by_user_repo(user_id: int, status: str) -> list[BookingOut]:
-    """List all bookings with a specific status for a specific user."""
-    with get_session() as session:
-        bookings = session.query(Booking).filter(Booking.user_id == user_id, Booking.status == status).all()
+
+
+async def list_bookings_status_by_user_repo(user_id: int, status: str) -> list[BookingOut]:
+    """List all bookings with a specific status for a user."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(
+                Booking.user_id == user_id,
+                Booking.status == status
+            )
+        )
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
-    
-def list_bookings_by_ticket_type_and_status_repo(ticket_type_id: int, status: str) -> list[BookingOut]:
-    """List all bookings with a specific status for a specific ticket type."""
-    with get_session() as session:
-        bookings = session.query(Booking).filter(Booking.ticket_type_id == ticket_type_id, Booking.status == status).all()
+
+
+async def list_bookings_by_ticket_type_and_status_repo(ticket_type_id: int, status: str) -> list[BookingOut]:
+    """List bookings for a ticket type with a given status."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(
+                Booking.ticket_type_id == ticket_type_id,
+                Booking.status == status
+            )
+        )
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
-    
-def list_recent_bookings_repo(limit: int = 10) -> list[BookingOut]:
-    """List the most recent bookings in the database."""
-    with get_session() as session:
-        bookings = session.query(Booking).order_by(Booking.created_at.desc()).limit(limit).all()
+
+
+async def list_recent_bookings_repo(limit: int = 10) -> list[BookingOut]:
+    """List the most recent bookings."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).order_by(Booking.created_at.desc()).limit(limit)
+        )
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
-    
-def list_bookings_in_date_range_repo(start_date: datetime, end_date: datetime) -> list[BookingOut]:
-    """List all bookings within a specific date range."""
-    with get_session() as session:
-        bookings = session.query(Booking).filter(Booking.created_at >= start_date, Booking.created_at <= end_date).all()
+
+
+async def list_bookings_in_date_range_repo(start_date: datetime, end_date: datetime) -> list[BookingOut]:
+    """List all bookings within a date range."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(
+                Booking.created_at >= start_date,
+                Booking.created_at <= end_date
+            )
+        )
+        bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]

@@ -22,7 +22,7 @@ class Payment(Base):
     amount: Mapped[float] = mapped_column(nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="KES")
     method: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., credit_card, paypal, m-pesa
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")  # e.g., pending, completed, failed, refunded
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")  # e.g., pending, successful, failed, refunded
     mpesa_ref: Mapped[str] = mapped_column(String(100), nullable=False)
     callback_payload: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True, default=None)  # Full M-Pesa response (for auditing)
     created_at: Mapped[datetime] = mapped_column(

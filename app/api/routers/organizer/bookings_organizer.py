@@ -10,7 +10,7 @@ from app.core.security import require_organizer
 
 router = APIRouter()
 
-@router.get("/organizer/bookings", response_model=list[BookingOut])
+@router.get("/organizers{user_id}/bookings", response_model=list[BookingOut])
 async def list_bookings_organizer(organizer=Depends(require_organizer)):
     """List all Bookings for organizers."""
     pass  # Implementation goes here

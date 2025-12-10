@@ -17,7 +17,7 @@ DB_NAME: str = config("DB_NAME")
 # Construct the SQLAlchemy Database URI
 # get_secret_value() is used to retrieve the actual password string from the Secret object
 DATABASE_URL: str = (
-    f"postgresql+psycopg2://{DB_USER}:{str(DB_PASSWORD)}@"
+    f"postgresql+asyncpg://{DB_USER}:{str(DB_PASSWORD)}@"
     f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 

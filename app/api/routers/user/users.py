@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
-from app.schemas.user import UserEmailVerification, UserOut, UserCreate, UserUpdate, UserPasswordChange, UserPasswordUpdate
+from app.schemas.user import UserEmailVerification, UserOut, UserUpdate, UserPasswordChange, UserPasswordUpdate
 from app.core.security import get_current_user
 from app.services.user_services import (
     get_user_by_id_service,
@@ -22,7 +22,7 @@ async def get_user_by_id(user_id: int): #, user=Depends(get_current_user)
     """
     Get a user by their ID.
     """
-    return get_user_by_id_service(user_id)
+    return await get_user_by_id_service(user_id)
 
 @router.patch("/users/{user_id}/contact", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_user_contact(user_id: int, user_data: UserUpdate, user=Depends(get_current_user)):

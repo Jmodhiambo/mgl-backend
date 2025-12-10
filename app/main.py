@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.logging_config import configure_logging, logger
 from app.core.logging_middleware import LoggingMiddleware
 from app.core.route_registery import register_routes
-from app.db.session import engine
+from app.db.session import async_engine
 from app.db import models
 
 configure_logging() # Initialize logging configuration
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up MGLTickets...")
     yield
     logger.info("Shutting down MGLTickets...")
-    engine.dispose()
+    async_engine.dispose()
     logger.info("MGLTickets shut down.")
 
 app = FastAPI(lifespan=lifespan)

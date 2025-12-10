@@ -9,7 +9,7 @@ from app.core.logging_config import logger
 from app.core.security import create_access_token, decode_access_token
 
 
-def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
+async def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
     """Create a new user and return the user"""
     logger.info("Registering user...")
 
@@ -39,7 +39,7 @@ def register_user_service(name: str, email: str, password: str, phone_number: st
 
     return user
 
-def authenticate_user_service(user_id: int, email: str, password: str) -> dict:
+async def authenticate_user_service(user_id: int, email: str, password: str) -> dict:
     """Authenticate a user and return the user"""
     logger.info(f"Authenticating user with ID: {user_id}")
 
@@ -55,10 +55,10 @@ def authenticate_user_service(user_id: int, email: str, password: str) -> dict:
     
     return user.model_dump(exclude={"password_hash"})
 
-def get_user_by_email_service(email: str) -> Optional[dict]:
+async def get_user_by_email_service(email: str) -> Optional[dict]:
     """Retrieve a user by email."""
     logger.info("Getting user by email...")
-    user = user_repo.get_user_by_email_repo(email)
+    user = await user_repo.get_user_by_email_repo(email)
 
     if not user:
         logger.error("User not found.")
@@ -66,17 +66,17 @@ def get_user_by_email_service(email: str) -> Optional[dict]:
 
     return user
 
-def get_user_by_id_service(user_id: int) -> Optional[dict]:
+async def get_user_by_id_service(user_id: int) -> Optional[dict]:
     """Retrieve a user by ID."""
     logger.info("Getting user by ID...")
-    return user_repo.get_user_by_id_repo(user_id)
+    return await user_repo.get_user_by_id_repo(user_id)
 
-def search_users_by_name_service(name_query: str) -> list[dict]:
+async def search_users_by_name_service(name_query: str) -> list[dict]:
     """Search users by name."""
     logger.info(f"Searching users by name: {name_query}")
     return user_repo.search_users_by_name_repo(name_query)
 
-def update_user_role_service(user_id: int, new_role: str) -> dict:
+async def update_user_role_service(user_id: int, new_role: str) -> dict:
     """Promote a user to admin role."""
     user = user_repo.get_user_by_id_repo(user_id)
     if not user:
@@ -90,7 +90,7 @@ def update_user_role_service(user_id: int, new_role: str) -> dict:
     return user_repo.update_user_role_repo(user_id, new_role)
 
 
-def update_user_info_service(user_id: int, info: dict) -> dict:
+async def update_user_info_service(user_id: int, info: dict) -> dict:
     """Update a user's contact information."""
     logger.info(f"Updating contact information of user with ID: {user_id}")
     if info.get("email"):
@@ -101,22 +101,22 @@ def update_user_info_service(user_id: int, info: dict) -> dict:
     
     return user_repo.update_user_info_repo(user_id, info)
 
-def delete_user_service(user_id: int) -> bool:
+async def delete_user_service(user_id: int) -> bool:
     """Delete a user by ID."""
     logger.info(f"Deleting user with ID: {user_id}")
     user_repo.delete_user_repo(user_id)
 
-def deactivate_user_service(user_id: int) -> Optional[dict]:
+async def deactivate_user_service(user_id: int) -> Optional[dict]:
     """Deactivate a user account."""
     logger.info(f"Deactivating a user account with ID: {user_id}")
     return user_repo.deactivate_user_repo(user_id)
 
-def reactivate_user_service(user_id: int) -> Optional[dict]:
+async def reactivate_user_service(user_id: int) -> Optional[dict]:
     """Reactivate a user account."""
     logger.info(f"Reactivating user account with ID: {user_id}")
     return user_repo.reactivate_user_repo(user_id)
 
-def update_user_password_service(user_id: int, new_password: str) -> None:
+async def update_user_password_service(user_id: int, new_password: str) -> None:
     """Update a user's password."""
     if len(new_password) < 8:
         logger.warning("Password must be at least 8 characters long.")
@@ -135,7 +135,7 @@ def update_user_password_service(user_id: int, new_password: str) -> None:
     new_password_hash = argon2.hash(new_password)
     user_repo.update_user_password_repo(user_id, new_password_hash)
 
-def change_user_password_service(user_id: int, old_password: str, new_password: str) -> None:
+async def change_user_password_service(user_id: int, old_password: str, new_password: str) -> None:
     """Change a user's password."""
     user = user_repo.get_user_with_password_by_id_repo(user_id)
     if not argon2.verify(old_password, user.password_hash):
@@ -148,22 +148,22 @@ def change_user_password_service(user_id: int, old_password: str, new_password: 
     # Send email notification about password change
     # send_password_change_email_success(user_id)
 
-def count_users_by_role_service(role: str) -> int:
+async def count_users_by_role_service(role: str) -> int:
     """Count users by their role."""
     logger.info(f"Counting users by role: {role.upper()}")
     return user_repo.count_users_by_role_repo(role)
 
-def list_all_users_service() -> list[dict]:
+async def list_all_users_service() -> list[dict]:
     """List users with pagination."""
     logger.info("Listing all users...")
     return user_repo.list_all_users_repo()
 
-def list_active_users_service() -> list[dict]:
+async def list_active_users_service() -> list[dict]:
     """List active users with pagination."""
     logger.info("Listing active users...")
     return user_repo.list_active_users_repo()
 
-def verify_user_email_service(user_id: int, token: str) -> dict:
+async def verify_user_email_service(user_id: int, token: str) -> dict:
     """Verify a user's email."""
     payload = decode_access_token(token)
     token_user_id = payload.get("id")
@@ -177,52 +177,52 @@ def verify_user_email_service(user_id: int, token: str) -> dict:
     logger.info(f"Verifying email of user with ID: {user_id}")
     return user_repo.verify_user_email_repo(user_id)
 
-def unverify_user_email_service(user_id: int) -> dict:
+async def unverify_user_email_service(user_id: int) -> dict:
     """Unverify a user's email."""
     logger.info(f"Unverifying email of user with ID: {user_id}")
     return user_repo.unverify_user_email_repo(user_id)
 
-def list_verified_users_service() -> list[dict]:
+async def list_verified_users_service() -> list[dict]:
     """List verified users."""
     logger.info("Listing verified users...")
     return user_repo.list_verified_users_repo()
 
-def list_unverified_users_service() -> list[dict]:
+async def list_unverified_users_service() -> list[dict]:
     """List unverified users."""
     return user_repo.list_unverified_users_repo()
 
-def count_active_users_service() -> int:
+async def count_active_users_service() -> int:
     """Count active users."""
     return user_repo.count_active_users_repo()
 
-def count_verified_users_service() -> int:
+async def count_verified_users_service() -> int:
     """Count verified users."""
     return user_repo.count_verified_users_repo()
 
-def count_unverified_users_service() -> int:
+async def count_unverified_users_service() -> int:
     """Count unverified users."""
     return user_repo.count_unverified_users_repo()
 
-def list_users_created_after_service(date: datetime) -> list[dict]:
+async def list_users_created_after_service(date: datetime) -> list[dict]:
     """List users created after a specific date."""
     return user_repo.list_users_created_after_repo(date)
 
-def list_users_created_before_service(date: datetime) -> list[dict]:
+async def list_users_created_before_service(date: datetime) -> list[dict]:
     """List users created before a specific date."""
     return user_repo.list_users_created_before_repo(date)
 
-def list_users_updated_after_service(date: datetime) -> list[dict]:
+async def list_users_updated_after_service(date: datetime) -> list[dict]:
     """List users updated after a specific date."""
     return user_repo.list_users_updated_after_repo(date)
 
-def list_users_updated_before_service(date: datetime) -> list[dict]:
+async def list_users_updated_before_service(date: datetime) -> list[dict]:
     """List users updated before a specific date."""
     return user_repo.list_users_updated_before_repo(date)
 
-def count_users_created_between_service(start_date: datetime, end_date: datetime) -> int:
+async def count_users_created_between_service(start_date: datetime, end_date: datetime) -> int:
     """Count users created between two dates."""
     return user_repo.count_users_created_between_repo(start_date, end_date)
 
-def count_users_updated_between_service(start_date: datetime, end_date: datetime) -> int:
+async def count_users_updated_between_service(start_date: datetime, end_date: datetime) -> int:
     """Count users updated between two dates."""
     return user_repo.count_users_updated_between_repo(start_date, end_date)
