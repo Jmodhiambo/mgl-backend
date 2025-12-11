@@ -13,6 +13,10 @@ from app.schemas.user import UserOut, UserPublic
 # FastAPI security scheme
 bearer_scheme = HTTPBearer()
 
+ROLE_ORGANIZER = "organizer"
+ROLE_ADMIN = "admin"
+ROLE_SYSADMIN = "sysadmin"
+
 def create_access_token(user_id: int, expires_minutes: int = 60) -> str:
     """Create a signed JWT."""
     if not "user_id":
@@ -33,7 +37,7 @@ def decode_access_token(token: str) -> dict:
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from e
 
-def get_current_user(
+async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ) -> UserPublic:
@@ -48,7 +52,7 @@ def get_current_user(
 
     if not token:
         request.state.user = None
-        return None
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token provided")
 
     payload = decode_access_token(token)
     
@@ -56,7 +60,7 @@ def get_current_user(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     
-    user = get_user_by_id_service(user_id)
+    user = await get_user_by_id_service(user_id)
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -74,18 +78,18 @@ def require_user(user=Depends(get_current_user)) -> UserOut:
 
 def require_organizer(user=Depends(get_current_user)) -> UserPublic:
     """Require user to be at least an organizer to access this route."""
-    if user.role != "organizer":
+    if user.role != ROLE_ORGANIZER:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an organizer to access this route.")
     return user
 
 def require_admin(user=Depends(get_current_user)) -> UserPublic:
     """Require user to be an admin to access this route."""
-    if user.role != "admin":
+    if user.role != ROLE_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an admin to access this route.")
     return user
 
 def require_superadmin(user=Depends(get_current_user)) -> UserPublic:
     """Require user to be a superadmin to access this route."""
-    if user.role != "sysadmin":
+    if user.role != ROLE_SYSADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be a superadmin to access this route.")
     return user

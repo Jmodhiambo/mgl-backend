@@ -53,7 +53,7 @@ async def authenticate_user_service(user_id: int, email: str, password: str) -> 
     if not argon2.verify(password, user.password_hash):
         raise ValueError("Invalid password.")
     
-    return user.model_dump(exclude={"password_hash"})
+    return user.pop("password_hash")  # Remove password from response
 
 async def get_user_by_email_service(email: str) -> Optional[dict]:
     """Retrieve a user by email."""
@@ -68,7 +68,7 @@ async def get_user_by_email_service(email: str) -> Optional[dict]:
 
 async def get_user_by_id_service(user_id: int) -> Optional[dict]:
     """Retrieve a user by ID."""
-    logger.info("Getting user by ID...")
+    logger.info(f"Getting user by ID for user with ID: {user_id}")
     return await user_repo.get_user_by_id_repo(user_id)
 
 async def search_users_by_name_service(name_query: str) -> list[dict]:

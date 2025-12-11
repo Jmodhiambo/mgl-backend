@@ -83,7 +83,7 @@ class OrganizerOut(UserOut):
     class Config:
         from_attributes = True
 
-class UserPublic(OrganizerOut):
+class UserPublic(OrganizerInfo, UserOut):
     """Schema for public User data. Includes organizer info if applicable."""
     class Config:
         from_attributes = True

@@ -23,7 +23,7 @@ async def register_user(user_data: UserCreate):
     """
     Register a new user.
     """
-    user = register_user_service(
+    user = await register_user_service(
         user_data.name,
         user_data.email,
         user_data.password,
@@ -38,7 +38,7 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     """
     # OAuth2PasswordRequestForm has username and password, so email in this case is username.
     email = form.username
-    user = get_user_by_email_service(email)
+    user = await get_user_by_email_service(email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

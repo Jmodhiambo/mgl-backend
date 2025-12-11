@@ -17,7 +17,7 @@ async def get_all_approved_events(user=Depends(require_user)):
     """
     Get all events.
     """
-    return event_services.get_approved_events_service()
+    return await event_services.get_approved_events_service()
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
@@ -25,7 +25,7 @@ async def get_event_by_id(event_id: int, user=Depends(require_user)):
     """
     Get an event by its ID.
     """
-    return event_services.get_event_by_id_service(event_id)
+    return await event_services.get_event_by_id_service(event_id)
 
 
 @router.get("/events/latest", response_model=list[EventOut])
@@ -33,7 +33,7 @@ async def get_latest_events(limit: int = 10, user=Depends(require_user)):
     """
     Get the latest added events.
     """
-    return event_services.get_latest_events_service(limit)
+    return await event_services.get_latest_events_service(limit)
 
 
 @router.get("/events/search/", response_model=list[EventOut])
@@ -50,19 +50,19 @@ async def search_events(
     """
     # Search by title
     if title:
-        return event_services.search_events_by_title_service(title)
+        return await event_services.search_events_by_title_service(title)
     
     # Search by venue
     if venue:
-        return event_services.search_events_by_venue_service(venue)
+        return await event_services.search_events_by_venue_service(venue)
     
     # Search by country
     if country:
-        return event_services.get_events_by_country_service(country)
+        return await event_services.get_events_by_country_service(country)
     
     # Search by date range
     if start_date and end_date:
-        return event_services.get_events_in_date_range_service(
+        return await event_services.get_events_in_date_range_service(
             datetime.fromisoformat(start_date), datetime.fromisoformat(end_date)
         )
     return []
@@ -84,11 +84,11 @@ async def get_events_sorted_by_start_time(
 
     # Sort by start time
     if start_time:
-        return event_services.get_events_sorted_by_start_time_service(ascending)
+        return await event_services.get_events_sorted_by_start_time_service(ascending)
     
     # Sort by end time
     if end_time:
-        return event_services.get_events_sorted_by_end_time_service(ascending)
+        return await event_services.get_events_sorted_by_end_time_service(ascending)
 
     return []
 
@@ -97,4 +97,4 @@ async def get_total_events(user=Depends(require_user)):
     """
     Get the total number of events.
     """
-    return event_services.count_events_service()
+    return await event_services.count_events_service()
