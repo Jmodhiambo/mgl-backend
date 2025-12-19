@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import datetime
 from passlib.hash import argon2
 from app.core.logging_config import logger
-from app.core.security import create_access_token, decode_access_token
+from app.core.security import create_access_token, decode_token
 
 
 async def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
@@ -46,7 +46,7 @@ async def authenticate_user_service(user_id: int, email: str, password: str) -> 
     if '@' not in email or '.' not in email:
         raise ValueError("Invalid email format.")
     
-    user = user_repo.get_user_with_password_by_id_repo(user_id)
+    user = await user_repo.get_user_with_password_by_id_repo(user_id)
     if not user:
         raise ValueError("User not found.")
     
@@ -165,7 +165,7 @@ async def list_active_users_service() -> list[dict]:
 
 async def verify_user_email_service(user_id: int, token: str) -> dict:
     """Verify a user's email."""
-    payload = decode_access_token(token)
+    payload = decode_token(token)
     token_user_id = payload.get("id")
     if token_user_id != user_id:
         logger.error("Token user ID does not match the provided user ID.")

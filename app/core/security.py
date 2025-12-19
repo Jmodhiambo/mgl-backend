@@ -10,6 +10,12 @@ from jose import jwt, JWTError
 from app.core.config import SECRET_KEY, ALGORITHM
 from app.schemas.user import UserOut, UserPublic
 
+# Token hashing
+import hmac
+import hashlib
+import base64
+from typing import Union
+
 # FastAPI security scheme
 bearer_scheme = HTTPBearer()
 
@@ -17,8 +23,8 @@ ROLE_ORGANIZER = "organizer"
 ROLE_ADMIN = "admin"
 ROLE_SYSADMIN = "sysadmin"
 
-def create_access_token(user_id: int, expires_minutes: int = 60) -> str:
-    """Create a signed JWT."""
+def create_access_token(user_id: int, expires_minutes: int) -> str:
+    """Create an access token valid for 15 minutes."""
     if not "user_id":
         raise ValueError("Token payload must contain user_id")
     
@@ -29,7 +35,21 @@ def create_access_token(user_id: int, expires_minutes: int = 60) -> str:
 
     return jwt.encode(payload, str(SECRET_KEY), algorithm=ALGORITHM)
 
-def decode_access_token(token: str) -> dict:
+def create_refresh_token(user_id: int, session_id: str) -> str:
+    """Create refresh token valid for 7 days."""
+    if not "user_id":
+        raise ValueError("Token payload must contain user_id")
+    
+    payload = {
+        "id": user_id,
+        "sid": session_id,
+        "type": "refresh",
+        "exp": datetime.utcnow() + timedelta(days=7)
+    }
+
+    return jwt.encode(payload, str(SECRET_KEY), algorithm=ALGORITHM)
+
+def decode_token(token: str) -> dict:
     """Decode and verify a JWT."""
     try:
         payload = jwt.decode(token, str(SECRET_KEY), algorithms=[ALGORITHM])
@@ -54,7 +74,7 @@ async def get_current_user(
         request.state.user = None
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token provided")
 
-    payload = decode_access_token(token)
+    payload = decode_token(token)
     
     user_id = payload.get("id")
     if not user_id:
@@ -93,3 +113,18 @@ def require_superadmin(user=Depends(get_current_user)) -> UserPublic:
     if user.role != ROLE_SYSADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be a superadmin to access this route.")
     return user
+
+def hash_token(token: str) -> str:
+    """
+    Hash a token using HMAC-SHA256.
+    Returns a base64-encoded string.
+    """
+    digest = hmac.new(SECRET_KEY.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).digest()
+    return base64.urlsafe_b64decode(digest).decode("utf-8")
+
+def verify_token(token: str) -> Union[bool, str]:
+    """
+    Verify a token using HMAC-SHA256.
+    Returns True if the token is valid, False otherwise.
+    """
+    return hmac.compare_digest(token, hash_token(token))

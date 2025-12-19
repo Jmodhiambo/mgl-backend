@@ -4,7 +4,7 @@
 from fastapi import FastAPI
 
 # Authentication route
-from app.api.routers.user.auth import router as auth_router
+from app.api.routers.auth.auth import router as auth_router
 
 # User routes
 from app.api.routers.user.users import router as user_router

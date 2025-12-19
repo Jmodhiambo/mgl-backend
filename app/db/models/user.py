@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.db.models.event import Event
     from app.db.models.booking import Booking
     from app.db.models.ticket_instance import TicketInstance
+    from app.db.models.refresh_sessions import RefreshSession
 
 class User(Base):
     """User model representing a user in the system."""
@@ -67,6 +68,7 @@ class User(Base):
     events: Mapped[list["Event"]] = relationship("Event", back_populates="organizer")
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="user")
     ticket_instances: Mapped[list["TicketInstance"]] = relationship("TicketInstance", back_populates="user")
+    refresh_sessions: Mapped[list["RefreshSession"]] = relationship("RefreshSession", back_populates="user")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} name={self.name} email={self.email} role={self.role}>"

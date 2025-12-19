@@ -4,7 +4,7 @@
 from fastapi import APIRouter, Depends, status
 from typing import Optional
 from app.schemas.user import UserEmailVerification, UserOut, UserUpdate, UserPasswordChange, UserPasswordUpdate, UserPublic
-from app.core.security import get_current_user
+from app.core.security import require_user, get_current_user
 from app.services.user_services import (
     get_user_by_id_service,
     update_user_info_service,
@@ -18,7 +18,7 @@ from app.services.user_services import (
 router = APIRouter()
 
 @router.get("/users/{user_id}", response_model=Optional[UserPublic], status_code=status.HTTP_200_OK)
-async def get_user_by_id(user_id: int): #, user=Depends(get_current_user)
+async def get_user_by_id(user_id: int):
     """
     Get a user by their ID.
     """
