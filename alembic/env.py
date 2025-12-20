@@ -12,7 +12,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Import your Base, models and database url
-from app.core.config import DATABASE_URL
+from app.core.config import ALEMBIC_DATABASE_URL
 from app.db.session import Base
 from app.db.models import *  # ensures all models are registered
 
@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
     context.configure(
-        url=DATABASE_URL,
+        url=ALEMBIC_DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -45,7 +45,7 @@ def run_migrations_online():
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        url=DATABASE_URL  # Dynamic database URL
+        url=ALEMBIC_DATABASE_URL  # Synchnronous Dynamic database URL
     )
 
     with connectable.connect() as connection:

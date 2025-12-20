@@ -21,6 +21,11 @@ DATABASE_URL: str = (
     f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
+ALEMBIC_DATABASE_URL: str = (
+    f"postgresql+psycopg2://{DB_USER}:{str(DB_PASSWORD)}@"
+    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
 # Optional SQLAlchemy settings
 SQLALCHEMY_ECHO: bool = config("SQLALCHEMY_ECHO", cast=bool, default=False)
 

@@ -87,7 +87,7 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
         value=refresh_token,
         httponly=True,
         secure=True,
-        samesite="strict",
+        samesite="none",
         max_age=7 * 24 * 60 * 60
     )
 
@@ -157,7 +157,7 @@ async def refresh_token(request: Request, response: Response):
         value=new_refresh_token,
         httponly=True,
         secure=True,
-        samesite="strict",
+        samesite="none",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
       
