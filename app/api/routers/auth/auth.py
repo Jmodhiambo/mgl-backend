@@ -75,8 +75,8 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
 
     # Create a new refresh session
     await create_refresh_session_service(
-        user_id=user.id,
         session_id=session_id,
+        user_id=user.id,
         refresh_token_hash=refresh_token_hash,
         expires_at=expires_at,
     )

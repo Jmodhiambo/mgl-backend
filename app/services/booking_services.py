@@ -65,6 +65,11 @@ async def delete_booking_service(booking_id: int) -> bool:
         logger.warning(f"Booking with ID {booking_id} not found for deletion")
     return booking
 
+async def list_bookings_by_event_id_service(event_id: int) -> list[dict]:
+    """Service to list all bookings for a specific event."""
+    logger.info("Listing bookings by event", extra={"extra": {"event_id": event_id}})
+    return await booking_repo.list_bookings_by_event_id_repo(event_id)
+
 async def list_bookings_service() -> list[dict]:
     """Service to list all bookings."""
     logger.info("Listing all bookings")
@@ -90,6 +95,21 @@ async def list_bookings_by_ticket_type_and_status_service(ticket_type_id: int, s
     """Service to list all bookings for a specific ticket type."""
     logger.info("Listing bookings by ticket type", extra={"extra": {"ticket_type_id": ticket_type_id}})
     return await booking_repo.list_bookings_by_ticket_type_and_status_repo(ticket_type_id, status)
+
+async def list_bookings_for_an_event_by_ticket_type_service(event_id: int, ticket_type_id: int) -> list[dict]:
+    """Service to list all bookings for a specific event and ticket type."""
+    logger.info("Listing bookings by event and ticket type", extra={"extra": {"event_id": event_id, "ticket_type_id": ticket_type_id}})
+    return await booking_repo.list_bookings_for_an_event_by_ticket_type_repo(event_id, ticket_type_id)
+
+async def list_all_bookings_for_an_event_service(event_id: int) -> list[dict]:
+    """Service to list all bookings for a specific event."""
+    logger.info("Listing all bookings for an event", extra={"extra": {"event_id": event_id}})
+    return await booking_repo.list_all_bookings_for_an_event_repo(event_id)
+
+async def  list_recent_bookings_by_event_service(event_id: int, limit: int = 10) -> list[dict]:
+    """Service to list the most recent bookings for a specific event."""
+    logger.info("Listing recent bookings by event", extra={"extra": {"event_id": event_id, "limit": limit}})
+    return await booking_repo.list_recent_bookings_by_event_repo(event_id, limit)
 
 async def list_recent_bookings_service(limit: int = 10) -> list[dict]:
     """Service to list recent bookings."""

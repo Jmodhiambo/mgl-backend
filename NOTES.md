@@ -22,3 +22,5 @@ Work on the logout functionality in the frontend to ensure that JWT tokens are p
 Work on TicketInstance especially the service and repository layers to ensure that ticket instances are correctly created, updated, and retrieved based on seat numbers and qr codes generated. Also look more into ticket type creation.
 
 Implement early bird ticket type functionality in the backend (service and repository layers). This includes setting up the necessary database models, services, and API endpoints to handle early bird ticket types.
+
+Ensure token is refreshed whenever there is password change and new password request.

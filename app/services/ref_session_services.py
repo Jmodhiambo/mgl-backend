@@ -7,10 +7,17 @@ import app.db.repositories.ref_sessions_repo as ref_sessions_repo
 from app.schemas.refresh_session import RefreshSessionCreate, RefreshSessionUpdate, RefreshSessionOut
 from typing import Optional
 
-async def create_refresh_session_service(session_create: RefreshSessionCreate) -> RefreshSessionOut:
+async def create_refresh_session_service(session_id, user_id, refresh_token_hash, expires_at) -> RefreshSessionOut:
     """Create a new RefreshSession."""
-    logger.info(f"Creating RefreshSession for user_id: {session_create.user_id}")
-    return await ref_sessions_repo.create_refresh_session_repo(session_create)
+    logger.info(f"Creating RefreshSession for user_id: {user_id}")
+    return await ref_sessions_repo.create_refresh_session_repo(
+        RefreshSessionCreate(
+            session_id=session_id,
+            user_id=user_id,
+            refresh_token_hash=refresh_token_hash,
+            expires_at=expires_at
+        )
+    )
 
 async def get_refresh_session_service(session_id: str) -> Optional[RefreshSessionOut]:
     """Get a RefreshSession by session_id."""

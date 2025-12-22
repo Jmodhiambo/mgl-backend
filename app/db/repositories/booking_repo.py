@@ -79,6 +79,14 @@ async def delete_booking_repo(booking_id: int) -> bool:
         await session.commit()
         return True
 
+async def list_bookings_by_event_id_repo(event_id: int) -> list[BookingOut]:
+    """List all bookings for a specific event."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(Booking.event_id == event_id)
+        )
+        bookings = result.scalars().all()
+        return [BookingOut.model_validate(booking) for booking in bookings]
 
 async def list_bookings_repo() -> list[BookingOut]:
     """List all bookings."""
@@ -132,7 +140,36 @@ async def list_bookings_by_ticket_type_and_status_repo(ticket_type_id: int, stat
         )
         bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
+    
+async def list_bookings_for_an_event_by_ticket_type_repo(event_id: int, ticket_type_id: int) -> list[BookingOut]:
+    """List bookings for a specific event and ticket type."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(
+                Booking.event_id == event_id,
+                Booking.ticket_type_id == ticket_type_id
+            )
+        )
+        bookings = result.scalars().all()
+        return [BookingOut.model_validate(booking) for booking in bookings]
+    
+async def list_all_bookings_for_an_event_repo(event_id: int) -> list[BookingOut]:
+    """List all bookings for a specific event."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(Booking.event_id == event_id)
+        )
+        bookings = result.scalars().all()
+        return [BookingOut.model_validate(booking) for booking in bookings]
 
+async def list_recent_bookings_by_event_repo(event_id: int, limit: int = 10) -> list[BookingOut]:
+    """List the most recent bookings for a specific event."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Booking).where(Booking.event_id == event_id).order_by(Booking.created_at.desc()).limit(limit)
+        )
+        bookings = result.scalars().all()
+        return [BookingOut.model_validate(booking) for booking in bookings]
 
 async def list_recent_bookings_repo(limit: int = 10) -> list[BookingOut]:
     """List the most recent bookings."""

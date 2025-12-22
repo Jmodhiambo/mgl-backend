@@ -34,7 +34,7 @@ from app.api.routers.admin.ticket_type_admin import router as admin_tt_router
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
     # Authentication routes
-    app.include_router(auth_router, prefix="/api/v1", tags=["Authentication"])
+    app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
 
     # User routes
     app.include_router(user_router, prefix="/api/v1", tags=["Users"])

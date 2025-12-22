@@ -14,7 +14,6 @@ from app.schemas.user import UserOut, UserPublic
 import hmac
 import hashlib
 import base64
-from typing import Union
 
 # FastAPI security scheme
 bearer_scheme = HTTPBearer()
@@ -22,15 +21,16 @@ bearer_scheme = HTTPBearer()
 ROLE_ORGANIZER = "organizer"
 ROLE_ADMIN = "admin"
 ROLE_SYSADMIN = "sysadmin"
+ENCODED_SECRET_KEY = str(SECRET_KEY).encode("utf-8")  # Convert to bytes from Secret object
 
-def create_access_token(user_id: int, expires_minutes: int) -> str:
+def create_access_token(user_id: int) -> str:
     """Create an access token valid for 15 minutes."""
     if not "user_id":
         raise ValueError("Token payload must contain user_id")
     
     payload = {
         "id": user_id,
-        "exp": datetime.utcnow() + timedelta(minutes=expires_minutes)
+        "exp": datetime.utcnow() + timedelta(minutes=15)
     }
 
     return jwt.encode(payload, str(SECRET_KEY), algorithm=ALGORITHM)
@@ -119,12 +119,15 @@ def hash_token(token: str) -> str:
     Hash a token using HMAC-SHA256.
     Returns a base64-encoded string.
     """
-    digest = hmac.new(SECRET_KEY.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).digest()
-    return base64.urlsafe_b64decode(digest).decode("utf-8")
+    digest = hmac.new(ENCODED_SECRET_KEY, token.encode("utf-8"), hashlib.sha256).digest()
+    # Encode digest to URL-safe Base64
+    return base64.urlsafe_b64encode(digest).decode("utf-8")
 
-def verify_token(token: str) -> Union[bool, str]:
+
+def verify_token(token: str) -> bool:
     """
     Verify a token using HMAC-SHA256.
     Returns True if the token is valid, False otherwise.
     """
-    return hmac.compare_digest(token, hash_token(token))
+    hashed_token = hash_token(token)
+    return hmac.compare_digest(token, hashed_token)

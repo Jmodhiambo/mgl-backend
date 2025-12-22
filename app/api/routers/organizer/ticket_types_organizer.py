@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Organizer TicketType API routes."""
 
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.ticket_type import TicketTypeOut, TicketTypeCreate, TicketTypeUpdate
 import app.services.ticket_type_services as tt_services

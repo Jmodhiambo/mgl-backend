@@ -59,6 +59,7 @@ async def update_event_repo(event_id: int, event_data: EventUpdate) -> Optional[
 
 
 async def get_approved_events_repo() -> list[EventOut]:
+    """Get all approved events from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.approved.is_(True))
         events = (await session.scalars(stmt)).all()
@@ -66,6 +67,7 @@ async def get_approved_events_repo() -> list[EventOut]:
 
 
 async def get_unapproved_events_repo() -> list[EventOut]:
+    """Get all unapproved events from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.approved.is_(False))
         events = (await session.scalars(stmt)).all()
@@ -73,6 +75,7 @@ async def get_unapproved_events_repo() -> list[EventOut]:
 
 
 async def get_all_events_repo() -> list[EventOut]:
+    """Get all events from the database."""
     async with get_async_session() as session:
         stmt = select(Event)
         events = (await session.scalars(stmt)).all()
@@ -80,6 +83,7 @@ async def get_all_events_repo() -> list[EventOut]:
 
 
 async def get_event_by_id_repo(event_id: int) -> Optional[EventOut]:
+    """Get an event by its ID from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
         event = await session.scalar(stmt)
@@ -87,6 +91,7 @@ async def get_event_by_id_repo(event_id: int) -> Optional[EventOut]:
 
 
 async def approve_event_repo(event_id: int) -> Optional[EventOut]:
+    """Approve an event in the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
         event = await session.scalar(stmt)
@@ -102,6 +107,7 @@ async def approve_event_repo(event_id: int) -> Optional[EventOut]:
 
 
 async def reject_event_repo(event_id: int) -> bool:
+    """Reject an event in the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
         event = await session.scalar(stmt)
@@ -115,6 +121,7 @@ async def reject_event_repo(event_id: int) -> bool:
 
 
 async def delete_event_repo(event_id: int) -> bool:
+    """Delete an event from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
         event = await session.scalar(stmt)
@@ -128,6 +135,7 @@ async def delete_event_repo(event_id: int) -> bool:
 
 
 async def update_event_status_repo(event_id: int, new_status: str) -> Optional[EventOut]:
+    """Update the status of an event in the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
         event = await session.scalar(stmt)
@@ -143,6 +151,7 @@ async def update_event_status_repo(event_id: int, new_status: str) -> Optional[E
 
 
 async def get_events_by_organizer_repo(organizer_id: int) -> list[EventOut]:
+    """Get all events by an organizer from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.organizer_id == organizer_id)
         events = (await session.scalars(stmt)).all()
@@ -150,6 +159,7 @@ async def get_events_by_organizer_repo(organizer_id: int) -> list[EventOut]:
 
 
 async def get_events_in_date_range_repo(start_date: datetime, end_date: datetime) -> list[EventOut]:
+    """Get all events in a date range from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(
             Event.start_time >= start_date,
@@ -160,6 +170,7 @@ async def get_events_in_date_range_repo(start_date: datetime, end_date: datetime
 
 
 async def search_events_by_title_repo(keyword: str) -> list[EventOut]:
+    """Search for events by title from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.title.ilike(f"%{keyword}%"))
         events = (await session.scalars(stmt)).all()
@@ -167,6 +178,7 @@ async def search_events_by_title_repo(keyword: str) -> list[EventOut]:
 
 
 async def count_events_by_organizer_repo(organizer_id: int) -> int:
+    """Count the number of events by an organizer from the database."""
     async with get_async_session() as session:
         stmt = select(func.count()).where(Event.organizer_id == organizer_id)
         count = await session.scalar(stmt)
@@ -174,6 +186,7 @@ async def count_events_by_organizer_repo(organizer_id: int) -> int:
 
 
 async def count_events_repo() -> int:
+    """Count the number of events from the database."""
     async with get_async_session() as session:
         stmt = select(func.count()).select_from(Event)
         count = await session.scalar(stmt)
@@ -181,6 +194,7 @@ async def count_events_repo() -> int:
 
 
 async def get_latest_events_repo(limit: int = 5) -> list[EventOut]:
+    """Get the latest events from the database."""
     async with get_async_session() as session:
         stmt = (
             select(Event)
@@ -193,6 +207,7 @@ async def get_latest_events_repo(limit: int = 5) -> list[EventOut]:
 
 
 async def get_events_by_status_repo(status: str) -> list[EventOut]:
+    """Get events by status from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.status == status)
         events = (await session.scalars(stmt)).all()
@@ -200,6 +215,7 @@ async def get_events_by_status_repo(status: str) -> list[EventOut]:
 
 
 async def get_events_with_bookings_repo() -> list[EventOut]:
+    """Get events with bookings from the database."""
     async with get_async_session() as session:
         stmt = (
             select(Event)
@@ -211,6 +227,7 @@ async def get_events_with_bookings_repo() -> list[EventOut]:
 
 
 async def get_events_without_bookings_repo() -> list[EventOut]:
+    """Get events without bookings from the database."""
     async with get_async_session() as session:
         stmt = (
             select(Event)
@@ -222,6 +239,7 @@ async def get_events_without_bookings_repo() -> list[EventOut]:
 
 
 async def search_events_by_venue_repo(venue: str) -> list[EventOut]:
+    """Search for events by venue from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(
             Event.approved.is_(True),
@@ -232,6 +250,7 @@ async def search_events_by_venue_repo(venue: str) -> list[EventOut]:
 
 
 async def get_events_created_after_repo(date: datetime) -> list[EventOut]:
+    """Get events created after a specific date from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.created_at > date)
         events = (await session.scalars(stmt)).all()
@@ -239,6 +258,7 @@ async def get_events_created_after_repo(date: datetime) -> list[EventOut]:
 
 
 async def get_events_created_before_repo(date: datetime) -> list[EventOut]:
+    """Get events created before a specific date from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.created_at < date)
         events = (await session.scalars(stmt)).all()
@@ -246,6 +266,7 @@ async def get_events_created_before_repo(date: datetime) -> list[EventOut]:
 
 
 async def get_events_updated_after_repo(date: datetime) -> list[EventOut]:
+    """Get events updated after a specific date from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.updated_at > date)
         events = (await session.scalars(stmt)).all()
@@ -253,6 +274,7 @@ async def get_events_updated_after_repo(date: datetime) -> list[EventOut]:
 
 
 async def get_events_updated_before_repo(date: datetime) -> list[EventOut]:
+    """Get events updated before a specific date from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.updated_at < date)
         events = (await session.scalars(stmt)).all()
@@ -260,6 +282,7 @@ async def get_events_updated_before_repo(date: datetime) -> list[EventOut]:
 
 
 async def get_events_sorted_by_start_time_repo(ascending: bool = True) -> list[EventOut]:
+    """Get events sorted by start time from the database."""
     async with get_async_session() as session:
         order = Event.start_time.asc() if ascending else Event.start_time.desc()
         stmt = select(Event).order_by(order)
@@ -268,6 +291,7 @@ async def get_events_sorted_by_start_time_repo(ascending: bool = True) -> list[E
 
 
 async def get_events_sorted_by_end_time_repo(ascending: bool = True) -> list[EventOut]:
+    """Get events sorted by end time from the database."""
     async with get_async_session() as session:
         order = Event.end_time.asc() if ascending else Event.end_time.desc()
         stmt = select(Event).order_by(order)
@@ -276,6 +300,7 @@ async def get_events_sorted_by_end_time_repo(ascending: bool = True) -> list[Eve
 
 
 async def get_events_sorted_by_creation_date_repo(ascending: bool = True) -> list[EventOut]:
+    """Get events sorted by creation date from the database."""
     async with get_async_session() as session:
         order = Event.created_at.asc() if ascending else Event.created_at.desc()
         stmt = select(Event).order_by(order)
@@ -284,6 +309,7 @@ async def get_events_sorted_by_creation_date_repo(ascending: bool = True) -> lis
 
 
 async def get_events_by_country_repo(country: str) -> list[EventOut]:
+    """Get events by country from the database."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.country.ilike(f"%{country}%"))
         events = (await session.scalars(stmt)).all()
