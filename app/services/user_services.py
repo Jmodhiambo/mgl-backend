@@ -22,12 +22,12 @@ async def register_user_service(name: str, email: str, password: str, phone_numb
     if len(password) < 8:  # Ensure password is at least 8 chars long
         raise ValueError("Password must be at least 8 characters long.")
     
-    if user_repo.get_user_by_email_repo(email):  # Check if the email exists
-        raise ValueError("Email already exists! Please use a different email.")
+    if await user_repo.get_user_by_email_repo(email):  # Check if the email exists
+        raise ValueError(f"The email {email} already exists! Please use a different email.")
     
     password_hash = argon2.hash(password)
 
-    user = user_repo.create_user_repo(name, email, password_hash, phone_number)
+    user = await user_repo.create_user_repo(name, email, password_hash, phone_number)
 
     logger.info(f"User {user.name} with ID {user.id} registered successfully.")
 

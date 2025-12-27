@@ -22,6 +22,7 @@ class TicketInstance(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     ticket_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("ticket_types.id"), nullable=False)
     booking_id: Mapped[int] = mapped_column(Integer, ForeignKey("bookings.id"), nullable=False)
+    price: Mapped[int] = mapped_column(Integer, nullable=False)
     code: Mapped[str] = mapped_column(String(100), unique=True, nullable=False) # Unique ticket code or QR code
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")  # e.g., active, used, cancelled
     issued_to: Mapped[Optional[str]] = mapped_column(String(150), nullable=True, default=None)  # Name of the ticket holder

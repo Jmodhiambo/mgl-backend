@@ -7,6 +7,11 @@ from starlette.datastructures import Secret
 # Load environment variables from a .env file
 config = Config(".env")
 
+# App settings
+APP_NAME: str = config("APP_NAME", default="MGLTickets API")
+APP_VERSION: str = config("APP_VERSION", default="1.0.0")
+DEBUG: bool = config("DEBUG", cast=bool, default=False)
+
 # Database connection settings
 DB_USER: str = config("DB_USER")
 DB_PASSWORD: Secret = config("DB_PASSWORD", cast=Secret)
@@ -34,4 +39,14 @@ SECRET_KEY: str = config("SECRET_KEY", cast=Secret)
 ALGORITHM: str = config("ALGORITHM", default="HS256")
 
 # Frontend URL
-FRONTEND_URL: str = config("FRONTEND_URL", default="http://localhost:5173")
+FRONTEND_URL: str = config("FRONTEND_URL", default="http://localhost:3000")
+
+# CORS settings
+ALLOWED_ORIGINS: list[str] = config(
+    "ALLOWED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000"
+).split(",")
+
+# Upload directories
+UPLOADS_EVENTS_DIR: str = config("UPLOADS_EVENTS_DIR", default="app/uploads/events")
+UPLOADS_PROFILES_DIR: str = config("UPLOADS_PROFILES_DIR", default="app/uploads/profiles")

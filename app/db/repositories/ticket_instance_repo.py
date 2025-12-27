@@ -21,6 +21,7 @@ async def create_ticket_instance_repo(
             booking_id=ticket_instance_create.booking_id,
             ticket_type_id=ticket_instance_create.ticket_type_id,
             user_id=ticket_instance_create.user_id,
+            price=ticket_instance_create.price,
             code=ticket_instance_create.code,
             status=ticket_instance_create.status,
             issued_to=ticket_instance_create.issued_to,

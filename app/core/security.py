@@ -124,10 +124,10 @@ def hash_token(token: str) -> str:
     return base64.urlsafe_b64encode(digest).decode("utf-8")
 
 
-def verify_token(token: str) -> bool:
+def verify_token(token: str, refresh_token_hash: str) -> bool:
     """
     Verify a token using HMAC-SHA256.
     Returns True if the token is valid, False otherwise.
     """
     hashed_token = hash_token(token)
-    return hmac.compare_digest(token, hashed_token)
+    return hmac.compare_digest(hashed_token, refresh_token_hash)

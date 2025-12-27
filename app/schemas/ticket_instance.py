@@ -16,6 +16,7 @@ class TicketInstanceOut(BaseModelEAT):
     user_id: int
     code: str
     status: str
+    price: int
     issued_to: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -32,6 +33,7 @@ class TicketInstanceCreate(BaseModelEAT):
     booking_id: int
     ticket_type_id: int
     user_id: int
+    price: int
     status: Optional[str] = "issued"  # Default status is issued
     issued_to: Optional[str] = None
     seat_number: Optional[int] = None

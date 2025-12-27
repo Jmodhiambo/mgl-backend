@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Auth routes for MGLTickets."""
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -16,8 +16,10 @@ from app.services.user_services import (
 from app.services.ref_session_services import (
     create_refresh_session_service,
     get_refresh_session_service,
-    update_refresh_session_service,
-    delete_refresh_session_service
+    revoke_refresh_session_service,
+    delete_refresh_session_service,
+    get_user_session_stats_service,
+    cleanup_user_sessions_service
 )
 from app.core.security import (
     create_access_token,
@@ -30,7 +32,7 @@ from app.core.security import (
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreate):
     """
     Register a new user.
@@ -86,9 +88,10 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
-        samesite="none",
-        max_age=7 * 24 * 60 * 60
+        secure=False,        # False impotart for localhost and True for production
+        samesite="lax",
+        # domain=".localhost", # Change to ".mgltickets.com" when deployed
+        max_age=7 * 24 * 60 * 60  # 7 days
     )
 
     return {
@@ -130,34 +133,73 @@ async def refresh_token(request: Request, response: Response):
     
     # Fetch session from DB
     session = await get_refresh_session_service(session_id)
+
+    # Verify session matches user
     if not session or session.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
-        )        
+        )
+
+    # Check if this session was just rotated (within last 5 seconds)
+    if session.revoked_at:
+        time_since_revoked = datetime.now(timezone.utc) - session.revoked_at
+        if time_since_revoked.total_seconds() < 5:
+            # This might be a race condition - allow it and return the new session
+            new_session = await get_refresh_session_service(session_id)
+            if new_session and not new_session.revoked_at:
+                # Use the new session instead
+                return {
+                    "access_token": create_access_token(user_id),
+                    "token_type": "bearer",
+                    "expires_in": 3600,
+                }
+        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token revoked",
+        )
+
+    # Delete session if it is expired
+    if session.expires_at < datetime.now(timezone.utc):
+        await delete_refresh_session_service(session_id)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired",
+        )   
     
     # Verify token matches hashed token in the DB
-    if not verify_token(refresh_token, session.token_hash):
+    if not verify_token(refresh_token, session.refresh_token_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
         )
-    
-    # Rotate refresh token
-    new_refresh_token = create_refresh_token(user_id, session_id)
-    token_hash = hash_token(new_refresh_token)
-    expires_at = datetime.utcnow() + timedelta(days=7)
 
-    # Update refresh token in DB
-    await update_refresh_session_service(session_id, refresh_token_hash=token_hash, expires_at=expires_at)
+    # Rotate refresh token
+    new_session_id = str(uuid.uuid4().hex)
+    new_refresh_token = create_refresh_token(user_id, new_session_id)
+    refresh_token_hash = hash_token(new_refresh_token)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+
+    # Create refresh token in DB
+    await create_refresh_session_service(
+        session_id=new_session_id,
+        user_id=user_id,
+        refresh_token_hash=refresh_token_hash,
+        expires_at=expires_at
+    )
+
+    # Revoke older session for later deletion
+    await revoke_refresh_session_service(session_id, new_session_id)
 
     # Set HttpOnlyCookie in response header
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=False,        # False impotart for localhost and True for production
+        samesite="lax",
+        # domain=".localhost", # Change to ".mgltickets.com" when deployed
         max_age=7 * 24 * 60 * 60  # 7 days
     )
       
@@ -192,3 +234,13 @@ async def logout(request: Request, response: Response, user=Depends(require_user
     return {
         "message": "User logged out successfully"
     }
+
+@router.post("/auth/logout-all-devices", response_model=dict, status_code=status.HTTP_200_OK)
+async def logout_all_devices(user=Depends(require_user)) -> dict:
+    """Logout all devices by deleting all user sessions."""
+    return await cleanup_user_sessions_service(user.id)
+
+@router.get("/auth/session-stats", response_model=dict, status_code=status.HTTP_200_OK)
+async def get_user_session_stats(user=Depends(require_user)) -> dict:
+    """Get user session stats."""
+    return await get_user_session_stats_service()

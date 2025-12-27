@@ -10,6 +10,8 @@ class RefreshSessionOut(BaseModelEAT):
     user_id: int
     refresh_token_hash: str
     expires_at: datetime
+    revoked_at: Optional[datetime]
+    replaced_by_sid: Optional[str]
 
     class Config:
         from_attributes = True
