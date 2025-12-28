@@ -21,14 +21,21 @@ DB_NAME: str = config("DB_NAME")
 
 # Construct the SQLAlchemy Database URI
 # get_secret_value() is used to retrieve the actual password string from the Secret object
-DATABASE_URL: str = (
-    f"postgresql+asyncpg://{DB_USER}:{str(DB_PASSWORD)}@"
-    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL: str = config (
+    "SQLITE_DATABASE_URL",
+    default=(
+        f"postgresql+asyncpg://{DB_USER}:{str(DB_PASSWORD)}@"
+        f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    ),
 )
 
-ALEMBIC_DATABASE_URL: str = (
-    f"postgresql+psycopg2://{DB_USER}:{str(DB_PASSWORD)}@"
-    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# Change to this in alembic/env.py in production
+ALEMBIC_DATABASE_URL: str = config (
+    "ALEMBIC_DATABASE_URL",
+    default=(
+        f"postgresql+psycopg2://{DB_USER}:{str(DB_PASSWORD)}@"
+        f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    ),
 )
 
 # Optional SQLAlchemy settings

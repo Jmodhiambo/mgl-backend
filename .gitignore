@@ -24,6 +24,10 @@ backend/app/logs/*
 # Environment variables file
 .env
 
+# SQLite development database
+dev.db
+.devdbrc
+
 # Log files
 *.jsonl
 *.log

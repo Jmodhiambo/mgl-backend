@@ -161,7 +161,7 @@ async def refresh_token(request: Request, response: Response):
         )
 
     # Delete session if it is expired
-    if session.expires_at < datetime.now(timezone.utc):
+    if session.expires_at < datetime.now():
         await delete_refresh_session_service(session_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
