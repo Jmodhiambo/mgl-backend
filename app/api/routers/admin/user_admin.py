@@ -54,11 +54,11 @@ async def get_user_by_id(user_id: int, user=Depends(require_admin)):
 
 # Admin Level User Actions
 @router.delete("/admin/users/{user_id}", response_model=bool)
-async def delete_user(user_id: int, user=Depends(require_admin)):
+async def delete_user(user_id: int):  # user=Depends(require_admin)
     """
     Delete a user by their ID.
     """
-    return user_services.delete_user_service(user_id)
+    return await user_services.delete_user_service(user_id)
 
 @router.patch("/admin/users/{user_id}/activate", response_model=UserOut)
 async def activate_user(user_id: int, user=Depends(require_admin)):

@@ -104,7 +104,7 @@ async def update_user_info_service(user_id: int, info: dict) -> dict:
 async def delete_user_service(user_id: int) -> bool:
     """Delete a user by ID."""
     logger.info(f"Deleting user with ID: {user_id}")
-    user_repo.delete_user_repo(user_id)
+    return await user_repo.delete_user_repo(user_id)
 
 async def deactivate_user_service(user_id: int) -> Optional[dict]:
     """Deactivate a user account."""

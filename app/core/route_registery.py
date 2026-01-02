@@ -13,6 +13,7 @@ from app.api.routers.user.bookings import router as bookings_router
 from app.api.routers.user.payments import router as payments_router 
 from app.api.routers.user.ticket_instances import router as ti_router
 from app.api.routers.user.ticket_types import router as tt_router
+from app.api.routers.user.favorites import router as favorites_router
 
 # Organizer routes
 from app.api.routers.organizer.user_organizer import router as organizer_user_router
@@ -44,6 +45,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(payments_router, prefix="/api/v1", tags=["Payments"])
     app.include_router(ti_router, prefix="/api/v1", tags=["Ticket Instances"])
     app.include_router(tt_router, prefix="/api/v1", tags=["Ticket Types"])
+    app.include_router(favorites_router, prefix="/api/v1", tags=["Favorites"])
 
     # Organizer routes
     app.include_router(organizer_user_router, prefix="/api/v1", tags=["Users-Organizer"])

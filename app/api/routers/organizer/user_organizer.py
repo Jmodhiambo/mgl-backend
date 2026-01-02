@@ -4,6 +4,9 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut, OrganizerInfo
+from app.schemas.co_organizer import CoOrganizerOut
+from app.schemas.user import UserOut
+import app.services.co_organizer_services as co_services
 import app.services.user_services as user_services
 from app.core.security import require_organizer, require_user
 from app.utils.images import save_profile_picture_and_get_url, delete_profile_picture
@@ -11,6 +14,19 @@ from app.utils.images import save_profile_picture_and_get_url, delete_profile_pi
 router = APIRouter()
 
 ROLE_ORGANIZER = "organizer"
+
+@router.post("/organizers/me/co-organizers", response_model=CoOrganizerOut, status_code=status.HTTP_201_CREATED)
+async def create_co_organizer(user_id: int, event_id: int, organizer=Depends(require_organizer)):
+    """Create a new co-organizer."""
+    return await co_services.create_co_organizer_service(user_id, organizer.id, event_id)
+
+
+@router.get("/organizers/me/co-organizers", response_model=list[UserOut], status_code=status.HTTP_200_OK)
+async def get_all_co_organizers(event_id: int, organizer=Depends(require_organizer)):
+    """List all co-organizers (User access only)."""
+    co_organizers = await co_services.get_all_event_co_organizers_service(event_id)
+    return [await user_services.get_user_by_id_service(co_organizer.user_id) for co_organizer in co_organizers]
+
 
 @router.patch("/organizers/me/promote", response_model=OrganizerOut, status_code=status.HTTP_201_CREATED)
 async def upgrade_user_to_organizer(
@@ -34,10 +50,12 @@ async def upgrade_user_to_organizer(
     
     return await user_services.update_user_info_service(user.id, organizer_data)
 
+
 @router.get("/organizers/me/profile", response_model=OrganizerOut, status_code=status.HTTP_200_OK)
 async def get_organizer_profile(user=Depends(require_organizer)):
     """Get the profile of the current organizer."""  
     return await user_services.get_user_by_id_service(user.id)
+
 
 @router.patch("/organizers/me/profile-update", response_model=OrganizerOut, status_code=status.HTTP_200_OK)
 async def update_organizer_profile(
@@ -58,6 +76,7 @@ async def update_organizer_profile(
 
     # Update user info with OrganizerInfo since OrganizerUpdate does not have profile_picture_url
     return await user_services.update_user_info_service(user.id, OrganizerInfo(**data_dict))
+
 
 @router.delete("/organizers/me/profile-picture", response_model=bool, status_code=status.HTTP_200_OK)
 async def delete_organizer_profile_picture(user=Depends(require_organizer)):
