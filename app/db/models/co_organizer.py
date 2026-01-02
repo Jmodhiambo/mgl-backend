@@ -18,6 +18,8 @@ class CoOrganizer(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     organizer_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"))
+    invited_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    create_co_organizer: Mapped[bool] = mapped_column(nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

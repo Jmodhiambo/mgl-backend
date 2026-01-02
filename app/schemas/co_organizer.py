@@ -11,6 +11,8 @@ class CoOrganizerOut(BaseModelEAT):
     user_id: int
     organizer_id: int
     event_id: int
+    invited_by: int
+    create_co_organizer: bool
     created_at: datetime
     updated_at: datetime
 
@@ -23,6 +25,14 @@ class CoOrganizerCreate(BaseModelEAT):
     user_id: int
     organizer_id: int
     event_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class CoOrganizerUpdate(BaseModelEAT):
+    """Co-Organizer schema for API requests."""
+    create_corganizer: bool
 
     class Config:
         orm_mode = True

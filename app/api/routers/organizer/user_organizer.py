@@ -15,19 +15,6 @@ router = APIRouter()
 
 ROLE_ORGANIZER = "organizer"
 
-@router.post("/organizers/me/co-organizers", response_model=CoOrganizerOut, status_code=status.HTTP_201_CREATED)
-async def create_co_organizer(user_id: int, event_id: int, organizer=Depends(require_organizer)):
-    """Create a new co-organizer."""
-    return await co_services.create_co_organizer_service(user_id, organizer.id, event_id)
-
-
-@router.get("/organizers/me/co-organizers", response_model=list[UserOut], status_code=status.HTTP_200_OK)
-async def get_all_co_organizers(event_id: int, organizer=Depends(require_organizer)):
-    """List all co-organizers (User access only)."""
-    co_organizers = await co_services.get_all_event_co_organizers_service(event_id)
-    return [await user_services.get_user_by_id_service(co_organizer.user_id) for co_organizer in co_organizers]
-
-
 @router.patch("/organizers/me/promote", response_model=OrganizerOut, status_code=status.HTTP_201_CREATED)
 async def upgrade_user_to_organizer(
     data: OrganizerCreate,
