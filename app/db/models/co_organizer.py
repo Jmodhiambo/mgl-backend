@@ -16,9 +16,9 @@ class CoOrganizer(Base):
     __tablename__ = "co_organizers"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
-    organizer_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    organizer_id: Mapped[int] = mapped_column(Integer, nullable=False)
     event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"))
-    invited_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    invited_by: Mapped[int] = mapped_column(Integer, nullable=False)
     create_co_organizer: Mapped[bool] = mapped_column(nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

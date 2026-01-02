@@ -13,7 +13,8 @@ from app.api.routers.user.bookings import router as bookings_router
 from app.api.routers.user.payments import router as payments_router 
 from app.api.routers.user.ticket_instances import router as ti_router
 from app.api.routers.user.ticket_types import router as tt_router
-from app.api.routers.user.favorites import router as favorites_router
+from app.api.routers.user.favorites import router as favorites_router   # Only in user routes
+from app.api.routers.user.co_organizer import router as co_organizer_router
 
 # Organizer routes
 from app.api.routers.organizer.user_organizer import router as organizer_user_router
@@ -22,6 +23,8 @@ from app.api.routers.organizer.bookings_organizer import router as organizer_boo
 # from app.api.routers.organizer.payments_organizer import router as organizer_payments_router
 from app.api.routers.organizer.ticket_instances_organizer import router as organizer_ti_router
 from app.api.routers.organizer.ticket_types_organizer import router as organizer_tt_router
+from app.api.routers.organizer.co_organizer import router as co_organizer_organizer_router
+
 
 # Admin routes
 from app.api.routers.admin.auth_admin import router as admin_auth_router
@@ -31,7 +34,7 @@ from app.api.routers.admin.booking_admin import router as admin_bookings_router
 from app.api.routers.admin.payment_admin import router as admin_payments_router
 from app.api.routers.admin.ticket_instance_admin import router as admin_ti_router
 from app.api.routers.admin.ticket_type_admin import router as admin_tt_router
-
+from app.api.routers.admin.co_organizer_admin import router as admin_co_organizer_router
 
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
@@ -45,7 +48,8 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(payments_router, prefix="/api/v1", tags=["Payments"])
     app.include_router(ti_router, prefix="/api/v1", tags=["Ticket Instances"])
     app.include_router(tt_router, prefix="/api/v1", tags=["Ticket Types"])
-    app.include_router(favorites_router, prefix="/api/v1", tags=["Favorites"])
+    app.include_router(favorites_router, prefix="/api/v1", tags=["Favorites"])  # Only in user routes
+    app.include_router(co_organizer_router, prefix="/api/v1", tags=["Co-Organizer"])
 
     # Organizer routes
     app.include_router(organizer_user_router, prefix="/api/v1", tags=["Users-Organizer"])
@@ -54,6 +58,7 @@ def register_routes(app: FastAPI) -> None:
     # app.include_router(organizer_payments_router, prefix="/api/v1", tags=["Payments-Organizer"])
     app.include_router(organizer_ti_router, prefix="/api/v1", tags=["Ticket Instances-Organizer"])
     app.include_router(organizer_tt_router, prefix="/api/v1", tags=["Ticket Types-Organizer"])
+    app.include_router(co_organizer_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Organizer"])
     
     # Admin routes
     app.include_router(admin_auth_router, prefix="/api/v1", tags=["Auth-Admin"])
@@ -63,3 +68,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(admin_payments_router, prefix="/api/v1", tags=["Payment-Admin"])
     app.include_router(admin_ti_router, prefix="/api/v1", tags=["Ticket Instance-Admin"])
     app.include_router(admin_tt_router, prefix="/api/v1", tags=["Ticket Type-Admin"])
+    app.include_router(admin_co_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Admin"])
