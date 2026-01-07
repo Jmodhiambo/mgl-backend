@@ -8,6 +8,7 @@ import app.services.event_services as event_services
 
 from app.core.security import require_organizer
 from app.utils.images import save_flyer_and_get_url
+from app.utils.generate_slug import generate_unique_slug
 
 
 router = APIRouter()
@@ -21,11 +22,15 @@ async def create_event(
     """
     Create a new event by the organizer.
     """ 
+    # Generate unique slug
+    slug = await generate_unique_slug(event_data.title)
+
     # Save flyer
     flyer_url = await save_flyer_and_get_url(flyer)
 
     # Prepare event data for service layer
     event_dict = event_data.model_dump()
+    event_dict["slug"] = slug
     event_dict["flyer_url"] = flyer_url
     event_dict["original_filename"] = flyer.filename
     event_dict["organizer_id"] = user.id

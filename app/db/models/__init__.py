@@ -7,6 +7,7 @@ from app.db.models.payment import Payment
 from app.db.models.refresh_sessions import RefreshSession
 from app.db.models.favorites import Favorite
 from app.db.models.co_organizer import CoOrganizer
+from app.db.models.contact import ContactMessage
 
 __all__ = [  # Dunder module attribute to export
     "User",
@@ -17,5 +18,6 @@ __all__ = [  # Dunder module attribute to export
     "Payment",
     "RefreshSession",
     "Favorite",
-    "CoOrganizer"
+    "CoOrganizer",
+    "ContactMessage"
 ]

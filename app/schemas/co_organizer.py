@@ -17,7 +17,7 @@ class CoOrganizerOut(BaseModelEAT):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CoOrganizerCreate(BaseModelEAT):
@@ -27,7 +27,7 @@ class CoOrganizerCreate(BaseModelEAT):
     event_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CoOrganizerUpdate(BaseModelEAT):
@@ -35,4 +35,4 @@ class CoOrganizerUpdate(BaseModelEAT):
     create_corganizer: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True

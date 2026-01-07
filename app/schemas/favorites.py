@@ -13,11 +13,11 @@ class FavoriteOut(BaseModelEAT):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class FavoriteCreate(BaseModelEAT):
     user_id: int
     event_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

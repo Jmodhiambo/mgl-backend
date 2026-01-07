@@ -22,6 +22,7 @@ class Event(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, default=None)
     venue: Mapped[str] = mapped_column(String(255), nullable=False)
     country: Mapped[str] = mapped_column(String(100), nullable=False, default="Kenya")

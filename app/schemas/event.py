@@ -13,6 +13,7 @@ class EventOut(BaseModelEAT):
     """Base schema for Event."""
     id: int
     title: str
+    slug: str
     organizer_id: int
     description: Optional[str] = None
     venue: str
@@ -43,6 +44,7 @@ class EventCreate(BaseModelEAT):
 
 class EventCreateWithFlyer(EventCreate):
     """Schema for creating a new Event with a flyer."""
+    slug: str
     organizer_id: int
     original_filename: str
     flyer_url: str

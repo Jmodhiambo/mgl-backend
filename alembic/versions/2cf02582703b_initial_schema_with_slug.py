@@ -1,8 +1,8 @@
-"""...
+"""initial_schema_with_slug
 
-Revision ID: 06938f2a8521
+Revision ID: 2cf02582703b
 Revises: 
-Create Date: 2025-12-28 19:59:38.883492
+Create Date: 2026-01-08 01:09:34.828013
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '06938f2a8521'
+revision: str = '2cf02582703b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -43,9 +43,39 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_table('contact_messages',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('reference_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('name', sa.String(length=50), nullable=True),
+    sa.Column('email', sa.String(length=100), nullable=True),
+    sa.Column('phone_number', sa.String(length=20), nullable=True),
+    sa.Column('subject', sa.String(length=100), nullable=False),
+    sa.Column('category', sa.String(length=50), nullable=False),
+    sa.Column('message', sa.String(length=2000), nullable=False),
+    sa.Column('status', sa.String(length=50), nullable=False),
+    sa.Column('priority', sa.String(length=50), nullable=False),
+    sa.Column('assigned_to', sa.Integer(), nullable=True),
+    sa.Column('client_ip', sa.String(length=50), nullable=True),
+    sa.Column('user_agent', sa.String(length=100), nullable=True),
+    sa.Column('recaptcha_score', sa.String(length=50), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('responded_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('closed_at', sa.DateTime(timezone=True), nullable=True),
+    sa.ForeignKeyConstraint(['assigned_to'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_contact_messages_category'), 'contact_messages', ['category'], unique=False)
+    op.create_index(op.f('ix_contact_messages_created_at'), 'contact_messages', ['created_at'], unique=False)
+    op.create_index(op.f('ix_contact_messages_email'), 'contact_messages', ['email'], unique=False)
+    op.create_index(op.f('ix_contact_messages_reference_id'), 'contact_messages', ['reference_id'], unique=False)
+    op.create_index(op.f('ix_contact_messages_status'), 'contact_messages', ['status'], unique=False)
     op.create_table('events',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=200), nullable=False),
+    sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('venue', sa.String(length=255), nullable=False),
     sa.Column('country', sa.String(length=100), nullable=False),
@@ -63,6 +93,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_events_id'), 'events', ['id'], unique=False)
+    op.create_index(op.f('ix_events_slug'), 'events', ['slug'], unique=True)
     op.create_table('refresh_sessions',
     sa.Column('session_id', sa.String(length=255), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -76,6 +107,31 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('session_id')
     )
     op.create_index(op.f('ix_refresh_sessions_session_id'), 'refresh_sessions', ['session_id'], unique=False)
+    op.create_table('co_organizers',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('organizer_id', sa.Integer(), nullable=False),
+    sa.Column('event_id', sa.Integer(), nullable=False),
+    sa.Column('invited_by', sa.Integer(), nullable=False),
+    sa.Column('create_co_organizer', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_co_organizers_id'), 'co_organizers', ['id'], unique=False)
+    op.create_table('favorites',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('event_id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_favorites_id'), 'favorites', ['id'], unique=False)
     op.create_table('ticket_types',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('event_id', sa.Integer(), nullable=False),
@@ -155,10 +211,21 @@ def downgrade() -> None:
     op.drop_table('bookings')
     op.drop_index(op.f('ix_ticket_types_id'), table_name='ticket_types')
     op.drop_table('ticket_types')
+    op.drop_index(op.f('ix_favorites_id'), table_name='favorites')
+    op.drop_table('favorites')
+    op.drop_index(op.f('ix_co_organizers_id'), table_name='co_organizers')
+    op.drop_table('co_organizers')
     op.drop_index(op.f('ix_refresh_sessions_session_id'), table_name='refresh_sessions')
     op.drop_table('refresh_sessions')
+    op.drop_index(op.f('ix_events_slug'), table_name='events')
     op.drop_index(op.f('ix_events_id'), table_name='events')
     op.drop_table('events')
+    op.drop_index(op.f('ix_contact_messages_status'), table_name='contact_messages')
+    op.drop_index(op.f('ix_contact_messages_reference_id'), table_name='contact_messages')
+    op.drop_index(op.f('ix_contact_messages_email'), table_name='contact_messages')
+    op.drop_index(op.f('ix_contact_messages_created_at'), table_name='contact_messages')
+    op.drop_index(op.f('ix_contact_messages_category'), table_name='contact_messages')
+    op.drop_table('contact_messages')
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

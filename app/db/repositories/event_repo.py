@@ -21,6 +21,7 @@ async def create_event_repo(event_data: EventCreateWithFlyer) -> EventOut:
     async with get_async_session() as session:
         new_event = Event(
             title=event_data.title,
+            slug=event_data.slug,
             description=event_data.description,
             venue=event_data.venue,
             start_time=event_data.start_time,
@@ -35,6 +36,22 @@ async def create_event_repo(event_data: EventCreateWithFlyer) -> EventOut:
         await session.refresh(new_event)
 
         return EventOut.model_validate(new_event)
+    
+
+async def get_event_by_id_repo(event_id: int) -> Optional[EventOut]:
+    """Get an event by its ID from the database."""
+    async with get_async_session() as session:
+        stmt = select(Event).where(Event.id == event_id)
+        event = await session.scalar(stmt)
+        return EventOut.model_validate(event) if event else None
+    
+
+async def get_event_by_slug_repo(slug: str) -> Optional[EventOut]:
+    """Get an event by its slug from the database."""
+    async with get_async_session() as session:
+        stmt = select(Event).where(Event.slug == slug)
+        event = await session.scalar(stmt)
+        return EventOut.model_validate(event) if event else None
 
 
 async def update_event_repo(event_id: int, event_data: EventUpdate) -> Optional[EventOut]:
@@ -80,14 +97,6 @@ async def get_all_events_repo() -> list[EventOut]:
         stmt = select(Event)
         events = (await session.scalars(stmt)).all()
         return [EventOut.model_validate(event) for event in events]
-
-
-async def get_event_by_id_repo(event_id: int) -> Optional[EventOut]:
-    """Get an event by its ID from the database."""
-    async with get_async_session() as session:
-        stmt = select(Event).where(Event.id == event_id)
-        event = await session.scalar(stmt)
-        return EventOut.model_validate(event) if event else None
 
 
 async def approve_event_repo(event_id: int) -> Optional[EventOut]:

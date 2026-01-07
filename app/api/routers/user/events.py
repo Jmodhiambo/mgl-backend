@@ -28,6 +28,14 @@ async def get_event_by_id(event_id: int, user=Depends(require_user)):
     return await event_services.get_event_by_id_service(event_id)
 
 
+@router.get("/events/{slug}", response_model=EventOut)
+async def get_event_by_slug(slug: str, user=Depends(require_user)):
+    """
+    Get an event by its slug.
+    """
+    return await event_services.get_event_by_slug_service(slug)
+
+
 @router.get("/events/latest", response_model=list[EventOut])
 async def get_latest_events(limit: int = 10, user=Depends(require_user)):
     """

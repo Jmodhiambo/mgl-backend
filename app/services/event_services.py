@@ -13,6 +13,16 @@ async def create_event_service(event_data: EventCreateWithFlyer) -> dict:
     logger.info(f"Created event with ID: {event.id}")
     return event
 
+async def get_event_by_id_service(event_id: int) -> dict:
+    """Retrieve an event by its ID."""
+    logger.info(f"Retrieving event with ID: {event_id}")
+    return await event_repo.get_event_by_id_repo(event_id)
+
+async def get_event_by_slug_service(slug: str) -> dict:
+    """Retrieve an event by its slug."""
+    logger.info(f"Retrieving event with slug: {slug}")
+    return await event_repo.get_event_by_slug_repo(slug)
+
 async def update_event_service(event_id: int, event_data: EventUpdate) -> dict:
     """Update an event by its ID."""
     logger.info(f"Updating event with ID: {event_id}")
@@ -34,11 +44,6 @@ async def get_all_events_service() -> list[dict]:
     """Retrieve all events."""
     logger.info("Retrieving all events")
     return await event_repo.get_all_events_repo()
-
-async def get_event_by_id_service(event_id: int) -> dict:
-    """Retrieve an event by its ID."""
-    logger.info(f"Retrieving event with ID: {event_id}")
-    return await event_repo.get_event_by_id_repo(event_id)
 
 async def approve_event_service(event_id: int) -> dict:
     """Approve an event."""
