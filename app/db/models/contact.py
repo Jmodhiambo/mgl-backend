@@ -36,7 +36,7 @@ class ContactMessage(Base):
     priority: Mapped[str] = mapped_column(String(50), nullable=False, default="normal")  # low, normal, high, urgent
 
     # Assignment (for future use)
-    assigned_to: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    assigned_to: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Metadata
     client_ip: Mapped[str] = mapped_column(String(50), nullable=True)
