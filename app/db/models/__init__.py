@@ -8,6 +8,7 @@ from app.db.models.refresh_sessions import RefreshSession
 from app.db.models.favorites import Favorite
 from app.db.models.co_organizer import CoOrganizer
 from app.db.models.contact import ContactMessage
+from app.db.models.article_analytics import ArticleView, ArticleEngagement, ArticleFeedback, ArticleSearchQuery
 
 __all__ = [  # Dunder module attribute to export
     "User",
@@ -19,5 +20,9 @@ __all__ = [  # Dunder module attribute to export
     "RefreshSession",
     "Favorite",
     "CoOrganizer",
-    "ContactMessage"
+    "ContactMessage",
+    "ArticleView",
+    "ArticleEngagement",
+    "ArticleFeedback",
+    "ArticleSearchQuery"
 ]

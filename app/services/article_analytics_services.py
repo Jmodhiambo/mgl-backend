@@ -3,45 +3,68 @@
 
 from typing import Optional
 import app.db.repositories.article_analytics_repo as article_analytics_repo
+from app.schemas.article_analytics import ArticleViewCreate, ArticleEngagementCreate, ArticleSearchClickCreate
 from app.core.logging_config import logger
 
 
-async def track_article_view_service(
-        article_slug: str,
-        user_id: int = None,
-        session_id: str = None,
-        referrer: str = None,
-        device_type: str = None,
-        time_spent_seconds: int = None,
-        scroll_depth_percent: int = None
-    ) -> dict[str, str] | None:
+async def create_article_view_service(user_id: Optional[int], client_ip: Optional[str], article_data: ArticleViewCreate) -> dict[str, str] | None:
     """Track an article view."""
-    logger.info(f"Tracking article view for {article_slug}")
-    return await article_analytics_repo.track_article_view_repo(article_slug, user_id, session_id, referrer, device_type, time_spent_seconds, scroll_depth_percent)
-
-
-async def submit_article_feedback_service(
-        article_slug: str,
-        is_helpful: bool,
-        feedback_text: str,
-        user_intent: str,
-        user_id: int = None
-    ) -> dict[str, str] | None:
-    """Submit article feedback."""
-    logger.info(f"Submitting article feedback for {article_slug}")
-    return await article_analytics_repo.submit_article_feedback_repo(
-        article_slug,
-        user_id,
-        is_helpful,
-        feedback_text,
-        user_intent
+    logger.info(f"Tracking article view for {article_data.article_slug}")
+    return await article_analytics_repo.create_article_view_repo(
+        article_slug = article_data.article_slug,
+        user_id = user_id,
+        session_id = article_data.session_id,
+        referrer = article_data.referrer,
+        device_type = article_data.device_type,
+        user_agent = article_data.user_agent,
+        screen_width = article_data.screen_width,
+        screen_height = article_data.screen_height,
+        client_ip = client_ip
     )
 
 
-async def submit_article_search_query_service(query: str, clicked_article_slug: str = None, results_count: int = None, user_id: int = None) -> dict[str, str] | None:
+async def create_article_engagement_service(user_id: Optional[int], article_data: ArticleEngagementCreate) -> dict[str, str] | None:
+    """Track an article engagement."""
+    logger.info(f"Tracking article engagement for {article_data.article_slug}")
+    return await article_analytics_repo.create_article_engagement_repo(
+        article_slug = article_data.article_slug,
+        user_id = user_id,
+        session_id = article_data.session_id,
+        time_spent_seconds = article_data.time_spent_seconds,
+        scroll_depth_percent = article_data.scroll_depth_percent
+    )
+
+async def create_article_feedback_service(
+        article_slug: str,
+        is_helpful: bool,
+        user_id: Optional[int] = None
+    ) -> dict[str, str] | None:
+    """Submit article feedback."""
+    logger.info(f"Submitting article feedback for {article_slug}")
+    return await article_analytics_repo.create_article_feedback_repo(
+        article_slug,
+        is_helpful,
+        user_id
+    )
+
+
+async def create_article_search_query_service(query: str, clicked_article_slug: Optional[str] = None, results_count: int = 0, user_id: int = None) -> dict[str, str] | None:
     """Submit article search query."""
     logger.info(f"Submitting article search query for {query}")
-    return await article_analytics_repo.submit_article_search_query_repo(query, clicked_article_slug, results_count, user_id)
+    return await article_analytics_repo.create_article_search_query_repo(query, clicked_article_slug, results_count, user_id)
+
+
+async def create_article_search_click_service(user_id: Optional[int], article_data: ArticleSearchClickCreate ) -> int:
+    """Submit article search click. And return search query id."""
+    logger.info(f"Submitting article search click for {article_data.clicked_article_slug} and {article_data.search_query_id}")
+    return await article_analytics_repo.create_article_search_click_repo(
+        search_query_id=article_data.search_query_id,
+        clicked_article_slug=article_data.clicked_article_slug,
+        clicked_article_title=article_data.clicked_article_title,
+        result_position=article_data.result_position,
+        time_to_click_seconds=article_data.time_to_click_seconds,
+        user_id=user_id
+    )
 
 
 async def get_article_stats_service(article_slug: str) -> dict[str, str] | None:
@@ -66,3 +89,15 @@ async def get_search_queries_service(limit: int = 10, days: int = 30) -> list[di
     """Get the most popular search queries in the last X days."""
     logger.info(f"Getting search queries for {days} days")
     return await article_analytics_repo.get_search_queries_repo(limit, days)
+
+
+async def get_popular_search_terms_service(limit: int = 10, days: int = 30) -> Optional[dict[str, str]]:
+    """Get the most popular search queries in the last X days."""
+    logger.info(f"Getting popular search term for {days} days")
+    return await article_analytics_repo.get_popular_search_terms_repo(limit, days)
+
+
+async def search_analytics_service(days: int = 30) -> Optional[dict[str, str]]:
+    """Get the most popular search queries in the last X days."""
+    logger.info(f"Getting search analytics for {days} days")
+    return await article_analytics_repo.search_analytics_repo(days)

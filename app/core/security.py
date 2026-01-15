@@ -2,6 +2,7 @@
 """Security for MGLTickets."""
 
 from datetime import datetime, timedelta
+from typing import Optional
 
 from fastapi import Request, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -16,7 +17,8 @@ import hashlib
 import base64
 
 # FastAPI security scheme
-bearer_scheme = HTTPBearer()
+# Auto-error is set to false because we want to handle errors ourselves
+bearer_scheme = HTTPBearer(auto_error=False)  # Makes it optional
 
 ROLE_ORGANIZER = "organizer"
 ROLE_ADMIN = "admin"
@@ -89,6 +91,18 @@ async def get_current_user(
     request.state.user = user
 
     return user
+
+async def get_current_user_optional(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
+) -> Optional[UserPublic]:
+    """
+    Same as get_current_user, but returns None if user is not authenticated.
+    Good for routes that require optional authentication like articles.
+    """
+    if not credentials:
+        return None
+    return await get_current_user(request, credentials)
 
 def require_user(user=Depends(get_current_user)) -> UserOut:
     """Require user to be authenticated to access this route."""

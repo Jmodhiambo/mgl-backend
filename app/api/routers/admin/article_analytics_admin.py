@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, Depends, status
 from typing import Optional
-from app.schemas.article_analytics import ArticleViewOut, ArticleFeedbackOut, ArticleSearchQueryOut
+from app.schemas.article_analytics import ArticleViewOut, ArticleFeedbackOut, ArticleSearchQueryOut, ArticleSearchClickOut, SearchAnalytics, PopularSearchTerm
 import app.services.article_analytics_services as aa_services
 from app.core.security import require_admin
 
@@ -32,3 +32,15 @@ async def get_articles_needing_improvement(threshold: float = 0.50, user=Depends
 async def get_search_queries(limit: int = 10, days: int = 30, user=Depends(require_admin)) -> list[ArticleSearchQueryOut]:
     """Get the most popular search queries in the last X days."""
     return await aa_services.get_search_queries_service(limit, days)
+
+
+@router.get("/admin/analytics/search-terms", response_model=list[PopularSearchTerm], status_code=status.HTTP_200_OK)
+async def get_popular_search_terms(limit: int = 10, days: int = 30, user=Depends(require_admin)) -> list[PopularSearchTerm]:
+    """Get the most popular search queries in the last X days."""
+    return await aa_services.get_popular_search_terms_service(limit, days)
+
+
+@router.get("/admin/analytics/search-clicks", response_model=list[ArticleSearchClickOut], status_code=status.HTTP_200_OK)
+async def get_search_clicks(days: int = 30, user=Depends(require_admin)) -> list[ArticleSearchClickOut]:
+    """Get the most popular search queries in the last X days."""
+    return await aa_services.search_analytics_service(days)
