@@ -18,7 +18,7 @@ class ContactMessage(Base):
     __tablename__ = "contact_messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    reference_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    reference_id: Mapped[str] = mapped_column(Integer, index=True, nullable=False)
 
     # User Information
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)

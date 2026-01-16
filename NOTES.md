@@ -24,3 +24,6 @@ Work on TicketInstance especially the service and repository layers to ensure th
 Implement early bird ticket type functionality in the backend (service and repository layers). This includes setting up the necessary database models, services, and API endpoints to handle early bird ticket types.
 
 Ensure token is refreshed whenever there is password change and new password request.
+
+
+Work on Contact Message service layer email integration to ensure that messages sent through the contact form are properly delivered to the designated email address.

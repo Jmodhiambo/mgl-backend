@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from app.db.models.refresh_sessions import RefreshSession
     from app.db.models.favorites import Favorite
     from app.db.models.co_organizer import CoOrganizer
-    from app.db.models.contact import ContactMessage
+    from app.db.models.contact_messages import ContactMessage
 
 class User(Base):
     """User model representing a user in the system."""

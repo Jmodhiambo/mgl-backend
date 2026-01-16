@@ -16,6 +16,7 @@ from app.api.routers.user.ticket_types import router as tt_router
 from app.api.routers.user.favorites import router as favorites_router   # Only in user routes
 from app.api.routers.user.co_organizer import router as co_organizer_router
 from app.api.routers.user.article_analytics import router as article_analytics_router
+from app.api.routers.user.contact_messages import router as contact_messages_router
 
 # Organizer routes
 from app.api.routers.organizer.user_organizer import router as organizer_user_router
@@ -37,6 +38,7 @@ from app.api.routers.admin.ticket_instance_admin import router as admin_ti_route
 from app.api.routers.admin.ticket_type_admin import router as admin_tt_router
 from app.api.routers.admin.co_organizer_admin import router as admin_co_organizer_router
 from app.api.routers.admin.article_analytics_admin import router as admin_article_analytics_router
+from app.api.routers.admin.contact_messages_admin import router as admin_contact_messages_router
 
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
@@ -53,6 +55,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(favorites_router, prefix="/api/v1", tags=["Favorites"])  # Only in user routes
     app.include_router(co_organizer_router, prefix="/api/v1", tags=["Co-Organizer"])
     app.include_router(article_analytics_router, prefix="/api/v1", tags=["Article Analytics"])
+    app.include_router(contact_messages_router, prefix="/api/v1", tags=["Contact Messages"])
 
     # Organizer routes
     app.include_router(organizer_user_router, prefix="/api/v1", tags=["Users-Organizer"])
@@ -73,3 +76,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(admin_tt_router, prefix="/api/v1", tags=["Ticket Type-Admin"])
     app.include_router(admin_co_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Admin"])
     app.include_router(admin_article_analytics_router, prefix="/api/v1", tags=["Article Analytics-Admin"])
+    app.include_router(admin_contact_messages_router, prefix="/api/v1", tags=["Contact Messages-Admin"])
