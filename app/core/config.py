@@ -66,3 +66,8 @@ SENDGRID_BILLING_EMAIL= config("SENDGRID_BILLING_EMAIL")
 SENDGRID_PRESS_EMAIL= config("SENDGRID_PRESS_EMAIL")
 SENDGRID_PARTNERSHIP_EMAIL= config("SENDGRID_PARTNERSHIP_EMAIL")
 SENDGRID_FROM_NAME= config("SENDGRID_FROM_NAME")
+
+# Google reCAPTCHA configuration
+RECAPTCHA_SECRET_KEY: Secret = config("RECAPTCHA_SECRET_KEY", cast=Secret)
+RECAPTCHA_VERIFY_URL: str = config("RECAPTCHA_VERIFY_URL", default="https://www.google.com/recaptcha/api/siteverify")
+MIN_RECAPTCHA_SCORE: float = config("MIN_RECAPTCHA_SCORE", cast=float, default=0.5)

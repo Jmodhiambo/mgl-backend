@@ -8,7 +8,7 @@ from app.core.logging_config import logger
 from app.schemas.contact_message import ContactMessageCreate, ContactMessageUpdate
 import app.db.repositories.contact_messages_repo as contact_repo
 from app.utils.generate_reference_id import generate_reference_id
-# from app.core.recaptcha import verify_recaptcha
+from app.core.recaptcha import verify_recaptcha
 # from app.core.email import send_contact_confirmation, send_support_notification
 
 
@@ -35,6 +35,7 @@ async def create_contact_message_service(
     recaptcha_score = await verify_recaptcha(
         token=contact_data.recaptcha_token,
         action='contact_form',
+        email=contact_data.email,
         client_ip=client_ip
     )
     
