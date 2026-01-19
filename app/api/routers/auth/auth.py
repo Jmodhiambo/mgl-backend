@@ -7,11 +7,14 @@ from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.user import UserCreate, UserOut
+from app.schemas.auth import EmailVerifyRequest, EmailVerifiyResponse, ResendVerificationRequest
 
 from app.services.user_services import (
     get_user_by_email_service,
     authenticate_user_service,
     register_user_service,
+    verify_user_email_service,
+    resend_verification_email_service
 )
 from app.services.ref_session_services import (
     create_refresh_session_service,
@@ -20,6 +23,7 @@ from app.services.ref_session_services import (
     delete_refresh_session_service,
     get_user_session_stats_service,
     cleanup_user_sessions_service
+
 )
 from app.core.security import (
     create_access_token,
@@ -44,6 +48,29 @@ async def register_user(user_data: UserCreate):
         user_data.phone_number
     )
     return user
+
+
+@router.post("/auth/verify-email", response_model=EmailVerifiyResponse, status_code=status.HTTP_200_OK)
+async def verify_user_email(user_data: EmailVerifyRequest):
+    """
+    Verify user's email address with token.
+    
+    - **token**: Verification token from email link
+    
+    Returns success message and user info if verification successful.
+    Returns 410 GONE if token expired.
+    Returns 400 BAD REQUEST if token invalid.
+    """
+    return await verify_user_email_service(user_data.token)
+
+
+@router.post("/auth/resend-verification", response_model=EmailVerifiyResponse, status_code=status.HTTP_200_OK)
+async def resend_verification_email(user_data: ResendVerificationRequest):
+    """
+    Resend verification email to user.
+    """
+    return await resend_verification_email_service(user_data.email)
+
 
 @router.post("/auth/login", response_model=dict, status_code=status.HTTP_200_OK)
 async def login(response: Response, form: OAuth2PasswordRequestForm = Depends()):

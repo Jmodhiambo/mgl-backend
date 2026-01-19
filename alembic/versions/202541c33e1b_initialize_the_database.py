@@ -1,8 +1,8 @@
-"""initial_schema_with_slug
+"""Initialize the database
 
-Revision ID: 2cf02582703b
+Revision ID: 202541c33e1b
 Revises: 
-Create Date: 2026-01-08 01:09:34.828013
+Create Date: 2026-01-18 05:16:58.188448
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2cf02582703b'
+revision: str = '202541c33e1b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -43,13 +43,65 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_table('article_engagements',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('article_slug', sa.String(length=255), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('session_id', sa.String(length=255), nullable=True),
+    sa.Column('time_spent_seconds', sa.Integer(), nullable=False),
+    sa.Column('scroll_depth_percent', sa.Integer(), nullable=False),
+    sa.Column('engaged_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_article_engagements_id'), 'article_engagements', ['id'], unique=False)
+    op.create_table('article_feedback',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('article_slug', sa.String(length=255), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('is_helpful', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_article_feedback_article_slug'), 'article_feedback', ['article_slug'], unique=False)
+    op.create_index(op.f('ix_article_feedback_id'), 'article_feedback', ['id'], unique=False)
+    op.create_table('article_search_queries',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('query', sa.String(length=255), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('results_count', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.String(length=255), nullable=True),
+    sa.Column('ip_address', sa.String(length=50), nullable=True),
+    sa.Column('user_agent', sa.String(length=255), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_article_search_queries_id'), 'article_search_queries', ['id'], unique=False)
+    op.create_index(op.f('ix_article_search_queries_query'), 'article_search_queries', ['query'], unique=False)
+    op.create_table('article_views',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('article_slug', sa.String(length=255), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('session_id', sa.String(length=255), nullable=False),
+    sa.Column('referrer', sa.String(length=255), nullable=True),
+    sa.Column('device_type', sa.String(length=50), nullable=True),
+    sa.Column('user_agent', sa.String(length=255), nullable=True),
+    sa.Column('screen_width', sa.Integer(), nullable=True),
+    sa.Column('screen_height', sa.Integer(), nullable=True),
+    sa.Column('viewed_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_article_views_id'), 'article_views', ['id'], unique=False)
     op.create_table('contact_messages',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('reference_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.String(length=50), nullable=True),
     sa.Column('email', sa.String(length=100), nullable=True),
-    sa.Column('phone_number', sa.String(length=20), nullable=True),
+    sa.Column('phone', sa.String(length=20), nullable=True),
     sa.Column('subject', sa.String(length=100), nullable=False),
     sa.Column('category', sa.String(length=50), nullable=False),
     sa.Column('message', sa.String(length=2000), nullable=False),
@@ -63,7 +115,6 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('responded_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('closed_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['assigned_to'], ['users.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -107,6 +158,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('session_id')
     )
     op.create_index(op.f('ix_refresh_sessions_session_id'), 'refresh_sessions', ['session_id'], unique=False)
+    op.create_table('article_search_clicks',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('search_query_id', sa.Integer(), nullable=False),
+    sa.Column('clicked_article_slug', sa.String(length=255), nullable=True),
+    sa.Column('clicked_article_title', sa.String(length=255), nullable=True),
+    sa.Column('result_position', sa.Integer(), nullable=True),
+    sa.Column('time_to_click_seconds', sa.Integer(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['search_query_id'], ['article_search_queries.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_article_search_clicks_id'), 'article_search_clicks', ['id'], unique=False)
     op.create_table('co_organizers',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -215,6 +278,8 @@ def downgrade() -> None:
     op.drop_table('favorites')
     op.drop_index(op.f('ix_co_organizers_id'), table_name='co_organizers')
     op.drop_table('co_organizers')
+    op.drop_index(op.f('ix_article_search_clicks_id'), table_name='article_search_clicks')
+    op.drop_table('article_search_clicks')
     op.drop_index(op.f('ix_refresh_sessions_session_id'), table_name='refresh_sessions')
     op.drop_table('refresh_sessions')
     op.drop_index(op.f('ix_events_slug'), table_name='events')
@@ -226,6 +291,16 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_contact_messages_created_at'), table_name='contact_messages')
     op.drop_index(op.f('ix_contact_messages_category'), table_name='contact_messages')
     op.drop_table('contact_messages')
+    op.drop_index(op.f('ix_article_views_id'), table_name='article_views')
+    op.drop_table('article_views')
+    op.drop_index(op.f('ix_article_search_queries_query'), table_name='article_search_queries')
+    op.drop_index(op.f('ix_article_search_queries_id'), table_name='article_search_queries')
+    op.drop_table('article_search_queries')
+    op.drop_index(op.f('ix_article_feedback_id'), table_name='article_feedback')
+    op.drop_index(op.f('ix_article_feedback_article_slug'), table_name='article_feedback')
+    op.drop_table('article_feedback')
+    op.drop_index(op.f('ix_article_engagements_id'), table_name='article_engagements')
+    op.drop_table('article_engagements')
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

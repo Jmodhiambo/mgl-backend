@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("/admin/ticket-types", response_model=TicketTypeOut)
 async def tt_admin_create_ticket_type(ticket_type_in: TicketTypeCreate, admin=Depends(require_admin)):
     """Create a new TicketType."""
-    return tt_services.create_ticket_type_service(ticket_type_in)
+    return await tt_services.create_ticket_type_service(ticket_type_in)
 
 @router.put("/admin/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
 async def tt_admin_update_ticket_type(ticket_type_id: int, ticket_type_in: TicketTypeUpdate, admin=Depends(require_admin)):

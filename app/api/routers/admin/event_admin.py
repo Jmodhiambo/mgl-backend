@@ -10,7 +10,7 @@ import app.services.event_services as event_services
 import app.services.user_services as user_services
 
 from app.core.security import require_admin
-from app.utils.images import save_flyer_and_get_url
+from app.utils.generate_image_url import save_flyer_and_get_url
 
 
 router = APIRouter()

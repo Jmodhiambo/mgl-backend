@@ -5,7 +5,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from typing import Dict, Optional
 
-from app.email.base import EmailService
+from app.emails.base import EmailService
 from app.core.config import (
     SENDGRID_API_KEY,
     SENDGRID_NO_REPLY_EMAIL,

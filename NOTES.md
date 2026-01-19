@@ -27,3 +27,5 @@ Ensure token is refreshed whenever there is password change and new password req
 
 
 Work on Contact Message service layer email integration to ensure that messages sent through the contact form are properly delivered to the designated email address.
+
+Work on ticket instance QR code generation and scanning functionality in the backend (service layer). Implement QR code generation when a ticket instance is created and ensure that the QR code can be scanned and validated during event check-in.

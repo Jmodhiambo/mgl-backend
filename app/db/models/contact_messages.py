@@ -24,7 +24,7 @@ class ContactMessage(Base):
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(50), nullable=True)
     email: Mapped[str] = mapped_column(String(100), index=True, nullable=True)
-    phone_number: Mapped[str] = mapped_column(String(20), nullable=True)
+    phone: Mapped[str] = mapped_column(String(20), nullable=True)
 
     # Message Details
     subject: Mapped[str] = mapped_column(String(100), nullable=False)

@@ -9,7 +9,7 @@ from app.schemas.user import UserOut
 import app.services.co_organizer_services as co_services
 import app.services.user_services as user_services
 from app.core.security import require_organizer, require_user
-from app.utils.images import save_profile_picture_and_get_url, delete_profile_picture
+from app.utils.generate_image_url import save_profile_picture_and_get_url, delete_profile_picture
 
 router = APIRouter()
 

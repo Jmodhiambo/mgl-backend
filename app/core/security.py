@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Security for MGLTickets."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Request, Depends, HTTPException, status
@@ -32,7 +32,7 @@ def create_access_token(user_id: int) -> str:
     
     payload = {
         "id": user_id,
-        "exp": datetime.utcnow() + timedelta(minutes=15)
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=15)
     }
 
     return jwt.encode(payload, str(SECRET_KEY), algorithm=ALGORITHM)
@@ -46,7 +46,7 @@ def create_refresh_token(user_id: int, session_id: str) -> str:
         "id": user_id,
         "sid": session_id,
         "type": "refresh",
-        "exp": datetime.utcnow() + timedelta(days=7)
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
     }
 
     return jwt.encode(payload, str(SECRET_KEY), algorithm=ALGORITHM)

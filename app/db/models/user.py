@@ -30,7 +30,12 @@ class User(Base):
     phone_number: Mapped[str] = mapped_column(String(20), nullable=False)
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
     role: Mapped[str] = mapped_column(String(50), nullable=True, default="user")  # user, organizer, admin
-    is_verified: Mapped[bool] = mapped_column(nullable=False, default=False)
+
+    # Email verification
+    email_verified: Mapped[bool] = mapped_column(nullable=False, default=False)
+    email_verification_token: Mapped[str] = mapped_column(String(255), nullable=True, unique=True)
+    email_verification_token_expires: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    email_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

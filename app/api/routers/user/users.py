@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, Depends, status
 from typing import Optional
-from app.schemas.user import UserEmailVerification, UserOut, UserUpdate, UserPasswordChange, UserPasswordUpdate, UserPublic
+from app.schemas.user import UserOut, UserUpdate, UserPasswordChange, UserPasswordUpdate
 from app.core.security import require_user
 from app.services.user_services import (
     get_user_by_id_service,
@@ -12,7 +12,6 @@ from app.services.user_services import (
     update_user_password_service,
     deactivate_user_service,
     reactivate_user_service,
-    verify_user_email_service,
     change_user_password_service
 )
 
@@ -73,10 +72,3 @@ async def reactivate_user(user=Depends(require_user)):
     Activate a user account.
     """
     return await reactivate_user_service(user.id)
-
-@router.patch("/users/me/verify-email", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def verify_user_email(data: UserEmailVerification, user=Depends(require_user)):
-    """
-    Verify a user's email.
-    """
-    return await verify_user_email_service(user.id, data.token)

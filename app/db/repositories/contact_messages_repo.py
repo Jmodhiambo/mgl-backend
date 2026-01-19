@@ -38,8 +38,8 @@ async def create_contact_message_repo(
         )
         
         session.add(contact_message)
-        session.commit()
-        session.refresh(contact_message)
+        await session.commit()
+        await session.refresh(contact_message)
         
         return ContactMessageOut.model_validate(contact_message) if contact_message else None
 
@@ -96,8 +96,8 @@ async def update_contact_message_repo(
         for field, value in update_data.dict(exclude_unset=True).items():
             setattr(contact, field, value)
         
-        session.commit()
-        session.refresh(contact)
+        await session.commit()
+        await session.refresh(contact)
         
         return ContactMessageOut.model_validate(contact)
 
@@ -105,11 +105,20 @@ async def update_contact_message_repo(
 async def get_contact_stats_repo() -> ContactMessageStats:
     """Get contact message statistics."""
     async with get_async_session() as session:
-        total = await session.execute(select(func.count(ContactMessage.id))).scalar()
-        new = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'new')).scalar()
-        responded = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'responded')).scalar()
-        closed = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'closed')).scalar()
-        spam = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'spam')).scalar()
+        total_result = await session.execute(select(func.count(ContactMessage.id)))
+        total = total_result.scalar()
+
+        new_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'new'))
+        new = new_result.scalar()
+
+        responded_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'responded'))
+        responded = responded_result.scalar()
+
+        closed_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'closed'))
+        closed = closed_result.scalar()
+
+        spam = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'spam'))
+        spam = spam.scalar()
         
         return ContactMessageStats(
             total=total or 0,
@@ -125,12 +134,13 @@ async def count_recent_messages_by_email_repo(email: str, hours: int = 1) -> int
     async with get_async_session() as session:
         time_threshold = datetime.now(timezone.utc) - timedelta(hours=hours)
         
-        return await session.execute(select(func.count(ContactMessage.id)).where(
+        result = await session.execute(select(func.count(ContactMessage.id)).where(
             and_(
                 ContactMessage.email == email,
                 ContactMessage.created_at >= time_threshold
             )
-        )).scalar() or 0
+        ))
+        return result.scalar() or 0
 
 
 async def count_recent_messages_by_ip_repo(ip_address: str, hours: int = 1) -> int:
@@ -138,9 +148,10 @@ async def count_recent_messages_by_ip_repo(ip_address: str, hours: int = 1) -> i
     async with get_async_session() as session:
         time_threshold = datetime.now(timezone.utc) - timedelta(hours=hours)
         
-        return await session.execute(select(func.count(ContactMessage.id)).where(
+        result = await session.execute(select(func.count(ContactMessage.id)).where(
             and_(
                 ContactMessage.client_ip == ip_address,
                 ContactMessage.created_at >= time_threshold
             )
-        )).scalar() or 0
+        ))
+        return result.scalar() or 0

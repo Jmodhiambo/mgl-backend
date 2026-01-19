@@ -13,7 +13,8 @@ class UserOut(BaseModelEAT):
     email: EmailStr
     phone_number: str
     role: str
-    is_verified: bool
+    email_verified: bool
+    email_verification_token_expires: datetime
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -83,7 +84,7 @@ class OrganizerOut(UserOut):
     class Config:
         from_attributes = True
 
-class UserPublic(OrganizerInfo, UserOut):
+class UserPublic(UserOut, OrganizerInfo):
     """Schema for public User data. Includes organizer info if applicable."""
     class Config:
         from_attributes = True

@@ -2,13 +2,13 @@
 """Async repository for User model operations."""
 
 from sqlalchemy import select, func
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.models.user import User
 from app.db.session import get_async_session
 from typing import Optional
 from app.schemas.user import UserOutWithPWD, UserPublic
 
-async def create_user_repo(name: str, email: str, password_hash: str, phone_number: str) -> UserPublic:
+async def create_user_repo(name: str, email: str, password_hash: str, phone_number: str, token: str, expires_at: datetime) -> UserPublic:
     """Create a new user in the database."""
     async with get_async_session() as session:
         new_user = User(
@@ -16,6 +16,8 @@ async def create_user_repo(name: str, email: str, password_hash: str, phone_numb
             email=email,
             password_hash=password_hash,
             phone_number=phone_number,
+            email_verification_token=token,
+            email_verification_token_expires=expires_at
         )
         session.add(new_user)
         await session.commit()
@@ -42,6 +44,13 @@ async def get_user_with_password_by_id_repo(user_id: int) -> Optional[UserOutWit
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         return UserOutWithPWD.model_validate(user) if user else None
+    
+async def get_user_by_verification_token_repo(token: str) -> Optional[UserPublic]:
+    """Retrieve a user by their verification token."""
+    async with get_async_session() as session:
+        result = await session.execute(select(User).where(User.email_verification_token == token))
+        user = result.scalar_one_or_none()
+        return UserPublic.model_validate(user) if user else None
 
 async def search_users_by_name_repo(name_substring: str) -> list[UserPublic]:
     """Search for users by a substring of their name."""
@@ -145,11 +154,25 @@ async def verify_user_email_repo(user_id: int) -> Optional[UserPublic]:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user:
-            user.is_verified = True
+            user.email_verified = True
+            user.email_verification_token = None
+            user.email_verification_token_expires = None
+            user.email_verified_at = datetime.now(timezone.utc)
+
             await session.commit()
             await session.refresh(user)
             return UserPublic.model_validate(user)
         return None
+
+async def update_verification_token_repo(user_id: int, token: str, expires: datetime) -> None:
+    """Update the verification token for a user."""
+    async with get_async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            user.email_verification_token = token
+            user.email_verification_token_expires = expires
+            await session.commit()
 
 async def unverify_user_email_repo(user_id: int) -> Optional[UserPublic]:
     """Mark a user's email as unverified."""
@@ -157,7 +180,9 @@ async def unverify_user_email_repo(user_id: int) -> Optional[UserPublic]:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user:
-            user.is_verified = False
+            user.email_verified = False
+            user.email_verified_at = None
+
             await session.commit()
             await session.refresh(user)
             return UserPublic.model_validate(user)

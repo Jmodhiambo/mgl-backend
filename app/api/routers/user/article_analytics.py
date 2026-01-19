@@ -3,7 +3,8 @@
 
 from fastapi import Request, APIRouter, Depends, status
 from app.schemas.article_analytics import (
-    ArticleViewOut, ArticleEngagementOut, ArticleFeedbackOut, ArticleSearchQueryOut, ArticleViewCreate, ArticleEngagementCreate, ArticleSearchClickCreate
+    ArticleViewOut, ArticleEngagementOut, ArticleFeedbackOut, ArticleSearchQueryOut,
+    ArticleViewCreate, ArticleEngagementCreate, ArticleSearchClickCreate
 )
 import app.services.article_analytics_services as aa_services
 from app.core.security import get_current_user_optional
