@@ -4,6 +4,7 @@
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from app.utils.eat_to_utc import convert_eat_to_utc
 
 def generate_verification_token() -> str:
     """Generate a secure random verification token"""
@@ -17,4 +18,6 @@ def is_token_expired(expires_at: Optional[datetime]) -> bool:
     """Check if verification token has expired"""
     if not expires_at:
         return True
-    return datetime.now(timezone.utc) > expires_at
+    
+    expires_time = convert_eat_to_utc(expires_at)
+    return datetime.now(timezone.utc) > expires_time

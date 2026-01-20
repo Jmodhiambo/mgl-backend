@@ -1,8 +1,8 @@
-"""Initialize the database
+"""Initialize the tables
 
-Revision ID: 202541c33e1b
+Revision ID: 610ad9891c11
 Revises: 
-Create Date: 2026-01-18 05:16:58.188448
+Create Date: 2026-01-20 05:43:18.703745
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '202541c33e1b'
+revision: str = '610ad9891c11'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,7 +29,10 @@ def upgrade() -> None:
     sa.Column('phone_number', sa.String(length=20), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('role', sa.String(length=50), nullable=True),
-    sa.Column('is_verified', sa.Boolean(), nullable=False),
+    sa.Column('email_verified', sa.Boolean(), nullable=False),
+    sa.Column('email_verification_token', sa.String(length=255), nullable=True),
+    sa.Column('email_verification_token_expires', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('email_verified_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('bio', sa.String(length=500), nullable=True),
@@ -39,7 +42,8 @@ def upgrade() -> None:
     sa.Column('social_media_links', sa.String(length=500), nullable=True),
     sa.Column('tax_id', sa.String(length=50), nullable=True),
     sa.Column('area_of_expertise', sa.String(length=200), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email_verification_token')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)

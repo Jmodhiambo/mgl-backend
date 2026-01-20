@@ -100,7 +100,7 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
     refresh_token = create_refresh_token(user.id, session_id)
     refresh_token_hash = hash_token(refresh_token)
 
-    expires_at = datetime.utcnow() + timedelta(days=7)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
 
     # Create a new refresh session
     await create_refresh_session_service(
