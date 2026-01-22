@@ -14,8 +14,9 @@ class UserOut(BaseModelEAT):
     phone_number: str
     role: str
     email_verified: bool
-    email_verification_token_expires: datetime
+    email_verification_token_expires: Optional[datetime]
     is_active: bool
+    password_reset_token_expires: Optional[datetime]
     created_at: datetime
     updated_at: datetime
 

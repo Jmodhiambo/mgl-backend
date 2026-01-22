@@ -51,6 +51,36 @@ async def get_user_by_verification_token_repo(token: str) -> Optional[UserPublic
         result = await session.execute(select(User).where(User.email_verification_token == token))
         user = result.scalar_one_or_none()
         return UserPublic.model_validate(user) if user else None
+    
+async def get_user_by_password_reset_token_repo(token: str) -> Optional[UserPublic]:
+    """Retrieve a user by their password reset token."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(User).where(User.password_reset_token == token)
+        )
+        user = result.scalar_one_or_none()
+        return UserPublic.model_validate(user) if user else None
+
+async def update_password_reset_token_repo(user_id: int, token: str, expires: datetime) -> None:
+    """Update the password reset token for a user."""
+    async with get_async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            user.password_reset_token = token
+            user.password_reset_token_expires = expires
+            await session.commit()
+
+
+async def clear_password_reset_token_repo(user_id: int) -> None:
+    """Clear the password reset token for a user."""
+    async with get_async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            user.password_reset_token = None
+            user.password_reset_token_expires = None
+            await session.commit()
 
 async def search_users_by_name_repo(name_substring: str) -> list[UserPublic]:
     """Search for users by a substring of their name."""

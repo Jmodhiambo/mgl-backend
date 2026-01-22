@@ -7,25 +7,28 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from passlib.hash import argon2
 from app.core.logging_config import logger
-from app.utils.email_verification import (
+from app.utils.token_verification import (
     generate_verification_token, create_verification_token_expiry, is_token_expired
 )
+# from app.emails.templates.verification_email import send_verification_email
+# from app.emails.templates.password_reset_email import send_password_reset_email, send_password_changed_notification_email
+# from app.emails.templates.account_reactivation_email import send_account_reactivated_email
 
 async def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
     """Create a new user and return the user"""
     logger.info("Registering user...")
 
     if len(name) < 3:  # Ensure name is at least 3 chars long
-        raise ValueError("Name must be at least 3 characters long.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name must be at least 3 characters long.")
     
     if '@' not in email or '.' not in email:
-        raise ValueError("Invalid email format.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format.")
     
     if len(password) < 8:  # Ensure password is at least 8 chars long
-        raise ValueError("Password must be at least 8 characters long.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters long.")
     
     if await user_repo.get_user_by_email_repo(email):  # Check if the email exists
-        raise ValueError(f"The email {email} already exists! Please use a different email.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists.")
     
     password_hash = argon2.hash(password)
 
@@ -50,14 +53,14 @@ async def authenticate_user_service(user_id: int, email: str, password: str) -> 
     logger.info(f"Authenticating user with ID: {user_id}")
 
     if '@' not in email or '.' not in email:
-        raise ValueError("Invalid email format.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format.")
     
     user = await user_repo.get_user_with_password_by_id_repo(user_id)
     if not user:
-        raise ValueError("User not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
     
     if not argon2.verify(password, user.password_hash):
-        raise ValueError("Invalid password.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
     
     return user.__dict__.pop("password_hash")  # Remove password from response
 
@@ -68,7 +71,7 @@ async def get_user_by_email_service(email: str) -> Optional[dict]:
 
     if not user:
         logger.error("User not found.")
-        raise ValueError("User not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
     return user
 
@@ -163,7 +166,7 @@ async def change_user_password_service(user_id: int, old_password: str, new_pass
             detail="Old password is incorrect."
         )
     
-    update_user_password_service(user_id, new_password)
+    await update_user_password_service(user_id, new_password)
     logger.info(f"Password changed successfully for user with ID: {user_id}")
 
     # Send email notification about password change
@@ -219,7 +222,7 @@ async def verify_user_email_service(token: str) -> dict:
         )
 
     # Verify user email
-    verified_user = await user_repo.verify_user_email_repo(user)
+    verified_user = await user_repo.verify_user_email_repo(user.id)
     
     logger.info(f"Email verified successfully for user: {verified_user.email}")
     
@@ -260,7 +263,7 @@ async def resend_verification_email_service(email: str) -> dict:
     expires_at = create_verification_token_expiry(hours=24)
 
     # Update user with an new token
-    await user_repo.update_verification_token_repo(user, new_token, expires_at)
+    await user_repo.update_verification_token_repo(user.id, new_token, expires_at)
 
     # Send verification email
     # email_sent = await send_verification_email(
@@ -288,6 +291,178 @@ async def unverify_user_email_service(user_id: int) -> dict:
     """Unverify a user's email."""
     logger.info(f"Unverifying email of user with ID: {user_id}")
     return await user_repo.unverify_user_email_repo(user_id)
+
+async def request_password_reset_service(email: str) -> dict:
+    """Request a password reset for a user."""
+    logger.info(f"Password reset requested for email: {email}")
+    
+    # Get user by email
+    user = await user_repo.get_user_by_email_repo(email)
+    
+    if not user:
+        # Don't reveal if user exists for security purposes
+        logger.warning(f"Password reset requested for non-existent email: {email}")
+        return {
+            "success": True,
+            "message": "If an account exists with this email, a password reset link has been sent."
+        }
+    
+    # Check if user is active
+    if not user.is_active:
+        logger.warning(f"Password reset requested for inactive user: {email}")
+        return {
+            "success": True,
+            "message": "If an account exists with this email, a password reset link has been sent."
+        }
+    
+    # Generate reset token
+    reset_token = generate_verification_token()
+    expires_at = create_verification_token_expiry(hours=1)  # Token expires in 1 hour
+    
+    # Update user with reset token
+    await user_repo.update_password_reset_token_repo(user.id, reset_token, expires_at)
+    
+    # Send password reset email
+    # email_sent = await send_password_reset_email(
+    #     to_email=user.email,
+    #     name=user.name,
+    #     reset_token=reset_token
+    # )
+    
+    # if not email_sent:
+    #     logger.error(f"Failed to send password reset email to: {email}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail="Failed to send password reset email. Please try again later."
+    #     )
+    
+    logger.info(f"Password reset email sent successfully to: {email}")
+    
+    return {
+        "success": True,
+        "message": "If an account exists with this email, a password reset link has been sent."
+    }
+
+
+async def reset_password_with_token_service(token: str, new_password: str) -> dict:
+    """Reset password using a valid reset token."""
+    logger.info(f"Password reset attempt with token: {token[:10]}...")
+    
+    # Validate password length
+    if len(new_password) < 8:
+        logger.warning("Password reset failed: password too short")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long."
+        )
+    
+    # Get user by reset token
+    user = await user_repo.get_user_by_password_reset_token_repo(token)
+    
+    if not user:
+        logger.warning(f"Invalid password reset token: {token[:10]}...")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token."
+        )
+    
+    # Check if user is active
+    if not user.is_active:
+        logger.warning(f"Password reset attempted for inactive user: {user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive. Please contact support."
+        )
+    
+    # Check if token is expired
+    if is_token_expired(user.password_reset_token_expires):
+        logger.warning(f"Password reset token expired for user: {user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Password reset token has expired. Please request a new one."
+        )
+    
+    # Get user with password to check if new password is same as old
+    user_with_pwd = await user_repo.get_user_with_password_by_id_repo(user.id)
+    
+    if argon2.verify(new_password, user_with_pwd.password_hash):
+        logger.warning(f"User {user.email} tried to reset to same password")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be the same as your current password."
+        )
+    
+    # Hash new password
+    new_password_hash = argon2.hash(new_password)
+    
+    # Update password
+    await user_repo.update_user_password_repo(user.id, new_password_hash)
+    
+    # Clear reset token
+    await user_repo.clear_password_reset_token_repo(user.id)
+    
+    logger.info(f"Password reset successfully for user: {user.email}")
+    
+    # Send password change notification email
+    # await send_password_changed_notification_email(user.email, user.name)
+    
+    return {
+        "success": True,
+        "message": "Password has been reset successfully. You can now log in with your new password."
+    }
+
+
+async def reactivate_account_service(email: str, password: str) -> dict:
+    """Reactivate a deactivated user account."""
+    logger.info(f"Account reactivation requested for email: {email}")
+    
+    # Validate email format
+    if '@' not in email or '.' not in email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email format."
+        )
+    
+    # Get user by email
+    user = await user_repo.get_user_by_email_repo(email)
+    
+    if not user:
+        logger.warning(f"Reactivation attempted for non-existent email: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+    
+    # Check if user is already active
+    if user.is_active:
+        logger.warning(f"Reactivation attempted for already active user: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account is already active. Please log in."
+        )
+    
+    # Verify password
+    user_with_pwd = await user_repo.get_user_with_password_by_id_repo(user.id)
+    
+    if not argon2.verify(password, user_with_pwd.password_hash):
+        logger.warning(f"Incorrect password for reactivation attempt: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password."
+        )
+    
+    # Reactivate user
+    await user_repo.reactivate_user_repo(user.id)
+    
+    logger.info(f"Account reactivated successfully for user: {email}")
+    
+    # Send account reactivation email
+    # await send_account_reactivated_email(user.email, user.name)
+    
+    return {
+        "success": True,
+        "message": "Your account has been reactivated successfully. You can now log in."
+    }
 
 async def list_verified_users_service() -> list[dict]:
     """List verified users."""

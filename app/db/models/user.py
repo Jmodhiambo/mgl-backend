@@ -37,6 +37,10 @@ class User(Base):
     email_verification_token_expires: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     email_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Password reseting
+    password_reset_token: Mapped[str] = mapped_column(String(255), nullable=True, unique=True)
+    password_reset_token_expires: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

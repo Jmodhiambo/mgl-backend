@@ -35,3 +35,26 @@ class EmailVerifiyResponse(BaseModelEAT):
 
     class Config:
         from_attributes = True
+
+
+class ForgotPasswordRequest(BaseModelEAT):
+    """Schema for forgot password request."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModelEAT):
+    """Schema for reset password request."""
+    token: str
+    new_password: str
+
+
+class ReactivateAccountRequest(BaseModelEAT):
+    """Schema for reactivate account request."""
+    email: EmailStr
+    password: str
+
+
+class PasswordResetResponse(BaseModelEAT):
+    """Schema for password reset response."""
+    success: bool
+    message: str

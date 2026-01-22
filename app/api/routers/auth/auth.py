@@ -7,14 +7,19 @@ from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.user import UserCreate, UserOut
-from app.schemas.auth import EmailVerifyRequest, EmailVerifiyResponse, ResendVerificationRequest
-
+from app.schemas.auth import (
+    EmailVerifyRequest, EmailVerifiyResponse, ResendVerificationRequest,
+    ForgotPasswordRequest, ResetPasswordRequest, ReactivateAccountRequest, PasswordResetResponse
+)
 from app.services.user_services import (
     get_user_by_email_service,
     authenticate_user_service,
     register_user_service,
     verify_user_email_service,
-    resend_verification_email_service
+    resend_verification_email_service,
+    request_password_reset_service,
+    reset_password_with_token_service,
+    reactivate_account_service
 )
 from app.services.ref_session_services import (
     create_refresh_session_service,
@@ -80,10 +85,11 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
     # OAuth2PasswordRequestForm has username and password, so email in this case is username.
     email = form.username
     user = await get_user_by_email_service(email)
-    if not user:
+
+    if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user",
         )
 
     if not await authenticate_user_service(user.id, email, form.password):
@@ -236,6 +242,47 @@ async def refresh_token(request: Request, response: Response):
         "expires_in": 3600,
     }
 
+router.post("/auth/forgot-password", response_model=PasswordResetResponse, status_code=status.HTTP_200_OK)
+async def forgot_password(request_data: ForgotPasswordRequest):
+    """
+    Request a password reset link.
+    
+    - **email**: User's email address
+    
+    Returns success message. For security, always returns success even if email doesn't exist.
+    """
+    return await request_password_reset_service(request_data.email)
+
+
+@router.post("/auth/reset-password", response_model=PasswordResetResponse, status_code=status.HTTP_200_OK)
+async def reset_password(request_data: ResetPasswordRequest):
+    """
+    Reset password using token from email.
+    
+    - **token**: Password reset token from email link
+    - **new_password**: New password (minimum 8 characters)
+    
+    Returns success message if password reset successful.
+    Returns 410 GONE if token expired.
+    Returns 400 BAD REQUEST if token invalid or password requirements not met.
+    """
+    return await reset_password_with_token_service(request_data.token, request_data.new_password)
+
+
+@router.post("/auth/reactivate", response_model=PasswordResetResponse, status_code=status.HTTP_200_OK)
+async def reactivate_account(request_data: ReactivateAccountRequest):
+    """
+    Reactivate a deactivated account.
+    
+    - **email**: User's email address
+    - **password**: User's password
+    
+    Returns success message if account reactivated successfully.
+    Returns 404 NOT FOUND if user doesn't exist.
+    Returns 400 BAD REQUEST if account is already active.
+    Returns 401 UNAUTHORIZED if password is incorrect.
+    """
+    return await reactivate_account_service(request_data.email, request_data.password)
 
 @router.post("/auth/logout")
 async def logout(request: Request, response: Response, user=Depends(require_user)):
