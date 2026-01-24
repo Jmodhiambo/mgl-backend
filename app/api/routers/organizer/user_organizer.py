@@ -4,9 +4,6 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut, OrganizerInfo
-from app.schemas.co_organizer import CoOrganizerOut
-from app.schemas.user import UserOut
-import app.services.co_organizer_services as co_services
 import app.services.user_services as user_services
 from app.core.security import require_organizer, require_user
 from app.utils.generate_image_url import save_profile_picture_and_get_url, delete_profile_picture

@@ -19,7 +19,8 @@ from app.services.user_services import (
     resend_verification_email_service,
     request_password_reset_service,
     reset_password_with_token_service,
-    reactivate_account_service
+    reactivate_account_service,
+    deactivate_user_service
 )
 from app.services.ref_session_services import (
     create_refresh_session_service,
@@ -242,7 +243,7 @@ async def refresh_token(request: Request, response: Response):
         "expires_in": 3600,
     }
 
-router.post("/auth/forgot-password", response_model=PasswordResetResponse, status_code=status.HTTP_200_OK)
+@router.post("/auth/forgot-password", response_model=PasswordResetResponse, status_code=status.HTTP_200_OK)
 async def forgot_password(request_data: ForgotPasswordRequest):
     """
     Request a password reset link.
@@ -265,6 +266,7 @@ async def reset_password(request_data: ResetPasswordRequest):
     Returns success message if password reset successful.
     Returns 410 GONE if token expired.
     Returns 400 BAD REQUEST if token invalid or password requirements not met.
+    Returns 403 FORBIDDEN if user is inactive.
     """
     return await reset_password_with_token_service(request_data.token, request_data.new_password)
 
@@ -282,7 +284,15 @@ async def reactivate_account(request_data: ReactivateAccountRequest):
     Returns 400 BAD REQUEST if account is already active.
     Returns 401 UNAUTHORIZED if password is incorrect.
     """
-    return await reactivate_account_service(request_data.email, request_data.password)
+    return await reactivate_account_service(request_data.email)
+
+
+@router.patch("/auth/deactivate", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_user(user=Depends(require_user)):
+    """
+    Deactivate a user account.
+    """
+    await deactivate_user_service(user.id)
 
 @router.post("/auth/logout")
 async def logout(request: Request, response: Response, user=Depends(require_user)):

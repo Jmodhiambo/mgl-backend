@@ -7,6 +7,7 @@ from app.db.models.user import User
 from app.db.session import get_async_session
 from typing import Optional
 from app.schemas.user import UserOutWithPWD, UserPublic
+from app.core.logging_config import logger
 
 async def create_user_repo(name: str, email: str, password_hash: str, phone_number: str, token: str, expires_at: datetime) -> UserPublic:
     """Create a new user in the database."""
@@ -44,6 +45,7 @@ async def get_user_with_password_by_id_repo(user_id: int) -> Optional[UserOutWit
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         return UserOutWithPWD.model_validate(user) if user else None
+
     
 async def get_user_by_verification_token_repo(token: str) -> Optional[UserPublic]:
     """Retrieve a user by their verification token."""
@@ -101,7 +103,7 @@ async def update_user_role_repo(user_id: int, new_role: str) -> Optional[UserPub
             return UserPublic.model_validate(user)
         return None
 
-async def deactivate_user_repo(user_id: int) -> Optional[UserPublic]:
+async def deactivate_user_repo(user_id: int) -> bool:
     """Deactivate a user account."""
     async with get_async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
@@ -110,8 +112,8 @@ async def deactivate_user_repo(user_id: int) -> Optional[UserPublic]:
             user.is_active = False
             await session.commit()
             await session.refresh(user)
-            return UserPublic.model_validate(user)
-        return None
+            return True
+        return False
 
 async def delete_user_repo(user_id: int) -> bool:
     """Delete a user from the database."""

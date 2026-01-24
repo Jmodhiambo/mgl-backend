@@ -36,9 +36,8 @@ class UserCreate(BaseModelEAT):
 class UserUpdate(BaseModelEAT):
     """Schema for updating an existing User."""
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    # email: Optional[EmailStr] = None
     phone_number: Optional[str] = None
-    role: Optional[str] = None
 
     class Config:
         from_attributes = True

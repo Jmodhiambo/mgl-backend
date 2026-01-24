@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.get("/organizers/me/events/{event_id}/bookings", response_model=list[BookingOut])
 async def get_bookings_by_event_organizer(event_id: int, organizer=Depends(require_organizer)):
-    """Get Bookings for a specific event for organizers."""
+    """Get Bookings for a specific event for an organizer."""
     return await booking_services.list_bookings_by_event_id_service(event_id)
 
 @router.get("/organizers/me/bookings/{booking_id}", response_model=BookingOut)

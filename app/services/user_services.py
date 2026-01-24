@@ -10,9 +10,14 @@ from app.core.logging_config import logger
 from app.utils.token_verification import (
     generate_verification_token, create_verification_token_expiry, is_token_expired
 )
+from app.schemas.user import (
+    UserOut, UserUpdate
+)
+from app.services.ref_session_services import cleanup_user_sessions_service
 # from app.emails.templates.verification_email import send_verification_email
 # from app.emails.templates.password_reset_email import send_password_reset_email, send_password_changed_notification_email
 # from app.emails.templates.account_reactivation_email import send_account_reactivated_email
+# from app.emails.templates.account_deactivation_email import send_account_deactivated_email
 
 async def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
     """Create a new user and return the user"""
@@ -57,7 +62,7 @@ async def authenticate_user_service(user_id: int, email: str, password: str) -> 
     
     user = await user_repo.get_user_with_password_by_id_repo(user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found. Auth Request Failed.")
     
     if not argon2.verify(password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
@@ -66,7 +71,6 @@ async def authenticate_user_service(user_id: int, email: str, password: str) -> 
 
 async def get_user_by_email_service(email: str) -> Optional[dict]:
     """Retrieve a user by email."""
-    logger.info("Getting user by email...")
     user = await user_repo.get_user_by_email_repo(email)
 
     if not user:
@@ -75,7 +79,7 @@ async def get_user_by_email_service(email: str) -> Optional[dict]:
 
     return user
 
-async def get_user_by_id_service(user_id: int) -> Optional[dict]:
+async def get_user_by_id_service(user_id: int) -> Optional[UserOut]:
     """Retrieve a user by ID."""
     logger.info(f"Getting user by ID for user with ID: {user_id}")
     return await user_repo.get_user_by_id_repo(user_id)
@@ -102,17 +106,18 @@ async def update_user_role_service(user_id: int, new_role: str) -> dict:
 async def update_user_info_service(user_id: int, info: dict) -> dict:
     """Update a user's contact information."""
     logger.info(f"Updating contact information of user with ID: {user_id}")
-    if info.get("email"):
-        if '@' not in info["email"] or '.' not in info["email"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid email format."
-            )
-        if await user_repo.get_user_by_email_repo(info["email"]):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"The email {info['email']} already exists! Please use a different email."
-            )
+
+    # if info.get("email"):
+    #     if '@' not in info["email"] or '.' not in info["email"]:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_400_BAD_REQUEST,
+    #             detail="Invalid email format."
+    #         )
+    #     if await user_repo.get_user_by_email_repo(info["email"]):
+    #         raise HTTPException(
+    #             status_code=status.HTTP_400_BAD_REQUEST,
+    #             detail=f"The email {info['email']} already exists! Please use a different email."
+    #         )
     
     return await user_repo.update_user_info_repo(user_id, info)
 
@@ -120,16 +125,6 @@ async def delete_user_service(user_id: int) -> bool:
     """Delete a user by ID."""
     logger.info(f"Deleting user with ID: {user_id}")
     return await user_repo.delete_user_repo(user_id)
-
-async def deactivate_user_service(user_id: int) -> Optional[dict]:
-    """Deactivate a user account."""
-    logger.info(f"Deactivating a user account with ID: {user_id}")
-    return await user_repo.deactivate_user_repo(user_id)
-
-async def reactivate_user_service(user_id: int) -> Optional[dict]:
-    """Reactivate a user account."""
-    logger.info(f"Reactivating user account with ID: {user_id}")
-    return await user_repo.reactivate_user_repo(user_id)
 
 async def update_user_password_service(user_id: int, new_password: str) -> None:
     """Update a user's password."""
@@ -140,10 +135,10 @@ async def update_user_password_service(user_id: int, new_password: str) -> None:
             detail="Password must be at least 8 characters long."
         )
     
-    user = user_repo.get_user_with_password_by_id_repo(user_id)
+    user = await user_repo.get_user_with_password_by_id_repo(user_id)
     if not user:
         logger.error(f"User with ID {user_id} not found.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found here.")
 
     if argon2.verify(new_password, user.password_hash):
         logger.warning("New password cannot be the same as the current password.")
@@ -158,7 +153,12 @@ async def update_user_password_service(user_id: int, new_password: str) -> None:
 
 async def change_user_password_service(user_id: int, old_password: str, new_password: str) -> None:
     """Change a user's password."""
-    user = user_repo.get_user_with_password_by_id_repo(user_id)
+    user = await user_repo.get_user_with_password_by_id_repo(user_id)
+
+    if not user:
+        logger.error(f"User with ID {user_id} not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found in the database.")
+    
     if not argon2.verify(old_password, user.password_hash):
         logger.warning(f"Old password is incorrect for user with ID: {user_id}.")
         raise HTTPException(
@@ -171,6 +171,7 @@ async def change_user_password_service(user_id: int, old_password: str, new_pass
 
     # Send email notification about password change
     # send_password_change_email_success(user_id)
+
 
 async def count_users_by_role_service(role: str) -> int:
     """Count users by their role."""
@@ -304,7 +305,7 @@ async def request_password_reset_service(email: str) -> dict:
         logger.warning(f"Password reset requested for non-existent email: {email}")
         return {
             "success": True,
-            "message": "If an account exists with this email, a password reset link has been sent."
+            "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
         }
     
     # Check if user is active
@@ -312,7 +313,7 @@ async def request_password_reset_service(email: str) -> dict:
         logger.warning(f"Password reset requested for inactive user: {email}")
         return {
             "success": True,
-            "message": "If an account exists with this email, a password reset link has been sent."
+            "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
         }
     
     # Generate reset token
@@ -340,7 +341,7 @@ async def request_password_reset_service(email: str) -> dict:
     
     return {
         "success": True,
-        "message": "If an account exists with this email, a password reset link has been sent."
+        "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
     }
 
 
@@ -412,7 +413,17 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
     }
 
 
-async def reactivate_account_service(email: str, password: str) -> dict:
+async def deactivate_user_service(user_id: int) -> None:
+    """Deactivate a user account."""
+    logger.info(f"Deactivating a user account with ID: {user_id}")
+    response = await user_repo.deactivate_user_repo(user_id)
+
+    if not response:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User account deactivation failed.")
+    
+    logger.info(f"User account with ID: {user_id} has been deactivated.")
+
+async def reactivate_account_service(email: str) -> dict:
     """Reactivate a deactivated user account."""
     logger.info(f"Account reactivation requested for email: {email}")
     
@@ -439,16 +450,6 @@ async def reactivate_account_service(email: str, password: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account is already active. Please log in."
-        )
-    
-    # Verify password
-    user_with_pwd = await user_repo.get_user_with_password_by_id_repo(user.id)
-    
-    if not argon2.verify(password, user_with_pwd.password_hash):
-        logger.warning(f"Incorrect password for reactivation attempt: {email}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password."
         )
     
     # Reactivate user

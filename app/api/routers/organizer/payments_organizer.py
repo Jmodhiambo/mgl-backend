@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Organizer-Payment routes for MGLTickets."""
 
-"""I do not see the need why an organizer should be able to see payments, since they alredy see the bookings they have made.
-    I also do not see the need to see the payments for a specific event, since the organizer can see the bookings for that event."""
+"""
+I do not see the need why an organizer should be able to see payments, since they already see the bookings made plus the status of the booking.
+I also do not see the need for an organizer to see the payments for a specific event, since the organizer can see the bookings for that event.
+"""
 # from fastapi import APIRouter, Depends
 # from app.schemas.payment import PaymentOut
 # import app.services.payment_services as payment_services

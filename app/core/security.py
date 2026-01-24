@@ -27,7 +27,7 @@ ENCODED_SECRET_KEY = str(SECRET_KEY).encode("utf-8")  # Convert to bytes from Se
 
 def create_access_token(user_id: int) -> str:
     """Create an access token valid for 15 minutes."""
-    if not "user_id":
+    if not user_id:
         raise ValueError("Token payload must contain user_id")
     
     payload = {
@@ -39,7 +39,7 @@ def create_access_token(user_id: int) -> str:
 
 def create_refresh_token(user_id: int, session_id: str) -> str:
     """Create refresh token valid for 7 days."""
-    if not "user_id":
+    if not user_id:
         raise ValueError("Token payload must contain user_id")
     
     payload = {
@@ -86,6 +86,9 @@ async def get_current_user(
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive. Please contact support.")
 
     # Attach user to request state - picked up by logging middleware
     request.state.user = user

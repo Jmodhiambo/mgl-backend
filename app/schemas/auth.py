@@ -51,7 +51,6 @@ class ResetPasswordRequest(BaseModelEAT):
 class ReactivateAccountRequest(BaseModelEAT):
     """Schema for reactivate account request."""
     email: EmailStr
-    password: str
 
 
 class PasswordResetResponse(BaseModelEAT):

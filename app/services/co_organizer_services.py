@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Service layer fot the CoOrganizer model in MGLTickets."""
+"""Service layer for the CoOrganizer model in MGLTickets."""
 
 import app.db.repositories.co_organizer_repo as co_repo
 from app.schemas.co_organizer import CoOrganizerOut
