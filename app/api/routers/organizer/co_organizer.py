@@ -12,11 +12,11 @@ router = APIRouter()
 
 
 @router.post("/organizers/me/co-organizers", response_model=CoOrganizerOut, status_code=status.HTTP_201_CREATED)
-async def create_co_organizer(user_id: int, event_id: int, organizer=Depends(require_organizer)):
+async def create_co_organizer(email: str, event_id: int, organizer=Depends(require_organizer)):
     """Create a new co-organizer."""
     invited_by = organizer.id
     organizer_id = organizer.id
-    return await co_services.create_co_organizer_service(user_id, organizer_id, event_id, invited_by)
+    return await co_services.create_co_organizer_service(email, organizer_id, event_id, invited_by)
 
 @router.patch("/organizers/me/co-organizers/{co_organizer_id}", status_code=status.HTTP_200_OK)
 async def update_create_co_organizer_status(co_organizer_id: int, create_co_organizer: bool, organizer=Depends(require_organizer)):

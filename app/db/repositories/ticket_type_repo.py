@@ -76,3 +76,27 @@ async def list_ticket_types_event_id_repo(
         )
         ticket_types = result.scalars().all()
         return [TicketTypeOut.model_validate(tt) for tt in ticket_types]
+    
+
+async def check_if_ticket_type_has_instances_repo(ticket_type_id: int) -> bool:
+    """Check if a TicketType has any associated ticket instances to avoid deletion and mark as inactive instead."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(TicketType).where(TicketType.ticket_instances.any(id=ticket_type_id) and TicketType.is_active == True)
+        )
+        ticket_instances = result.scalars().all()
+        return True if ticket_instances else False
+    
+
+async def update_ticket_type_status_repo(ticket_type_id: int, is_active: bool) -> Optional[TicketTypeOut]:
+    """Update the status of a TicketType record."""
+    async with get_async_session() as session:
+        ticket_type = await session.get(TicketType, ticket_type_id)
+        if not ticket_type:
+            return None
+
+        ticket_type.is_active = is_active
+        session.add(ticket_type)
+        await session.commit()
+        await session.refresh(ticket_type)
+        return TicketTypeOut.model_validate(ticket_type)

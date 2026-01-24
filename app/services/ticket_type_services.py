@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Service layer for TicketType operations."""
 
+from fastapi import HTTPException, status
 from typing import Optional
 import app.db.repositories.ticket_type_repo as tt_repo
 from app.schemas.ticket_type import TicketTypeCreate, TicketTypeUpdate
@@ -36,12 +37,20 @@ async def update_ticket_type_service(ticket_type_id: int, ticket_type_in: Ticket
 
 async def delete_ticket_type_service(ticket_type_id: int) -> bool:
     """Service to delete a TicketType by ID."""
+    # Check if the ticket type has ticket instances. If so make it inactive instead of deleting it.
+    ticket_type = await tt_repo.check_if_ticket_type_has_instances_repo(ticket_type_id)
+    if ticket_type:
+        logger.warning(f"TicketType with ID {ticket_type_id} has ticket instances and cannot be deleted, but has been marked as inactive and will not have any future bookings.")
+        await tt_repo.update_ticket_type_status_repo(ticket_type_id, False)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="TicketType has bookings and cannot be deleted, but has been marked as inactive and will not have any future bookings.")
+
     logger.info(f"Deleting TicketType with ID: {ticket_type_id}")
     success = await tt_repo.delete_ticket_type_repo(ticket_type_id)
     if success:
         logger.info(f"Deleted TicketType with ID: {ticket_type_id}")
     else:
         logger.warning(f"TicketType with ID {ticket_type_id} not found for deletion")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TicketType not found")
     return success
 
 async def list_ticket_types_by_event_id_service(event_id: int) -> list[dict]:

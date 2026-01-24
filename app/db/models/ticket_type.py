@@ -24,6 +24,7 @@ class TicketType(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)  # i.e Standard, VIP, Early Bird, VVIP, Regular
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, default=None)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
     quantity_available: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity_sold: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -48,4 +49,4 @@ class TicketType(Base):
     ticket_instances: Mapped[list["TicketInstance"]] = relationship("TicketInstance", back_populates="ticket_type")
 
     def __repr__(self) -> str:
-        return f"<TicketType id={self.id} event_id={self.event_id} name={self.name} price={self.price} available_quantity={self.available_quantity} created_at={self.created_at} updated_at={self.updated_at}>"
+        return f"<TicketType id={self.id} event_id={self.event_id} name={self.name} price={self.price} available_quantity={self.quantity_available} created_at={self.created_at} updated_at={self.updated_at}>"

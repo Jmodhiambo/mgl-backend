@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """Service layer for the CoOrganizer model in MGLTickets."""
 
+from fastapi import HTTPException, status
 import app.db.repositories.co_organizer_repo as co_repo
 from app.schemas.co_organizer import CoOrganizerOut
 from typing import Optional
 from datetime import datetime
+from app.db.repositories.user_repo import get_user_by_email_repo
 from app.core.logging_config import logger
 
-async def create_co_organizer_service(user_id: int, organizer_id: int, event_id: int, invited_by: int) -> CoOrganizerOut:
+async def create_co_organizer_service(email: str, organizer_id: int, event_id: int, invited_by: int) -> CoOrganizerOut:
     """Create a new event co-organizer in the database."""
-    logger.info(f"Creating a new co-organizer for user with ID: {user_id}, organizer with ID: {organizer_id}, and event with ID: {event_id}")
-    return await co_repo.create_co_organizer_repo(user_id=user_id, organizer_id=organizer_id, event_id=event_id, invited_by=invited_by)
+    # Get the user
+    user = await get_user_by_email_repo(email=email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        
+    logger.info(f"Creating a new co-organizer for user with Email: {email}, organizer with ID: {organizer_id}, and event with ID: {event_id}")
+
+    return await co_repo.create_co_organizer_repo(user_id=user.id, organizer_id=organizer_id, event_id=event_id, invited_by=invited_by)
 
 async def get_co_organizer_by_id_service(co_organizer_id: int) -> Optional[CoOrganizerOut]:
     """Get a co-organizer by ID."""
