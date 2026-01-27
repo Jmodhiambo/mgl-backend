@@ -25,7 +25,7 @@ class TicketType(Base):
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, default=None)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
-    quantity_available: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity_sold: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

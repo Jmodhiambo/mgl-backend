@@ -52,3 +52,12 @@ async def get_user_co_organizing_events_repo(user_id: int) -> Optional[list[CoOr
         result = await session.execute(select(CoOrganizer).where(CoOrganizer.user_id == user_id))
         co_organizers = result.scalars().unique().all()
         return [CoOrganizerOut.model_validate(co_organizer) for co_organizer in co_organizers]
+
+    
+async def check_if_co_organizer_repo(user_id: int, event_id: int) -> bool:
+    """Check if a user is a co-organizer for an event."""
+    async with get_async_session() as session:
+        result = await session.execute(select(CoOrganizer).where(CoOrganizer.user_id == user_id).where(CoOrganizer.event_id == event_id))
+        co_organizer = result.scalars().unique().one_or_none()
+        
+        return True if co_organizer else False

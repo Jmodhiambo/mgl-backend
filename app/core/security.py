@@ -62,7 +62,7 @@ def decode_token(token: str) -> dict:
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-) -> UserPublic:
+) -> UserOut:
     """
     Extract token from Authorization header, decode it, load user,
     and attach user to request.state.
@@ -113,19 +113,19 @@ def require_user(user=Depends(get_current_user)) -> UserOut:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required to access this route.")
     return user
 
-def require_organizer(user=Depends(get_current_user)) -> UserPublic:
+def require_organizer(user=Depends(get_current_user)) -> UserOut:
     """Require user to be at least an organizer to access this route."""
     if user.role != ROLE_ORGANIZER:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an organizer to access this route.")
     return user
 
-def require_admin(user=Depends(get_current_user)) -> UserPublic:
+def require_admin(user=Depends(get_current_user)) -> UserOut:
     """Require user to be an admin to access this route."""
     if user.role != ROLE_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be an admin to access this route.")
     return user
 
-def require_superadmin(user=Depends(get_current_user)) -> UserPublic:
+def require_superadmin(user=Depends(get_current_user)) -> UserOut:
     """Require user to be a superadmin to access this route."""
     if user.role != ROLE_SYSADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be a superadmin to access this route.")

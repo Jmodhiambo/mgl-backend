@@ -8,17 +8,44 @@ from typing import Optional
 from datetime import datetime
 from app.db.repositories.user_repo import get_user_by_email_repo
 from app.core.logging_config import logger
+from app.utils.token_verification import generate_verification_token
+# from app.emails.templates.co_organizer_invitation_email import {
+#    send_co_organizer_invitation_email_to_non_existing_user, send_co_organizer_invitation_email_to_existing_user
+# }
 
 async def create_co_organizer_service(email: str, organizer_id: int, event_id: int, invited_by: int) -> CoOrganizerOut:
     """Create a new event co-organizer in the database."""
     # Get the user
     user = await get_user_by_email_repo(email=email)
+
+    # Generate activation token
+    #token = generate_verification_token()
     if not user:
+        logger.info(f"User with Email: {email} not found. Sending invitation email...")
+        # Send an email iniviting the user to create an account
+        # send_co_organizer_invitation_email_to_non_existing_user(
+        #     to_email=user.email,
+        #     to_name=user.name,
+        #     inviter_name=inviter.name,
+        #     event_title=event.title,
+        #     event_id=event_id,
+        #     activation_token=token
+        # )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    # Check if the user is already a co-organizer
+    if await co_repo.check_if_co_organizer_repo(user_id=user.id, event_id=event_id):
+        logger.info(f"User with Email: {email} is already a co-organizer for event with ID: {event_id}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a co-organizer")
         
     logger.info(f"Creating a new co-organizer for user with Email: {email}, organizer with ID: {organizer_id}, and event with ID: {event_id}")
 
-    return await co_repo.create_co_organizer_repo(user_id=user.id, organizer_id=organizer_id, event_id=event_id, invited_by=invited_by)
+    result = await co_repo.create_co_organizer_repo(user_id=user.id, organizer_id=organizer_id, event_id=event_id, invited_by=invited_by)
+    if result:
+        # Send an email iniviting the user to create an account
+        # send_co_organizer_invitation_email_to_existing_user(email=email, invited_by=invited_by)
+        pass
+    return result
 
 async def get_co_organizer_by_id_service(co_organizer_id: int) -> Optional[CoOrganizerOut]:
     """Get a co-organizer by ID."""

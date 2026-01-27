@@ -230,14 +230,14 @@ async def list_active_users_repo() -> list[UserPublic]:
 async def list_verified_users_repo() -> list[UserPublic]:
     """List all verified users in the database."""
     async with get_async_session() as session:
-        result = await session.execute(select(User).where(User.is_verified == True))
+        result = await session.execute(select(User).where(User.email_verified == True))
         users = result.scalars().all()
         return [UserPublic.model_validate(user) for user in users]
 
 async def list_unverified_users_repo() -> list[UserPublic]:
     """List all unverified users in the database."""
     async with get_async_session() as session:
-        result = await session.execute(select(User).where(User.is_verified == False))
+        result = await session.execute(select(User).where(User.email_verified == False))
         users = result.scalars().all()
         return [UserPublic.model_validate(user) for user in users]
 
@@ -250,13 +250,13 @@ async def count_active_users_repo() -> int:
 async def count_verified_users_repo() -> int:
     """Count the number of verified users."""
     async with get_async_session() as session:
-        result = await session.execute(select(func.count()).select_from(User).where(User.is_verified == True))
+        result = await session.execute(select(func.count()).select_from(User).where(User.email_verified == True))
         return result.scalar_one()
 
 async def count_unverified_users_repo() -> int:
     """Count the number of unverified users."""
     async with get_async_session() as session:
-        result = await session.execute(select(func.count()).select_from(User).where(User.is_verified == False))
+        result = await session.execute(select(func.count()).select_from(User).where(User.email_verified == False))
         return result.scalar_one()
 
 async def list_users_created_after_repo(date_time: datetime) -> list[UserPublic]:

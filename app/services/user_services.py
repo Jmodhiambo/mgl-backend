@@ -11,7 +11,7 @@ from app.utils.token_verification import (
     generate_verification_token, create_verification_token_expiry, is_token_expired
 )
 from app.schemas.user import (
-    UserOut, UserUpdate
+    UserOut, UserUpdate, UserPublic
 )
 from app.services.ref_session_services import cleanup_user_sessions_service
 # from app.emails.templates.verification_email import send_verification_email
@@ -79,7 +79,7 @@ async def get_user_by_email_service(email: str) -> Optional[dict]:
 
     return user
 
-async def get_user_by_id_service(user_id: int) -> Optional[UserOut]:
+async def get_user_by_id_service(user_id: int) -> Optional[UserPublic]:
     """Retrieve a user by ID."""
     logger.info(f"Getting user by ID for user with ID: {user_id}")
     return await user_repo.get_user_by_id_repo(user_id)

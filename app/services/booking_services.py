@@ -120,3 +120,8 @@ async def list_bookings_in_date_range_service(start_date: datetime, end_date: da
     """Service to list bookings within a specific date range."""
     logger.info("Listing bookings in date range", extra={"extra": {"start_date": start_date, "end_date": end_date}})
     return await booking_repo.list_bookings_in_date_range_repo(start_date, end_date)
+
+async def get_recent_bookings_by_organizer_service(organizer_id: int, limit: int = 10) -> list[dict]:
+    """Service to list the most recent bookings for a specific organizer."""
+    logger.info("Listing recent bookings by organizer", extra={"extra": {"organizer_id": organizer_id, "limit": limit}})
+    return await booking_repo.get_recent_bookings_by_organizer_repo(organizer_id, limit)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Async Repository for Event model operations."""
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from sqlalchemy import select, func
@@ -323,3 +323,129 @@ async def get_events_by_country_repo(country: str) -> list[EventOut]:
         stmt = select(Event).where(Event.country.ilike(f"%{country}%"))
         events = (await session.scalars(stmt)).all()
         return [EventOut.model_validate(event) for event in events]
+    
+
+async def count_events_by_organizer_repo(organizer_id: int) -> int:
+    """Count total events created by an organizer."""    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Event)
+            .where(Event.organizer_id == organizer_id)
+            .where(Event.status != 'deleted')
+        )
+        return result.scalar_one()
+
+
+async def count_active_events_by_organizer_repo(organizer_id: int) -> int:
+    """Count currently active/ongoing events by an organizer."""    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Event)
+            .where(Event.organizer_id == organizer_id)
+            .where(Event.start_time <= datetime.now(timezone.utc),
+                  Event.end_time >= datetime.now(timezone.utc))
+        )
+        return result.scalar_one()
+
+
+async def count_upcoming_events_by_organizer_repo(organizer_id: int) -> int:
+    """Count upcoming events by an organizer."""    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Event)
+            .where(Event.organizer_id == organizer_id)
+            .where(Event.status == 'upcoming')
+        )
+        return result.scalar_one()
+
+
+async def count_completed_events_by_organizer_repo(organizer_id: int) -> int:
+    """Count completed events by an organizer."""    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Event)
+            .where(Event.organizer_id == organizer_id)
+            .where(Event.status == 'completed')
+        )
+        return result.scalar_one()
+
+
+async def count_events_created_this_month_repo(organizer_id: int) -> int:
+    """Count events created by organizer in current month."""    
+    # Get first day of current month
+    now = datetime.now(timezone.utc)
+    first_day_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Event)
+            .where(Event.organizer_id == organizer_id)
+            .where(Event.created_at >= first_day_of_month)
+            .where(Event.status != 'deleted')
+        )
+        return result.scalar_one()
+
+
+async def count_events_created_last_month_repo(organizer_id: int) -> int:
+    """Count events created by organizer in previous month."""    
+    # Get first and last day of previous month
+    now = datetime.now(timezone.utc)
+    first_day_of_current_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    last_day_of_previous_month = first_day_of_current_month - timedelta(days=1)
+    first_day_of_previous_month = datetime(
+        last_day_of_previous_month.year,
+        last_day_of_previous_month.month,
+        1,
+        tzinfo=timezone.utc
+    )
+    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Event)
+            .where(Event.organizer_id == organizer_id)
+            .where(Event.created_at >= first_day_of_previous_month)
+            .where(Event.created_at < first_day_of_current_month)
+            .where(Event.status != 'deleted')
+        )
+        return result.scalar_one()
+    
+
+async def get_top_events_by_organizer_repo(organizer_id: int, limit: int = 5) -> list:
+    """Get top performing events by revenue for an organizer."""
+    from app.db.models.booking import Booking
+    
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(
+                Event.id,
+                Event.title,
+                func.count(Booking.id).label('bookings'),
+                func.sum(Booking.total_price).label('revenue'),
+                func.sum(Booking.quantity).label('tickets_sold')
+            )
+            .select_from(Event)
+            .join(Booking, Event.id == Booking.event_id)
+            .where(Event.organizer_id == organizer_id)
+            .where(Booking.status == 'confirmed')
+            .group_by(Event.id, Event.title)
+            .order_by(func.sum(Booking.total_price).desc())
+            .limit(limit)
+        )
+        
+        top_events = []
+        for event_id, title, bookings, revenue, tickets_sold in result:
+            top_events.append({
+                'id': event_id,
+                'title': title,
+                'bookings': bookings,
+                'revenue': revenue if revenue else 0,
+                'tickets_sold': tickets_sold if tickets_sold else 0
+            })
+        
+        return top_events

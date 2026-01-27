@@ -2,7 +2,7 @@
 """Async repository for TicketType model operations."""
 
 from typing import Optional, List
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.session import get_async_session
 from app.db.models.ticket_type import TicketType
 from app.schemas.ticket_type import (
@@ -66,7 +66,7 @@ async def delete_ticket_type_repo(ticket_type_id: int) -> bool:
         return True
 
 
-async def list_ticket_types_event_id_repo(
+async def list_ticket_types_by_event_id_repo(
     event_id: int,
 ) -> List[TicketTypeOut]:
     """List all TicketTypes for a given Event ID."""
@@ -100,3 +100,25 @@ async def update_ticket_type_status_repo(ticket_type_id: int, is_active: bool) -
         await session.commit()
         await session.refresh(ticket_type)
         return TicketTypeOut.model_validate(ticket_type)
+    
+
+async def count_available_tickets_by_event_repo(event_id: int) -> int:
+    """Count available tickets for an event."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.sum(TicketType.total_quantity))
+            .select_from(TicketType)
+            .where(TicketType.event_id == event_id)
+        )
+        return result.scalar_one()
+    
+
+async def count_tickets_sold_by_event_id_repo(event_id: int) -> int:
+    """Count total tickets sold for an event."""
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.sum(TicketType.quantity_sold))
+            .select_from(TicketType)
+            .where(TicketType.event_id == event_id)
+        )
+        return result.scalar_one()

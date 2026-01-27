@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post("/organizers/me/events/{event_id}/co-organizers/{email}", response_model=CoOrganizerOut, status_code=status.HTTP_201_CREATED)
-async def create_co_organizer(email: str, event_id: int, organizer=Depends(require_organizer)):
+async def create_co_organizer(event_id: int, email: str, organizer=Depends(require_organizer)):
     """Create a new co-organizer."""
     invited_by = organizer.id
     organizer_id = organizer.id

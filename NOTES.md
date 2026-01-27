@@ -31,3 +31,5 @@ Work on Contact Message service layer email integration to ensure that messages 
 Work on ticket instance QR code generation and scanning functionality in the backend (service layer). Implement QR code generation when a ticket instance is created and ensure that the QR code can be scanned and validated during event check-in.
 
 Integrate account reactivation token just like the email verification token to allow users to reactivate their accounts after deactivation. Like {url}/reactivate-account?token=xxxx which is sent to their email.
+
+Work on the event repo to be able to auto update event status based on current date and event start and end dates. For example, if the current date is past the event end date, the event status should be updated to "completed".

@@ -3,11 +3,14 @@
 
 from datetime import datetime
 from app.schemas.base import BaseModelEAT
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-# from app.schemas.user import UserOut
-# from app.schemas.booking import BookingOut
-# from app.schemas.ticket_type import TicketTypeOut
+if TYPE_CHECKING:
+    from app.schemas.ticket_type import TicketTypeOut
+    from app.schemas.booking import BookingOut
+    # from app.schemas.user import UserOut
+
+
 
 class EventOut(BaseModelEAT):
     """Base schema for Event."""
@@ -24,9 +27,6 @@ class EventOut(BaseModelEAT):
     status: str
     created_at: datetime
     updated_at: datetime
-    # organizer: UserOut
-    # bookings: list[BookingOut] = []
-    # ticket_types: list[TicketTypeOut] = []
 
     class Config:
         from_attributes = True
@@ -56,6 +56,37 @@ class EventUpdate(BaseModelEAT):
     venue: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class EventStats(BaseModelEAT):
+    total_bookings: int
+    total_revenue: float
+    tickets_sold: int
+    tickets_remaining: int
+
+    class Config:
+        from_attributes = True
+
+
+class EventDetails(BaseModelEAT):
+    event: EventOut
+    stats: EventStats
+    ticket_types: list[TicketTypeOut]
+    recent_bookings: list[BookingOut]
+
+    class Config:
+        from_attributes = True
+
+
+class TopEvent(BaseModelEAT):
+    id: int
+    title: str
+    bookings: int
+    revenue: float
+    tickets_sold: int
 
     class Config:
         from_attributes = True

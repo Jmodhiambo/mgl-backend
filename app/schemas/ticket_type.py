@@ -16,6 +16,7 @@ class TicketTypeOut(BaseModelEAT):
     name: str
     description: Optional[str] = None
     price: int
+    is_active: bool = True
     quantity_available: int
     quantity_sold: int
     created_at: datetime
@@ -33,6 +34,7 @@ class TicketTypeCreate(BaseModelEAT):
     name: str
     description: Optional[str] = None
     price: int
+    is_active: Optional[bool] = True
     quantity_available: int
 
     class Config:
@@ -43,6 +45,7 @@ class TicketTypeUpdate(BaseModelEAT):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[int] = None
+    is_active: Optional[bool] = None
     quantity_available: Optional[int] = None
 
     class Config:

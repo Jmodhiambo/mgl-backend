@@ -3,8 +3,10 @@
 
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
-from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut, OrganizerInfo
+from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut, OrganizerInfo, UserOut
+from app.schemas.organizer import DashboardStats, TopEvent, RecentBooking
 import app.services.user_services as user_services
+import app.services.user_organizer_services as user_organizer_services
 from app.core.security import require_organizer, require_user
 from app.utils.generate_image_url import save_profile_picture_and_get_url, delete_profile_picture
 
@@ -12,11 +14,27 @@ router = APIRouter()
 
 ROLE_ORGANIZER = "organizer"
 
-@router.patch("/organizers/me/promote", response_model=OrganizerOut, status_code=status.HTTP_201_CREATED)
+
+@router.get("/organizers/me", response_model=OrganizerOut, status_code=status.HTTP_200_OK)
+async def get_organizer_info(organizer: UserOut = Depends(require_organizer)):
+    """Get the info of the current organizer."""
+    return await user_services.get_user_by_id_service(organizer.id)
+
+
+@router.get("/organizers/me/stats", response_model=DashboardStats, status_code=status.HTTP_200_OK)
+async def get_organizer_stats(organizer: UserOut = Depends(require_organizer)):
+    """
+    Get the stats of the current organizer.
+    Return total events, bookings, revenue, etc.
+    """    
+    return await user_organizer_services.get_organizer_stats_service(organizer.id)
+
+
+@router.patch("/organizers/me/promote", response_model=OrganizerOut, status_code=status.HTTP_201_CREATED)#
 async def upgrade_user_to_organizer(
     data: OrganizerCreate,
     profile_picture: Optional[UploadFile] = File(None),
-    user=Depends(require_user)
+    user: UserOut = Depends(require_user)
 ):
     """Promote a regular user to an organizer."""
     # Check if user is already an organizer
@@ -35,25 +53,24 @@ async def upgrade_user_to_organizer(
     return await user_services.update_user_info_service(user.id, organizer_data)
 
 
-@router.get("/organizers/me/profile", response_model=OrganizerOut, status_code=status.HTTP_200_OK)
-async def get_organizer_profile(user=Depends(require_organizer)):
-    """Get the profile of the current organizer."""  
-    return await user_services.get_user_by_id_service(user.id)
-
-
 @router.patch("/organizers/me/profile-update", response_model=OrganizerOut, status_code=status.HTTP_200_OK)
 async def update_organizer_profile(
     data: OrganizerUpdate,
     profile_picture: Optional[UploadFile] = File(None),
-    user=Depends(require_organizer)
+    user: UserOut = Depends(require_organizer)
 ):
     """Update the profile of the current organizer."""
     data_dict = data.model_dump()  # Convert to dict to modify
+
+    # Get full organizer info
+    organizer = await user_services.get_user_by_id_service(user.id)
+
+    # Update profile picture
     if profile_picture:
 
-        if user.profile_picture_url:
+        if organizer.profile_picture_url:
             # Delete the old profile picture
-            await delete_profile_picture(user.profile_picture_url)
+            await delete_profile_picture(organizer.profile_picture_url)
 
         profile_picture_url = await save_profile_picture_and_get_url(profile_picture)
         data_dict["profile_picture_url"] = profile_picture_url
@@ -63,17 +80,19 @@ async def update_organizer_profile(
 
 
 @router.delete("/organizers/me/profile-picture", response_model=bool, status_code=status.HTTP_200_OK)
-async def delete_organizer_profile_picture(user=Depends(require_organizer)):
+async def delete_organizer_profile_picture(user: UserOut = Depends(require_organizer)):
     """Delete the profile picture of the current organizer."""
+    # Get the full organizer info
+    organizer = await user_services.get_user_by_id_service(user.id)
 
-    if not user.profile_picture_url:
+    if not organizer.profile_picture_url:
         raise HTTPException(status_code=400, detail="No profile picture to delete.")
 
     # Delete the profile picture
-    await delete_profile_picture(user.profile_picture_url)
+    await delete_profile_picture(organizer.profile_picture_url)
 
     # Update user info to remove profile picture URL
     updated_data = {"profile_picture_url": None}
-    await user_services.update_user_info_service(user.id, OrganizerUpdate(**updated_data))
+    await user_services.update_user_info_service(organizer.id, OrganizerUpdate(**updated_data))
 
     return True
