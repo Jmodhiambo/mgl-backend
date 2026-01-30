@@ -3,14 +3,7 @@
 
 from datetime import datetime
 from app.schemas.base import BaseModelEAT
-from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from app.schemas.ticket_type import TicketTypeOut
-    from app.schemas.booking import BookingOut
-    # from app.schemas.user import UserOut
-
-
+from typing import Optional
 
 class EventOut(BaseModelEAT):
     """Base schema for Event."""
@@ -62,6 +55,7 @@ class EventUpdate(BaseModelEAT):
 
 
 class EventStats(BaseModelEAT):
+    """Schema for outputting Event stats."""
     total_bookings: int
     total_revenue: float
     tickets_sold: int
@@ -71,7 +65,40 @@ class EventStats(BaseModelEAT):
         from_attributes = True
 
 
+class TicketTypeOut(BaseModelEAT):
+    """Schema for outputting TicketType data."""
+    id: int
+    event_id: int
+    name: str
+    description: Optional[str] = None
+    price: int
+    is_active: bool = True
+    quantity_available: int
+    quantity_sold: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class BookingOut(BaseModelEAT):
+    """Schema for outputting Booking data."""
+    id: int
+    user_id: int
+    ticket_type_id: int
+    quantity: int
+    status: str
+    total_price: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class EventDetails(BaseModelEAT):
+    """Schema for outputting Event details."""
     event: EventOut
     stats: EventStats
     ticket_types: list[TicketTypeOut]
@@ -82,6 +109,7 @@ class EventDetails(BaseModelEAT):
 
 
 class TopEvent(BaseModelEAT):
+    """Schema for outputting TopEvent data."""
     id: int
     title: str
     bookings: int
@@ -90,3 +118,14 @@ class TopEvent(BaseModelEAT):
 
     class Config:
         from_attributes = True
+
+
+# Rebuild models after changes. Imported here to avoid circular imports
+EventOut.model_rebuild()
+TicketTypeOut.model_rebuild()
+BookingOut.model_rebuild()
+EventCreate.model_rebuild()
+EventCreateWithFlyer.model_rebuild()
+EventUpdate.model_rebuild()
+EventStats.model_rebuild()
+EventDetails.model_rebuild()

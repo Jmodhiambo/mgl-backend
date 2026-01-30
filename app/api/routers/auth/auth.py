@@ -85,7 +85,7 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
     """
     # OAuth2PasswordRequestForm has username and password, so email in this case is username.
     email = form.username
-    user = await get_user_by_email_service(email)
+    user: UserOut = await get_user_by_email_service(email)
 
     if not user.is_active:
         raise HTTPException(
