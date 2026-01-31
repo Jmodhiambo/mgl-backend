@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.config import ENVIRONMENT
+from app.core.config import ENVIRONMENT, COOKIE_DOMAIN
 from app.schemas.user import UserCreate, UserOut
 from app.schemas.auth import (
     EmailVerifyRequest, EmailVerifiyResponse, ResendVerificationRequest,
@@ -127,8 +127,8 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
         value=refresh_token,
         httponly=True,
         secure=True if IS_PRODUCTION else False,        # False impotart for localhost and True for production
-        samesite=None if IS_PRODUCTION else "lax",
-        domain=".mgltickets.com" if IS_PRODUCTION else None,  # No domain in dev
+        samesite="none" if IS_PRODUCTION else "lax",
+        domain=COOKIE_DOMAIN,  # No domain in dev
         path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -237,8 +237,8 @@ async def refresh_token(request: Request, response: Response):
         value=new_refresh_token,
         httponly=True,
         secure=True if IS_PRODUCTION else False,  # False impotart for localhost and True for production
-        samesite=None if IS_PRODUCTION else "lax",
-        domain=".mgltickets.com" if IS_PRODUCTION else None,  # No domain in dev
+        samesite="none" if IS_PRODUCTION else "lax",
+        domain=COOKIE_DOMAIN,  # No domain in dev
         path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
