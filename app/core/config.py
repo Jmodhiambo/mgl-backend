@@ -4,8 +4,8 @@
 from starlette.config import Config
 from starlette.datastructures import Secret
 
-# Load environment variables from a .env file
-config = Config(".env")
+# Load environment variables from a .env.development file in dev and a .env.production file in production
+config = Config(".env.development")
 
 # App settings
 APP_NAME: str = config("APP_NAME", default="MGLTickets API")
@@ -41,17 +41,20 @@ ALEMBIC_DATABASE_URL: str = config (
 # Optional SQLAlchemy settings
 SQLALCHEMY_ECHO: bool = config("SQLALCHEMY_ECHO", cast=bool, default=False)
 
+#Environment
+ENVIRONMENT: str = config("ENVIRONMENT", default="development")
+
 # Other secrets
 SECRET_KEY: str = config("SECRET_KEY", cast=Secret)
 ALGORITHM: str = config("ALGORITHM", default="HS256")
 
 # Frontend URL
-FRONTEND_URL: str = config("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL: str = config("FRONTEND_URL", default="https://mgltickets.com")
 
 # CORS settings
 ALLOWED_ORIGINS: list[str] = config(
     "ALLOWED_ORIGINS",
-    default="http://localhost:3000,http://127.0.0.1:3000"
+    default="https://mgltickets.com,https://organizer.mgltickets.com,https://admin.mgltickets.com",
 ).split(",")
 
 # Upload directories

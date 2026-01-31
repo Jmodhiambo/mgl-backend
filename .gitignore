@@ -22,7 +22,7 @@ backend/app/logs/*
 .pytest_cache/
 
 # Environment variables file
-.env
+.env*
 
 # SQLite development database
 dev.db

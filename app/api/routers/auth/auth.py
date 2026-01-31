@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
+from app.core.config import ENVIRONMENT
 from app.schemas.user import UserCreate, UserOut
 from app.schemas.auth import (
     EmailVerifyRequest, EmailVerifiyResponse, ResendVerificationRequest,
@@ -39,6 +40,9 @@ from app.core.security import (
     verify_token,
     require_user
 )
+
+# Determine environment
+IS_PRODUCTION: bool = True if ENVIRONMENT == "production" else False
 
 router = APIRouter()
 
@@ -84,7 +88,7 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
     Authenticate user and return an access token along with a refresh token cookie.
     """
     # OAuth2PasswordRequestForm has username and password, so email in this case is username.
-    email = form.username
+    email: str = form.username
     user: UserOut = await get_user_by_email_service(email)
 
     if not user.is_active:
@@ -122,9 +126,10 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,        # False impotart for localhost and True for production
-        samesite="lax",
-        # domain=".localhost", # Change to ".mgltickets.com" when deployed
+        secure=True if IS_PRODUCTION else False,        # False impotart for localhost and True for production
+        samesite=None if IS_PRODUCTION else "lax",
+        domain=".mgltickets.com" if IS_PRODUCTION else None,  # No domain in dev
+        path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
 
@@ -231,9 +236,10 @@ async def refresh_token(request: Request, response: Response):
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=False,        # False impotart for localhost and True for production
-        samesite="lax",
-        # domain=".localhost", # Change to ".mgltickets.com" when deployed
+        secure=True if IS_PRODUCTION else False,  # False impotart for localhost and True for production
+        samesite=None if IS_PRODUCTION else "lax",
+        domain=".mgltickets.com" if IS_PRODUCTION else None,  # No domain in dev
+        path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
       
