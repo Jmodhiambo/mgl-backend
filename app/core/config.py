@@ -3,7 +3,6 @@
 
 from starlette.config import Config
 from starlette.datastructures import Secret
-from typing import Optional
 
 # Load environment variables from a .env.development file in dev and a .env.production file in production
 config = Config(".env.development")
@@ -44,7 +43,7 @@ SQLALCHEMY_ECHO: bool = config("SQLALCHEMY_ECHO", cast=bool, default=False)
 
 #Environment and cookie domain
 ENVIRONMENT: str = config("ENVIRONMENT", default="development")
-COOKIE_DOMAIN: Optional[str] = config("COOKIE_DOMAIN", default=None)
+COOKIE_DOMAIN: str = config("COOKIE_DOMAIN", default=".mgltickets.com")
 
 # Other secrets
 SECRET_KEY: str = config("SECRET_KEY", cast=Secret)

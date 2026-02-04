@@ -126,9 +126,9 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True if IS_PRODUCTION else False,        # False impotart for localhost and True for production
+        secure=IS_PRODUCTION,        # False impotart for localhost and True for production
         samesite="none" if IS_PRODUCTION else "lax",
-        domain=COOKIE_DOMAIN,  # No domain in dev
+        domain=COOKIE_DOMAIN,  # .mgltickets.local in dev, .mgltickets.com in prod
         path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
@@ -234,11 +234,11 @@ async def refresh_token(request: Request, response: Response):
     # Set HttpOnlyCookie in response header
     response.set_cookie(
         key="refresh_token",
-        value=new_refresh_token,
+        value=refresh_token,
         httponly=True,
-        secure=True if IS_PRODUCTION else False,  # False impotart for localhost and True for production
+        secure=IS_PRODUCTION,        # False impotart for localhost and True for production
         samesite="none" if IS_PRODUCTION else "lax",
-        domain=COOKIE_DOMAIN,  # No domain in dev
+        domain=COOKIE_DOMAIN,  # .mgltickets.local in dev, .mgltickets.com in prod
         path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
