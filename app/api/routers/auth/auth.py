@@ -4,14 +4,16 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.config import ENVIRONMENT, COOKIE_DOMAIN
+from app.core.config import COOKIE_DOMAIN
 from app.schemas.user import UserCreate, UserOut
 from app.schemas.auth import (
     EmailVerifyRequest, EmailVerifiyResponse, ResendVerificationRequest,
     ForgotPasswordRequest, ResetPasswordRequest, ReactivateAccountRequest, PasswordResetResponse
 )
+from app.utils.eat_to_utc import convert_eat_to_utc
 from app.services.user_services import (
     get_user_by_email_service,
     authenticate_user_service,
@@ -40,9 +42,6 @@ from app.core.security import (
     verify_token,
     require_user
 )
-
-# Determine environment
-IS_PRODUCTION: bool = True if ENVIRONMENT == "production" else False
 
 router = APIRouter()
 
@@ -121,24 +120,29 @@ async def login(response: Response, form: OAuth2PasswordRequestForm = Depends())
         expires_at=expires_at,
     )
 
+    # Create response with cookie
+    response = JSONResponse(
+        content={
+            "message": "Login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": 900,  # 15 minutes
+        }
+    )
+
     # Set HttpOnlyCookie in response header
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=IS_PRODUCTION,        # False impotart for localhost and True for production
-        samesite="none" if IS_PRODUCTION else "lax",
+        secure=True,       # TRUE for HTTPS
+        samesite="none",    # NONe for cross-subdomain
         domain=COOKIE_DOMAIN,  # .mgltickets.local in dev, .mgltickets.com in prod
         path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
 
-    return {
-        "message": "Login successful",
-        "access_token": access_token,
-        "token_type": "bearer",
-        "expires_in": 900,  # 15 minutes
-    }
+    return response
 
 @router.post("/auth/refresh")
 async def refresh_token(request: Request, response: Response):
@@ -182,7 +186,7 @@ async def refresh_token(request: Request, response: Response):
 
     # Check if this session was just rotated (within last 5 seconds)
     if session.revoked_at:
-        time_since_revoked = datetime.now(timezone.utc) - session.revoked_at
+        time_since_revoked = datetime.now(timezone.utc) - convert_eat_to_utc(session.revoked_at)
         if time_since_revoked.total_seconds() < 5:
             # This might be a race condition - allow it and return the new session
             new_session = await get_refresh_session_service(session_id)
@@ -231,23 +235,29 @@ async def refresh_token(request: Request, response: Response):
     # Revoke older session for later deletion
     await revoke_refresh_session_service(session_id, new_session_id)
 
+    # Create response with cookie
+    response = JSONResponse(
+        content={
+            "message": "Login successful",
+            "access_token": create_access_token(user_id),
+            "token_type": "bearer",
+            "expires_in": 900,  # 15 minutes
+        }
+    )
+
     # Set HttpOnlyCookie in response header
     response.set_cookie(
         key="refresh_token",
-        value=refresh_token,
+        value=new_refresh_token,
         httponly=True,
-        secure=IS_PRODUCTION,        # False impotart for localhost and True for production
-        samesite="none" if IS_PRODUCTION else "lax",
+        secure=True,       # TRUE for HTTPS
+        samesite="none",    # NONe for cross-subdomain
         domain=COOKIE_DOMAIN,  # .mgltickets.local in dev, .mgltickets.com in prod
         path="/",
         max_age=7 * 24 * 60 * 60  # 7 days
     )
-      
-    return {
-        "access_token": create_access_token(user_id),
-        "token_type": "bearer",
-        "expires_in": 3600,
-    }
+
+    return response
 
 @router.post("/auth/forgot-password", response_model=PasswordResetResponse, status_code=status.HTTP_200_OK)
 async def forgot_password(request_data: ForgotPasswordRequest):

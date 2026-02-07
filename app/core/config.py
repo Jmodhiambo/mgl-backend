@@ -55,7 +55,7 @@ FRONTEND_URL: str = config("FRONTEND_URL", default="https://mgltickets.com")
 # CORS settings
 ALLOWED_ORIGINS: list[str] = config(
     "ALLOWED_ORIGINS",
-    default="https://mgltickets.com,https://organizer.mgltickets.com,https://admin.mgltickets.com",
+    default="http://mgltickets.local:3000,http://organizer.mgltickets.local:3001,http://admin.mgltickets.local:3002",
 ).split(",")
 
 # Upload directories
