@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Base email class for MGLTickets."""
 
-from abc import ABC ,abstractmethod
+from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
 class BaseEmail(ABC):

@@ -25,6 +25,13 @@ async def get_booking_by_id_service(booking_id: int) -> Optional[dict]:
         logger.warning(f"Booking with ID {booking_id} not found")
     return booking
 
+async def get_bookings_by_ids_service(ids: list[int]) -> list[dict]:
+    """Service to retrieve a list of bookings by their IDs."""
+    logger.info("Retrieving bookings by IDs", extra={"extra": {"ids": ids}})
+    bookings = await booking_repo.get_booking_by_ids_repo(ids)
+    logger.info(f"Retrieved {len(bookings)} bookings")
+    return bookings
+
 async def update_booking_service(booking_id: int, booking_data: BookingUpdate) -> Optional[dict]:
     """Service to update an existing booking."""
     logger.info("Updating booking", extra={"extra": {"booking_id": booking_id}})

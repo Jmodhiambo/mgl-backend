@@ -31,6 +31,13 @@ async def get_booking_by_id_repo(booking_id: int) -> Optional[BookingOut]:
         booking = await session.get(Booking, booking_id)
         return BookingOut.model_validate(booking) if booking else None
 
+async def get_bookings_by_ids_repo(ids: list[int]) -> list[BookingOut]:
+    """Retrieve a list of bookings by their IDs."""
+    async with get_async_session() as session:
+        result = await session.execute(select(Booking).where(Booking.id.in_(ids)))
+        bookings = result.scalars().all()
+        return [BookingOut.model_validate(booking) for booking in bookings]
+
 
 async def update_booking_repo(booking_id: int, booking_data: BookingUpdate) -> Optional[BookingOut]:
     """Update an existing booking."""

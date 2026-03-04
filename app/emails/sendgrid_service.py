@@ -15,24 +15,36 @@ from app.core.config import (
     SENDGRID_PARTNERSHIP_EMAIL,
     SENDGRID_FROM_NAME
 )
+from app.core.logging_config import logger
 
-def email_sender(sender):
-    if sender == "no_reply":
-        return SENDGRID_NO_REPLY_EMAIL
-    elif sender == "support":
-        return SENDGRID_SUPPORT_EMAIL
-    elif sender == "billing":
-        return SENDGRID_BILLING_EMAIL
-    elif sender == "press":
-        return SENDGRID_PRESS_EMAIL
-    elif sender == "partnership":
-        return SENDGRID_PARTNERSHIP_EMAIL
-    else:
-        return SENDGRID_SUPPORT_EMAIL
+
+def get_sender_email(sender: str) -> str:
+    """
+    Get sender email based on sender type.
+    
+    Args:
+        sender: Sender type ('no_reply', 'support', 'billing', 'press', 'partnership')
+    
+    Returns:
+        Email address for the sender type
+    """
+    sender_map = {
+        "no_reply": SENDGRID_NO_REPLY_EMAIL,
+        "support": SENDGRID_SUPPORT_EMAIL,
+        "billing": SENDGRID_BILLING_EMAIL,
+        "press": SENDGRID_PRESS_EMAIL,
+        "partnership": SENDGRID_PARTNERSHIP_EMAIL
+    }
+    return sender_map.get(sender, SENDGRID_SUPPORT_EMAIL)
+
 
 class SendGridEmailService(EmailService):
+    """SendGrid email service implementation."""
+    
     def __init__(self) -> None:
+        """Initialize SendGrid client."""
         self.client = SendGridAPIClient(api_key=SENDGRID_API_KEY)
+        logger.info("SendGrid email service initialized")
 
     def send_email(
         self,
@@ -41,12 +53,53 @@ class SendGridEmailService(EmailService):
         html_content: str,
         template_data: Optional[Dict] = None
     ) -> None:
-        message = Mail(
-            from_email=email_sender(template_data.get("from_email")),
-            from_name=SENDGRID_FROM_NAME,
-            to_emails=to_email,
-            subject=subject,
-            html_content=html_content
-        )
-
-        self.client.send(message)
+        """
+        Send email using SendGrid.
+        
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            html_content: HTML email content
+            template_data: Additional template data (contains 'from_email' key)
+        
+        Raises:
+            Exception: If email sending fails
+        """
+        # Determine sender
+        from_email_type = 'no_reply'
+        if template_data and 'from_email' in template_data:
+            from_email_type = template_data['from_email']
+        
+        from_email = get_sender_email(from_email_type)
+        
+        # If SendGrid is not configured, just log
+        if not self.client:
+            logger.info(f"[SENDGRID NOT CONFIGURED] Would send email:")
+            logger.info(f"  From: {from_email} ({SENDGRID_FROM_NAME})")
+            logger.info(f"  To: {to_email}")
+            logger.info(f"  Subject: {subject}")
+            logger.info(f"  Content length: {len(html_content)} characters")
+            return
+        
+        try:
+            # Create email message
+            message = Mail(
+                from_email=(from_email, SENDGRID_FROM_NAME),
+                to_emails=to_email,
+                subject=subject,
+                html_content=html_content
+            )
+            
+            # Send email
+            response = self.client.send(message)
+            
+            # Check response
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"Email sent successfully to {to_email} (Status: {response.status_code})")
+            else:
+                logger.error(f"SendGrid returned status {response.status_code}: {response.body}")
+                raise Exception(f"SendGrid error: {response.status_code}")
+                
+        except Exception as e:
+            logger.error(f"Failed to send email to {to_email}: {str(e)}")
+            raise

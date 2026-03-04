@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.db.models.ticket_type import TicketType
     from app.db.models.payment import Payment
     from app.db.models.ticket_instance import TicketInstance
+    from app.db.models.organizer_email_recipients import OrganizerEmailRecipients
 
 class Booking(Base):
     """Booking model representing a ticket booking in the system."""
@@ -45,6 +46,7 @@ class Booking(Base):
     payment: Mapped["Payment"] = relationship("Payment", back_populates="booking", uselist=False)
     ticket_type: Mapped["TicketType"] = relationship("TicketType", back_populates="bookings")
     ticket_instances: Mapped[list["TicketInstance"]] = relationship("TicketInstance", back_populates="booking")
+    organizer_email_recipients: Mapped[list["OrganizerEmailRecipients"]] = relationship("OrganizerEmailRecipients", back_populates="booking")
 
     def __repr__(self) -> str:
         return f"<Booking id={self.id} user_id={self.user_id} ticket_type_id={self.ticket_type_id} quantity={self.quantity} status={self.status} total_price={self.total_price} created_at={self.created_at} updated_at={self.updated_at}>"

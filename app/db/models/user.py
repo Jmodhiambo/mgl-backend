@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from app.db.models.favorites import Favorite
     from app.db.models.co_organizer import CoOrganizer
     from app.db.models.contact_messages import ContactMessage
+    from app.db.models.organizer_emails import OrganizerEmails
 
 class User(Base):
     """User model representing a user in the system."""
@@ -84,6 +85,7 @@ class User(Base):
     favorites: Mapped[list["Favorite"]] = relationship("Favorite", back_populates="user")
     co_organizers: Mapped[list["CoOrganizer"]] = relationship("CoOrganizer", back_populates="user")
     contact_messages: Mapped[list["ContactMessage"]] = relationship("ContactMessage", back_populates="user")
+    organizer_emails: Mapped[list["OrganizerEmails"]] = relationship("OrganizerEmails", back_populates="user")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} name={self.name} email={self.email} role={self.role}>"

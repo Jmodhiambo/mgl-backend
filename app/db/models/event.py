@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.db.models.ticket_type import TicketType
     from app.db.models.favorites import Favorite
     from app.db.models.co_organizer import CoOrganizer
+    from app.db.models.organizer_emails import OrganizerEmails
 
 class Event(Base):
     """Event model representing an event in the system."""
@@ -58,6 +59,9 @@ class Event(Base):
 
     # Foreign key relationship to Co-Organizer (co_organizers)
     co_organizers: Mapped[list["CoOrganizer"]] = relationship("CoOrganizer", back_populates="event")
+
+    # Foreign key relationship to OrganizerEmails (organizer_emails)
+    organizer_emails: Mapped[list["OrganizerEmails"]] = relationship("OrganizerEmails", back_populates="event")
 
     def __repr__(self) -> str:
         return f"<Event id={self.id} title={self.title} location={self.venue} start_time={self.start_time}>"

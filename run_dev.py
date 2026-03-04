@@ -6,7 +6,7 @@ Run with (since we have local ssl certificates now):
 python run_dev.py
 
 Instead of:
-uvicorn app.main:app --relaod
+uvicorn app.main:app --reload
 
 Or manually:
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 \

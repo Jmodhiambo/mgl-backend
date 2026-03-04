@@ -7,7 +7,6 @@ from app.db.models.user import User
 from app.db.session import get_async_session
 from typing import Optional
 from app.schemas.user import UserOutWithPWD, UserPublic
-from app.core.logging_config import logger
 
 async def create_user_repo(name: str, email: str, password_hash: str, phone_number: str, token: str, expires_at: datetime) -> UserPublic:
     """Create a new user in the database."""
