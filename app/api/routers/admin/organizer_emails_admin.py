@@ -90,45 +90,79 @@ async def get_email_details_admin(
 # ==================== Email Templates Endpoint ====================
 
 @router.get(
-    "/email-templates",
+    "/admin/email-templates",
     status_code=status.HTTP_200_OK,
-    summary="Get available email templates",
-    description="Get list of available email templates with their content"
+    summary="Get All Email Templates (Admin)",
+    description="View all available email templates in the system"
 )
-async def get_email_templates():
+async def get_all_templates_admin(
+    admin: UserOut = Depends(require_admin)
+):
     """
-    Get available email templates.
+    Get all email templates (admin only).
     
-    **Available templates:**
-    - `reminder`: Event reminder
-    - `update`: Event update
-    - `thank_you`: Thank you message
-    - `cancellation`: Event cancellation
-    - `venue_change`: Venue change notification
-    - `time_change`: Time change notification
-    - `custom`: Blank template
+    **Admin Access:** View all email templates across categories.
     
-    **Returns:** Dictionary of templates with subjects and bodies
+    **Includes:**
+    - User templates
+    - Organizer templates
+    - Admin templates (if any)
+    - Template metadata and required variables
+    
+    **Returns:**
+    - Complete list of all templates
+    
+    **Use Cases:**
+    - Template management
+    - Content review
+    - Template documentation
     """
-    from app.utils.email_templates import get_email_templates
-    return get_email_templates()
-
-
+    from app.emails.email_manager import email_manager
+    
+    logger.info(f"Admin {admin.id} fetching all email templates")
+    return email_manager.list_templates()
+ 
+ 
 @router.get(
-    "/email-templates/variables",
+    "/admin/email-templates/{template_id}",
     status_code=status.HTTP_200_OK,
-    summary="Get template variables",
-    description="Get list of available variables for email templates"
+    summary="Get Template Details (Admin)",
+    description="View detailed information about a specific template"
 )
-async def get_template_variables():
+async def get_template_details_admin(
+    template_id: str,
+    admin: UserOut = Depends(require_admin)
+):
     """
-    Get available template variables.
+    Get specific template details (admin only).
     
-    **Usage:** Use these variables in custom templates with {variable_name} syntax
+    **Admin Access:** View full template information.
     
-    **Example:** "Dear {customer_name}, your booking #{booking_id} is confirmed!"
+    **Includes:**
+    - Template ID and name
+    - Category
+    - Description
+    - Required variables
+    - Template content preview
     
-    **Returns:** List of available variable names
+    **Returns:**
+    - Complete template metadata
+    
+    **Use Cases:**
+    - Template inspection
+    - Content review
+    - Variable documentation
     """
-    from app.utils.email_templates import get_template_variables
-    return {"variables": get_template_variables()}
+    from app.emails.email_manager import email_manager
+    
+    logger.info(f"Admin {admin.id} fetching template {template_id}")
+    template_info = email_manager.get_template_info(template_id)
+    
+    if not template_info:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Template '{template_id}' not found"
+        )
+    
+    return template_info
