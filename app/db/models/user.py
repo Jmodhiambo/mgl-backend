@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from app.db.models.co_organizer import CoOrganizer
     from app.db.models.contact_messages import ContactMessage
     from app.db.models.organizer_emails import OrganizerEmails
+    from app.db.models.notification import Notification
+    from app.db.models.audit_log import AuditLog
+    from app.db.models.platform_settings import PlatformSettings
 
 class User(Base):
     """User model representing a user in the system."""
@@ -86,6 +89,9 @@ class User(Base):
     co_organizers: Mapped[list["CoOrganizer"]] = relationship("CoOrganizer", back_populates="user")
     contact_messages: Mapped[list["ContactMessage"]] = relationship("ContactMessage", back_populates="user")
     organizer_emails: Mapped[list["OrganizerEmails"]] = relationship("OrganizerEmails", back_populates="user")
-
+    notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="recipient")
+    audit_logs: Mapped[list["AuditLog"]] = relationship("AuditLog", back_populates="admin")
+    platform_settings_updates: Mapped[list["PlatformSettings"]] = relationship("PlatformSettings", back_populates="updated_by_user")
+    
     def __repr__(self) -> str:
         return f"<User id={self.id} name={self.name} email={self.email} role={self.role}>"

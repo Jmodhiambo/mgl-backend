@@ -16,6 +16,7 @@ from app.core.logging_config import configure_logging, logger
 from app.core.logging_middleware import LoggingMiddleware
 from app.core.scheduler import start_scheduler, shutdown_scheduler
 from app.core.route_registery import register_routes
+from app.db.seed import run_all_seeds
 from app.db.session import async_engine
 from app.db import models
 
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for FastAPI app."""
     logger.info(f"Starting up {APP_NAME} v{APP_VERSION}...")
     start_scheduler()
+    await run_all_seeds() # Ensure DB is seeded with required data like platform settings
     yield
     logger.info(f"Shutting down {APP_NAME}...")
     shutdown_scheduler()

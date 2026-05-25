@@ -1,3 +1,4 @@
+# alembic upgrade head  --> Follow this procedure to avoid multiple heads
 # alembic revision --autogenerate -m "..."
 # alembic upgrade head
 
@@ -35,3 +36,19 @@ Integrate account reactivation token just like the email verification token to a
 Work on the event repo to be able to auto update event status based on current date and event start and end dates. For example, if the current date is past the event end date, the event status should be updated to "completed".
 
 Implement co-organizer email invitation to both members and non-members.
+
+Work on notifications on the service layer. Ensure the triggers are called in all the relevant domains in the router level using Background task.
+
+Rate limit request per IP to prevent brute force and abuse. Logs help in seeing the attack so it is better to have them outside or sent to external services.
+
+Add notification cleanup from notification_admin.py to schedular. It is the last route.
+
+Work on revenue notification milestone in notification_services.py.
+
+Need to work on notification for the rejected event. We need to include the reason. So the frontend needs to send the reason from the admin for rejection.
+
+Implement sold out, flagged user, all under payment and bookings in notifications. Basically go through all the notifications to ensure implementation.
+
+Add admin log write to all the required places. app.services.audit_log_services.py
+
+Work on getting location field in the app.api.auth.auth under login route.

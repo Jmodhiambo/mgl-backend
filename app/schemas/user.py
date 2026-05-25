@@ -42,6 +42,14 @@ class UserUpdate(BaseModelEAT):
     class Config:
         from_attributes = True
 
+class UserRoleUpdate(BaseModelEAT):
+    """Schema for updating a User's role."""
+    id: int
+    role: str
+
+    class Config:
+        from_attributes = True
+
 
 class OrganizerCreate(BaseModelEAT):
     """Schema for creating a new Organizer."""

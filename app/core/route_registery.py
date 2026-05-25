@@ -4,41 +4,44 @@
 from fastapi import FastAPI
 
 # Authentication route
-from app.api.routers.auth.auth import router as auth_router
+from app.api.auth.auth import router as auth_router
 
 # User routes
-from app.api.routers.user.users import router as user_router
-from app.api.routers.user.events import router as events_router
-from app.api.routers.user.bookings import router as bookings_router
-from app.api.routers.user.payments import router as payments_router 
-from app.api.routers.user.ticket_instances import router as ti_router
-from app.api.routers.user.ticket_types import router as tt_router
-from app.api.routers.user.favorites import router as favorites_router   # Only in user routes
-from app.api.routers.user.co_organizer import router as co_organizer_router
-from app.api.routers.user.article_analytics import router as article_analytics_router
-from app.api.routers.user.contact_messages import router as contact_messages_router
+from app.api.user.users import router as user_router
+from app.api.user.events import router as events_router
+from app.api.user.bookings import router as bookings_router
+from app.api.user.payments import router as payments_router 
+from app.api.user.ticket_instances import router as ti_router
+from app.api.user.ticket_types import router as tt_router
+from app.api.user.favorites import router as favorites_router   # Only in user routes
+from app.api.user.co_organizer import router as co_organizer_router
+from app.api.user.article_analytics import router as article_analytics_router
+from app.api.user.contact_messages import router as contact_messages_router
 
 # Organizer routes
-from app.api.routers.organizer.user_organizer import router as organizer_user_router
-from app.api.routers.organizer.events_organizer import router as organizer_events_router
-from app.api.routers.organizer.bookings_organizer import router as organizer_bookings_router
-# from app.api.routers.organizer.payments_organizer import router as organizer_payments_router
-# from app.api.routers.organizer.ticket_instances_organizer import router as organizer_ti_router
-from app.api.routers.organizer.ticket_types_organizer import router as organizer_tt_router
-from app.api.routers.organizer.co_organizer import router as co_organizer_organizer_router
+from app.api.organizer.user_organizer import router as organizer_user_router
+from app.api.organizer.events_organizer import router as organizer_events_router
+from app.api.organizer.bookings_organizer import router as organizer_bookings_router
+# from app.api.organizer.payments_organizer import router as organizer_payments_router
+# from app.api.organizer.ticket_instances_organizer import router as organizer_ti_router
+from app.api.organizer.ticket_types_organizer import router as organizer_tt_router
+from app.api.organizer.co_organizer import router as co_organizer_organizer_router
 
 
 # Admin routes
-from app.api.routers.admin.auth_admin import router as admin_auth_router
-from app.api.routers.admin.user_admin import router as admin_user_router
-from app.api.routers.admin.event_admin import router as admin_events_router
-from app.api.routers.admin.booking_admin import router as admin_bookings_router
-from app.api.routers.admin.payment_admin import router as admin_payments_router
-from app.api.routers.admin.ticket_instance_admin import router as admin_ti_router
-from app.api.routers.admin.ticket_type_admin import router as admin_tt_router
-from app.api.routers.admin.co_organizer_admin import router as admin_co_organizer_router
-from app.api.routers.admin.article_analytics_admin import router as admin_article_analytics_router
-from app.api.routers.admin.contact_messages_admin import router as admin_contact_messages_router
+from app.api.admin.auth_admin import router as admin_auth_router
+from app.api.admin.user_admin import router as admin_user_router
+from app.api.admin.event_admin import router as admin_events_router
+from app.api.admin.booking_admin import router as admin_bookings_router
+from app.api.admin.payment_admin import router as admin_payments_router
+from app.api.admin.ticket_instance_admin import router as admin_ti_router
+from app.api.admin.ticket_type_admin import router as admin_tt_router
+from app.api.admin.co_organizer_admin import router as admin_co_organizer_router
+from app.api.admin.article_analytics_admin import router as admin_article_analytics_router
+from app.api.admin.contact_messages_admin import router as admin_contact_messages_router
+from app.api.admin.notification_admin import router as admin_notification_router
+from app.api.admin.audit_log_admin import router as admin_audit_log_router
+from app.api.admin.settings_admin import router as admin_settings_router
 
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
@@ -77,3 +80,6 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(admin_co_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Admin"])
     app.include_router(admin_article_analytics_router, prefix="/api/v1", tags=["Article Analytics-Admin"])
     app.include_router(admin_contact_messages_router, prefix="/api/v1", tags=["Contact Messages-Admin"])
+    app.include_router(admin_notification_router, prefix="/api/v1", tags=["Notification-Admin"])
+    app.include_router(admin_audit_log_router, prefix="/api/v1", tags=["Audit Log-Admin"])
+    app.include_router(admin_settings_router, prefix="/api/v1", tags=["Settings-Admin"])

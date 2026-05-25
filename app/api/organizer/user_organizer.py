@@ -2,9 +2,10 @@
 """Organizer User API routes."""
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File, BackgroundTasks
 from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut, OrganizerInfo, UserOut
 from app.schemas.organizer import DashboardStats, TopEvent, RecentBooking
+from app.services.notification_services import notify_organizer_registered
 import app.services.user_services as user_services
 import app.services.user_organizer_services as user_organizer_services
 from app.core.security import require_organizer, require_user
@@ -33,6 +34,7 @@ async def get_organizer_stats(organizer: UserOut = Depends(require_organizer)):
 @router.patch("/organizers/me/promote", response_model=OrganizerOut, status_code=status.HTTP_201_CREATED)#
 async def upgrade_user_to_organizer(
     data: OrganizerCreate,
+    background_tasks: BackgroundTasks,
     profile_picture: Optional[UploadFile] = File(None),
     user: UserOut = Depends(require_user)
 ):
@@ -50,7 +52,12 @@ async def upgrade_user_to_organizer(
     data_dict["role"] = ROLE_ORGANIZER
     organizer_data = OrganizerCreate(**data_dict)
     
-    return await user_services.update_user_info_service(user.id, organizer_data)
+    organizer = await user_services.update_user_info_service(user.id, organizer_data)
+
+    # Notify admins of new organizer registration
+    background_tasks.add_task(notify_organizer_registered, organizer.id, organizer.name)
+
+    return organizer
 
 
 @router.patch("/organizers/me/profile-update", response_model=OrganizerOut, status_code=status.HTTP_200_OK)

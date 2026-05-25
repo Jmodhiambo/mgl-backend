@@ -12,6 +12,9 @@ class RefreshSessionOut(BaseModelEAT):
     expires_at: datetime
     revoked_at: Optional[datetime]
     replaced_by_sid: Optional[str]
+    device_info: Optional[str]
+    ip_address: Optional[str]
+    location: Optional[str]
 
     class Config:
         from_attributes = True
@@ -22,6 +25,9 @@ class RefreshSessionCreate(BaseModelEAT):
     user_id: int
     refresh_token_hash: str
     expires_at: datetime
+    device_info: Optional[str]
+    ip_address: Optional[str]
+    location: Optional[str]
 
     class Config:
         from_attributes = True
@@ -31,6 +37,9 @@ class RefreshSessionUpdate(BaseModelEAT):
     session_id: Optional[str]
     refresh_token_hash: Optional[str]
     expires_at: Optional[datetime]
+    device_info: Optional[str]
+    ip_address: Optional[str]
+    location: Optional[str]
 
     class Config:
         from_attributes = True

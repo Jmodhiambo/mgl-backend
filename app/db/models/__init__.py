@@ -11,6 +11,10 @@ from app.db.models.contact_messages import ContactMessage
 from app.db.models.article_analytics import ArticleView, ArticleEngagement, ArticleFeedback, ArticleSearchQuery
 from app.db.models.organizer_emails import OrganizerEmails
 from app.db.models.organizer_email_recipients import OrganizerEmailRecipients
+from app.db.models.notification import Notification
+from app.db.models.audit_log import AuditLog
+from app.db.models.admin_notification_prefs import AdminNotificationPrefs
+from app.db.models.platform_settings import PlatformSettings
 
 __all__ = [  # Dunder module attribute to export
     "User",
@@ -28,5 +32,9 @@ __all__ = [  # Dunder module attribute to export
     "ArticleFeedback",
     "ArticleSearchQuery",
     "OrganizerEmails",
-    "OrganizerEmailRecipients"
+    "OrganizerEmailRecipients",
+    "Notification",
+    "AuditLog",
+    "AdminNotificationPrefs",
+    "PlatformSettings",
 ]

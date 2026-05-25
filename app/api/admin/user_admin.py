@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, Depends
 from datetime import datetime
-from app.schemas.user import UserOut
+from app.schemas.user import UserOut, UserRoleUpdate
 from app.core.security import require_admin
 import app.services.user_services as user_services
 
@@ -65,7 +65,7 @@ async def activate_user(user_id: int, user=Depends(require_admin)):
     """
     Activate a user account.
     """
-    return await user_services.activate_user_service(user_id)
+    return await user_services.reactivate_account_service(user_id)
 
 @router.patch("/admin/users/{user_id}/deactivate", response_model=UserOut)
 async def deactivate_user(user_id: int, user=Depends(require_admin)):
@@ -89,47 +89,15 @@ async def unverify_user_email(user_id: int, user=Depends(require_admin)):
     return await user_services.unverify_user_email_service(user_id)
 
 # Admin Role Management
-@router.patch("/admin/users/{user_id}/role/user-to-admin", response_model=UserOut)
-async def promote_user_to_admin(user_id: int, user=Depends(require_admin)):
+@router.patch("/admin/users/{user_id}/role", response_model=UserOut)
+async def update_user_role(data: UserRoleUpdate, user=Depends(require_admin)):
     """
-    Promote a user to admin role.
+    Update a user's role.
     """
-    return await user_services.promote_user_to_admin_service(user_id)
+    user_id = data.id
+    role = data.role
+    return await user_services.update_user_role_service(user_id, role)
 
-@router.patch("/admin/users/{user_id}/role/admin-to-user", response_model=UserOut)
-async def demote_user_from_admin(user_id: int, user=Depends(require_admin)):
-    """
-    Demote a user from admin role.
-    """
-    return await user_services.demote_user_from_admin_service(user_id)
-
-@router.patch("/admin/users/{user_id}/role/user-to-organizer", response_model=UserOut)
-async def promote_user_to_organizer(user_id: int, user=Depends(require_admin)):
-    """
-    Promote a user to organizer role.
-    """
-    return await user_services.promote_user_to_organizer_service(user_id)
-
-@router.patch("/admin/users/{user_id}/role/organizer-to-user", response_model=UserOut)
-async def demote_user_from_organizer(user_id: int, user=Depends(require_admin)):
-    """
-    Demote a user from organizer role.
-    """
-    return await user_services.demote_user_from_organizer_service(user_id)
-
-@router.patch("/admin/users/{user_id}/role/organizer-to-admin", response_model=UserOut)
-async def promote_organizer_to_admin(user_id: int, user=Depends(require_admin)):
-    """
-    Promote an organizer to admin role.
-    """
-    return await user_services.promote_organizer_to_admin_service(user_id)
-
-@router.patch("/admin/users/{user_id}/role/admin-to-organizer", response_model=UserOut)
-async def demote_admin_to_organizer(user_id: int, user=Depends(require_admin)):
-    """
-    Demote an admin to organizer role.
-    """
-    return await user_services.demote_admin_to_organizer_service(user_id)
 
 # Admin Analytics
 @router.get("/admin/analytics/count", response_model=int)

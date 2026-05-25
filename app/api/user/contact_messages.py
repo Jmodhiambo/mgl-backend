@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """API routes for Contact Message operations."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
 from typing import List, Optional
 from app.core.security import get_current_user_optional
 from app.schemas.contact_message import ContactMessageCreate, ContactMessageOut
 import app.services.contact_messages_services as contact_service
+from app.services.notification_services import notify_new_contact_message
 
 router = APIRouter()
 
@@ -14,6 +15,7 @@ router = APIRouter()
 async def submit_contact_form(
     contact: ContactMessageCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
     user = Depends(get_current_user_optional)
 ):
     """
@@ -37,7 +39,18 @@ async def submit_contact_form(
             user_agent=user_agent,
             user_id=user_id
         )
-        
+
+        # Notify admin team of new contact message
+        background_tasks.add_task(
+            notify_new_contact_message,
+            contact_message.id,
+            contact_message.name,
+            contact_message.email,
+            contact_message.subject,
+            contact_message.message,
+            contact_message.category
+        )
+
         return contact_message
         
     except HTTPException:

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Events organizer routes for MGLTickets."""
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, BackgroundTasks
 
 from app.schemas.user import UserOut
 from app.schemas.event import EventOut, EventCreate, EventCreateWithFlyer, EventStats, EventDetails, TopEvent
 import app.services.event_services as event_services
 import app.services.event_organizer_services as event_organizer_services
+from app.services.notification_services import notify_event_submitted
+
 
 from app.core.security import require_organizer
 from app.utils.generate_image_url import save_flyer_and_get_url
@@ -18,8 +20,9 @@ router = APIRouter()
 @router.post("/organizers/me/events", response_model=EventOut, status_code=status.HTTP_201_CREATED)
 async def create_event(
     event_data: EventCreate,
+    background_tasks: BackgroundTasks,
     flyer: UploadFile = File(...),
-    organizer: UserOut =Depends(require_organizer)
+    organizer: UserOut =Depends(require_organizer),
 ):
     """
     Create a new event by the organizer.
@@ -39,7 +42,12 @@ async def create_event(
 
     event_with_flyer = EventCreateWithFlyer(**event_dict)
 
-    return await event_services.create_event_service(event_with_flyer)
+    event = await event_services.create_event_service(event_with_flyer)
+
+    # Create background task to notify admin about new event submission
+    background_tasks.add_task(notify_event_submitted, event.id, event.title, event.slug, organizer.name)
+
+    return event
 
 
 @router.get("/organizers/me/events/{event_id}/stats", response_model=EventStats, status_code=status.HTTP_200_OK)
