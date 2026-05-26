@@ -17,6 +17,7 @@ from app.api.user.favorites import router as favorites_router   # Only in user r
 from app.api.user.co_organizer import router as co_organizer_router
 from app.api.user.article_analytics import router as article_analytics_router
 from app.api.user.contact_messages import router as contact_messages_router
+from app.api.user.sessions import router as user_session_router
 
 # Organizer routes
 from app.api.organizer.user_organizer import router as organizer_user_router
@@ -26,6 +27,7 @@ from app.api.organizer.bookings_organizer import router as organizer_bookings_ro
 # from app.api.organizer.ticket_instances_organizer import router as organizer_ti_router
 from app.api.organizer.ticket_types_organizer import router as organizer_tt_router
 from app.api.organizer.co_organizer import router as co_organizer_organizer_router
+from app.api.organizer.sessions_organizer import router as organizer_session_router
 
 
 # Admin routes
@@ -39,6 +41,7 @@ from app.api.admin.ticket_type_admin import router as admin_tt_router
 from app.api.admin.co_organizer_admin import router as admin_co_organizer_router
 from app.api.admin.article_analytics_admin import router as admin_article_analytics_router
 from app.api.admin.contact_messages_admin import router as admin_contact_messages_router
+from app.api.admin.session_admin import router as admin_session_router
 from app.api.admin.notification_admin import router as admin_notification_router
 from app.api.admin.audit_log_admin import router as admin_audit_log_router
 from app.api.admin.settings_admin import router as admin_settings_router
@@ -59,6 +62,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(co_organizer_router, prefix="/api/v1", tags=["Co-Organizer"])
     app.include_router(article_analytics_router, prefix="/api/v1", tags=["Article Analytics"])
     app.include_router(contact_messages_router, prefix="/api/v1", tags=["Contact Messages"])
+    app.include_router(user_session_router, prefix="/api/v1", tags=["Session-User"])
 
     # Organizer routes
     app.include_router(organizer_user_router, prefix="/api/v1", tags=["Users-Organizer"])
@@ -68,7 +72,8 @@ def register_routes(app: FastAPI) -> None:
     # app.include_router(organizer_ti_router, prefix="/api/v1", tags=["Ticket Instances-Organizer"])
     app.include_router(organizer_tt_router, prefix="/api/v1", tags=["Ticket Types-Organizer"])
     app.include_router(co_organizer_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Organizer"])
-    
+    app.include_router(organizer_session_router, prefix="/api/v1", tags=["Session-Organizer"])
+
     # Admin routes
     app.include_router(admin_auth_router, prefix="/api/v1", tags=["Auth-Admin"])
     app.include_router(admin_user_router, prefix="/api/v1", tags=["User-Admin"])
@@ -80,6 +85,8 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(admin_co_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Admin"])
     app.include_router(admin_article_analytics_router, prefix="/api/v1", tags=["Article Analytics-Admin"])
     app.include_router(admin_contact_messages_router, prefix="/api/v1", tags=["Contact Messages-Admin"])
+    app.include_router(admin_session_router, prefix="/api/v1", tags=["Session-Admin"])
     app.include_router(admin_notification_router, prefix="/api/v1", tags=["Notification-Admin"])
     app.include_router(admin_audit_log_router, prefix="/api/v1", tags=["Audit Log-Admin"])
     app.include_router(admin_settings_router, prefix="/api/v1", tags=["Settings-Admin"])
+    

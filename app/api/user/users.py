@@ -1,10 +1,10 @@
 #!/usr/bin/env python 3
 """User routes for MGLTickets."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from typing import Optional
-from app.schemas.user import UserOut, UserUpdate, UserPasswordChange, UserPasswordUpdate
-from app.core.security import require_user
+from app.schemas.user import UserOut, UserUpdate, UserPasswordChange, UserOrganizerProfileOut
+from app.core.security import require_user, get_current_user
 from app.services.user_services import (
     get_user_by_id_service,
     get_user_by_email_service,
@@ -20,6 +20,30 @@ async def get_current_user(user=Depends(require_user)):
     Get the currently authenticated user.
     """
     return user
+
+@router.get("/users/me/organizer", response_model=UserOrganizerProfileOut, status_code=status.HTTP_200_OK)
+async def get_organizer_profile_status(user=Depends(get_current_user)):
+    """Get the current user's organizer profile completion status."""
+    if user.role != "organizer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not an organizer"
+        )
+
+    required = {
+        "bio":                 user.bio,
+        "profile_picture_url": user.profile_picture_url,
+        "organization_name":   user.organization_name,
+        "area_of_expertise":   user.area_of_expertise,
+    }
+
+    missing_fields = [field for field, value in required.items() if not value]
+    profile_completed = len(missing_fields) == 0
+
+    return UserOrganizerProfileOut(
+        profile_completed=profile_completed,
+        missing_fields=missing_fields
+    )
 
 @router.get("/users/{user_id}", response_model=Optional[UserOut], status_code=status.HTTP_200_OK)
 async def get_user_by_id(user_id: int):

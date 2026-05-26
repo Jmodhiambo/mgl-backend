@@ -125,3 +125,11 @@ class UserEmailVerification(BaseModelEAT):
 
     class Config:
         from_attributes = True
+
+class UserOrganizerProfileOut(BaseModelEAT):
+    """Schema for outputting organizer profile data. Shows whether they have completed their organizer profile or not."""
+    profile_completed: bool
+    missing_fields: list[str] = []
+
+    class Config:
+        from_attributes = True

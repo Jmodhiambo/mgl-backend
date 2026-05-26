@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""FastAPI router — Admin Sessions.
+"""FastAPI router — User Sessions.
 
 Endpoints
 ---------
-GET    /admin/sessions                  → list my active sessions
-DELETE /admin/sessions/{session_id}     → revoke one session
-DELETE /admin/sessions                  → sign out all other devices
+GET    /user/sessions                   → list my active sessions
+DELETE /user/sessions/{session_id}      → revoke one session
+DELETE /user/sessions                   → sign out all other devices
 
 """
 
 from fastapi import APIRouter, Depends
 
-from app.core.security import require_admin
-from app.schemas.refresh_session import RefreshSessionOut, RevokeAllOtherSessionsRequest, RevokeAllOtherSessionsResponse
+from app.core.security import require_user
+from app.schemas.refresh_session import (
+    RefreshSessionOut,
+    RevokeAllOtherSessionsRequest,
+    RevokeAllOtherSessionsResponse,
+)
 from app.services.ref_session_services import (
     get_my_sessions_service,
     revoke_single_session_service,
@@ -23,34 +27,33 @@ router = APIRouter()
 
 
 @router.get(
-    "/admin/sessions",
+    "/user/sessions",
     response_model=list[RefreshSessionOut],
     summary="List my active sessions",
     description=(
         "Returns all non-revoked, non-expired RefreshSessions for the "
-        "currently authenticated admin.  Feeds the 'Active Sessions' tab "
-        "on the My Profile page.\n\n"
-        "Data source: RefreshSession table (no separate AdminSession table)."
+        "currently authenticated user.  Feeds the 'Active Sessions' tab "
+        "on the user profile page."
     ),
 )
-async def get_my_sessions(current_user=Depends(require_admin)):
-    """Return only the ACTIVE sessions for the current admin."""
+async def get_my_sessions(current_user=Depends(require_user)):
+    """Return only the ACTIVE sessions for the current user."""
     return await get_my_sessions_service(user_id=current_user.id)
 
 
 @router.delete(
-    "/admin/sessions/{session_id}",
+    "/user/sessions/{session_id}",
     status_code=204,
     summary="Revoke one session",
     description=(
         "Soft-revokes a single RefreshSession by setting revoked_at.  "
-        "Admins may only revoke their own sessions from this endpoint.  "
+        "Users may only revoke their own sessions.  "
         "Returns 204 on success, 404 if not found or not owned."
     ),
 )
 async def revoke_session(
     session_id: str,
-    current_user=Depends(require_admin),
+    current_user=Depends(require_user),
 ):
     """Revoke one specific session, ownership-checked."""
     await revoke_single_session_service(
@@ -60,18 +63,17 @@ async def revoke_session(
 
 
 @router.delete(
-    "/admin/sessions",
+    "/user/sessions",
     response_model=RevokeAllOtherSessionsResponse,
     summary="Sign out all other devices",
     description=(
-        "Revokes every active RefreshSession for the current admin EXCEPT "
-        "the one passed in current_session_id.  "
-        "The frontend reads current_session_id from the JWT 'sid' claim."
+        "Revokes every active session for the current user EXCEPT the one "
+        "identified by current_session_id in the request body."
     ),
 )
 async def revoke_all_other_sessions(
     body: RevokeAllOtherSessionsRequest,
-    current_user=Depends(require_admin),
+    current_user=Depends(require_user),
 ):
     """Revoke all sessions EXCEPT the one currently in use."""
     result = await revoke_all_other_sessions_service(

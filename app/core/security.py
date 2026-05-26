@@ -62,7 +62,7 @@ def decode_token(token: str) -> dict:
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-) -> UserOut:
+) -> UserPublic:
     """
     Extract token from Authorization header, decode it, load user,
     and attach user to request.state.
