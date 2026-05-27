@@ -111,7 +111,7 @@ async def unverify_user_email(user_id: int, user=Depends(require_admin)):
     return await user_services.unverify_user_email_service(user_id)
 
 # Admin Role Management
-@router.patch("/admin/users/{user_id}/change-role/{role}", response_model=UserOut)
+@router.patch("/admin/users/{user_id}/update-role/{role}", response_model=UserOut)
 async def update_user_role(user_id: int, role: str, user=Depends(require_admin)):
     """
     Update a user's role.
