@@ -3,19 +3,41 @@
 
 from fastapi import APIRouter, Depends
 from datetime import datetime
-from app.schemas.user import UserOut, UserRoleUpdate
-from app.core.security import require_admin
+from app.schemas.user import UserOut, UserRoleUpdate, AdminMeOut, AdminMeUpdate, AdminUserEmailUpdate
+from app.core.security import require_admin, get_current_user
 import app.services.user_services as user_services
 
 router = APIRouter()
 
 # Admin User Listing and Lookup
 @router.get("/admin/users", response_model=list[UserOut])
-async def list_all_users(): # user=Depends(require_admin)
+async def list_all_users(user=Depends(require_admin)):
     """
     List all users.
     """
     return await user_services.list_all_users_service()
+
+@router.get("/admin/users/me", response_model=AdminMeOut)
+async def get_current_admin(user=Depends(get_current_user)):
+    """
+    Get the current authenticated admin's details.
+    """
+    return user
+
+@router.patch("/admin/users/me", response_model=AdminMeOut)
+async def update_current_admin(user_data: AdminMeUpdate, user=Depends(get_current_user)):
+    """
+    Update the current authenticated admin's details.
+    """
+    data = user_data.model_dump()
+    return await user_services.update_user_info_service(user.id, data)
+
+@router.patch("/admin/users/update-user-email/", response_model=UserOut)
+async def update_user_email(user_data: AdminUserEmailUpdate, user=Depends(require_admin)):
+    """
+    Update a user's email address.
+    """
+    return await user_services.update_user_info_service(user_data.user_id, {"email": user_data.new_email})
 
 @router.get("/admin/users/active", response_model=list[UserOut])
 async def list_active_users(user=Depends(require_admin)):

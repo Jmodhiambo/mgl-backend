@@ -45,7 +45,7 @@ async def register_user_service(name: str, email: str, password: str, phone_numb
 
     logger.info(f"User {user.name} with ID {user.id} registered successfully.")
 
-    # I will work on email sending later
+    # I will work on email sending later. Here and on user update. I want to get the core functionality working first before adding in emails.
 
     # Send verification email
     # send_verification_email(user, token)
@@ -107,19 +107,36 @@ async def update_user_info_service(user_id: int, info: dict) -> dict:
     """Update a user's contact information."""
     logger.info(f"Updating contact information of user with ID: {user_id}")
 
-    # if info.get("email"):
-    #     if '@' not in info["email"] or '.' not in info["email"]:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_400_BAD_REQUEST,
-    #             detail="Invalid email format."
-    #         )
-    #     if await user_repo.get_user_by_email_repo(info["email"]):
-    #         raise HTTPException(
-    #             status_code=status.HTTP_400_BAD_REQUEST,
-    #             detail=f"The email {info['email']} already exists! Please use a different email."
-    #         )
+    if info.get("email"):
+        if '@' not in info["email"] or '.' not in info["email"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email format."
+            )
+        
+        # Check if email already exists
+        user = await user_repo.get_user_by_email_repo(info["email"])
+
+        if user and user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"The email {info['email']} already exists! Please use a different email."
+            )
+        
+        # Reject change if the user is an admin as they have custom domain emails that must be preserved
+        if user and user.role == "admin":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Admin email addresses cannot be changed. Please contact support if you need to update your email."
+            )
+        # If the email is being changed, we need to unverify the email and send a new verification email
+        info["email_verified"] = False
+
+    user = await user_repo.update_user_info_repo(user_id, info)
+
+    # If email is being changed, send verification email to new email address
     
-    return await user_repo.update_user_info_repo(user_id, info)
+    return user
 
 async def delete_user_service(user_id: int) -> bool:
     """Delete a user by ID."""

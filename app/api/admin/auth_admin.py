@@ -9,6 +9,6 @@ router = APIRouter()
 
 
 @router.post("/admin/auth/cleanup-sessions", response_model=dict, status_code=status.HTTP_200_OK)
-async def manual_cleanup_sessions(hours: int = 24, admin=Depends(require_admin)) -> dict:
+async def manual_cleanup_sessions(hours: int = 24, admin=Depends(require_admin)):
     """Cleanup expired and revoked sessions."""
     return await cleanup_expired_and_revoked_sessions_service(hours)

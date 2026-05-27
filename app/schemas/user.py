@@ -133,3 +133,35 @@ class UserOrganizerProfileOut(BaseModelEAT):
 
     class Config:
         from_attributes = True
+
+class AdminMeOut(BaseModelEAT):
+    """Schema for outputting Admin's own data."""
+    id: int
+    name: str
+    email: EmailStr
+    phone_number: str
+    role: str
+    is_active: bool
+    email_verified: bool
+    bio: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class AdminMeUpdate(BaseModelEAT):
+    """Schema for updating Admin's own data."""
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    bio: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class AdminUserEmailUpdate(BaseModelEAT):
+    """Schema for updating a User's email by an Admin."""
+    user_id: int
+    new_email: EmailStr
+
+    class Config:
+        from_attributes = True
