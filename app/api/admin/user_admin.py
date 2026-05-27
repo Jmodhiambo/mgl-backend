@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, Depends
 from datetime import datetime
-from app.schemas.user import UserOut, UserRoleUpdate, AdminMeOut, AdminMeUpdate, AdminUserEmailUpdate
+from app.schemas.user import UserOut, AdminMeOut, AdminMeUpdate, AdminUserEmailUpdate
 from app.core.security import require_admin, get_current_user
 import app.services.user_services as user_services
 
@@ -111,13 +111,11 @@ async def unverify_user_email(user_id: int, user=Depends(require_admin)):
     return await user_services.unverify_user_email_service(user_id)
 
 # Admin Role Management
-@router.patch("/admin/users/{user_id}/role", response_model=UserOut)
-async def update_user_role(data: UserRoleUpdate, user=Depends(require_admin)):
+@router.patch("/admin/users/{user_id}/change-role/{role}", response_model=UserOut)
+async def update_user_role(user_id: int, role: str, user=Depends(require_admin)):
     """
     Update a user's role.
     """
-    user_id = data.id
-    role = data.role
     return await user_services.update_user_role_service(user_id, role)
 
 
