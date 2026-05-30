@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Admin booking routes."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from datetime import datetime
 from app.schemas.booking import BookingOut
 import app.services.booking_services as booking_services
 from app.core.security import require_admin
+from app.services.audit_log_services import log_admin_action_service
 
 router = APIRouter()
 
@@ -25,25 +26,67 @@ async def get_booking(booking_id: int, user=Depends(require_admin)):
     return booking_services.get_booking_by_id_service(booking_id)
 
 @router.put("/admin/bookings/{booking_id}", response_model=BookingOut)
-async def update_booking(booking_id: int, booking: BookingOut, user=Depends(require_admin)):
+async def update_booking(booking_id: int, booking: BookingOut, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Update an existing booking.
     """
-    return booking_services.update_booking_service(booking_id, booking)
+    res = await booking_services.update_booking_service(booking_id, booking)
+
+    if res is not None:
+        # Log the booking update action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="update_booking",
+            target_type="booking",
+            target_id=booking_id,
+            details={"updated_booking": booking}
+        )
+
+    return res
 
 @router.patch("/admin/bookings/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_booking_status(booking_id: int, status: str, user=Depends(require_admin)):
+async def update_booking_status(booking_id: int, status: str, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Update the status of an existing booking.
     """
-    return booking_services.update_booking_status_service(booking_id, status)
+    res = await booking_services.update_booking_status_service(booking_id, status)
+
+    if res is not None:
+        # Log the booking status update action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="update_booking_status",
+            target_type="booking",
+            target_id=booking_id,
+            details={"updated_status": status}
+        )
+
+    return res
 
 @router.delete("/admin/bookings/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_booking(booking_id: int, user=Depends(require_admin)):
+async def delete_booking(booking_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Delete a specific booking by its ID.
     """
-    return booking_services.delete_booking_service(booking_id)
+    res = await booking_services.delete_booking_service(booking_id)
+
+    if res is not None:
+        # Log the booking deletion action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="delete_booking",
+            target_type="booking",
+            target_id=booking_id,
+            details={"deleted_booking_id": booking_id}
+        )
+
+    return res
 
 # Booking analytics and reports
 @router.get("/admin/bookings/status/{status}", response_model=list[BookingOut])

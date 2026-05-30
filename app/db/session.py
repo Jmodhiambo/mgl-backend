@@ -24,15 +24,6 @@ async_engine = create_async_engine(
     **engine_kwargs,
 )
 
-
-# Enable SQLite foreign key enforcement. Required for many-to-many relationships. Remove in production
-@event.listens_for(Engine, "connect")
-def enable_sqlite_foreign_keys(dbapi_connection, _):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
-
 # Async session factory
 AsyncSessionLocal = sessionmaker(
     bind=async_engine,

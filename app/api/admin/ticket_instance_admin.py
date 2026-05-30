@@ -3,31 +3,69 @@
 
 from typing import Optional
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from app.schemas.ticket_instance import TicketInstanceOut, TicketInstanceCreate, TicketInstanceUpdate
 import app.services.ticket_instance_services as ti_services
 from app.core.security import require_admin
+from app.services.audit_log_services import log_admin_action_service
 
 router = APIRouter()
 @router.post("/admin/ticket-instances", response_model=TicketInstanceOut)
-async def create_ticket_instance_admin(ticket_instance_create: TicketInstanceCreate, admin=Depends(require_admin)):
+async def create_ticket_instance_admin(ticket_instance_create: TicketInstanceCreate, background_tasks: BackgroundTasks, admin=Depends(require_admin)):
     """Create a new TicketInstance as an admin."""
-    return ti_services.create_ticket_instance(ticket_instance_create)
+    ticket_instance = ti_services.create_ticket_instance(ticket_instance_create)
+
+    # Create admin log entry for ticket instance creation
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=admin.id,
+        admin_name=admin.name,
+        action="create_ticket_instance",
+        target_type="ticket_instance",
+        target_id=ticket_instance.id,
+        details={"admin": admin.name},
+    )
+
+    return ticket_instance
 
 @router.put("/admin/ticket-instances/{ticket_instance_id}", response_model=TicketInstanceOut)
-async def update_ticket_instance_admin(ticket_instance_id: int, ticket_instance_update: TicketInstanceUpdate, admin=Depends(require_admin)):
+async def update_ticket_instance_admin(ticket_instance_id: int, ticket_instance_update: TicketInstanceUpdate, background_tasks: BackgroundTasks, admin=Depends(require_admin)):
     """Update an existing TicketInstance as an admin."""
     ticket_instance = ti_services.update_ticket_instance(ticket_instance_id, ticket_instance_update)
     if not ticket_instance:
         raise HTTPException(status_code=404, detail="TicketInstance not found")
+    
+    # Create admin log entry for ticket instance update
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=admin.id,
+        admin_name=admin.name,
+        action="update_ticket_instance",
+        target_type="ticket_instance",
+        target_id=ticket_instance.id,
+        details={"admin": admin.name, "status": ticket_instance.status},
+    )
+
     return ticket_instance
 
 @router.delete("/admin/ticket-instances/{ticket_instance_id}", response_model=dict)
-async def delete_ticket_instance_admin(ticket_instance_id: int, admin=Depends(require_admin)):
+async def delete_ticket_instance_admin(ticket_instance_id: int, background_tasks: BackgroundTasks, admin=Depends(require_admin)):
     """Delete a TicketInstance as an admin."""
     success = ti_services.delete_ticket_instance(ticket_instance_id)
     if not success:
         raise HTTPException(status_code=404, detail="TicketInstance not found")
+    
+    # Create admin log entry for ticket instance deletion
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=admin.id,
+        admin_name=admin.name,
+        action="delete_ticket_instance",
+        target_type="ticket_instance",
+        target_id=ticket_instance_id,
+        details={"admin": admin.name},
+    )
+
     return {"detail": "TicketInstance deleted successfully"}
 
 @router.get("/admin/ticket-instances", response_model=list[TicketInstanceOut])

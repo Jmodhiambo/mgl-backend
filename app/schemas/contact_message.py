@@ -54,6 +54,9 @@ class ContactMessageCreate(ContactMessageBase):
     recaptcha_token: str
     user_id: Optional[int] = None  # Set by backend if user is logged in
 
+    class Config:
+        from_attributes = True
+
 
 class ContactMessageOut(ContactMessageBase):
     """Schema for outputting ContactMessage data."""
@@ -105,9 +108,17 @@ class ContactMessageStats(BaseModelEAT):
     """Schema for contact message statistics."""
     total: int
     new: int
+    pending: int
     responded: int
     closed: int
     spam: int
     
+    class Config:
+        from_attributes = True
+
+class ContactMessageStatusUpdate(BaseModelEAT):
+    """Schema for updating the status of a contact message."""
+    status: str  # new | pending | responded | closed | spam
+
     class Config:
         from_attributes = True

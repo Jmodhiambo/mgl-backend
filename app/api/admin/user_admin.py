@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Admin user routes."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from datetime import datetime
 from app.schemas.user import UserOut, AdminMeOut, AdminMeUpdate, AdminUserEmailUpdate
 from app.core.security import require_admin, get_current_user
 import app.services.user_services as user_services
+from app.services.audit_log_services import log_admin_action_service
 
 router = APIRouter()
 
@@ -33,11 +34,25 @@ async def update_current_admin(user_data: AdminMeUpdate, user=Depends(get_curren
     return await user_services.update_user_info_service(user.id, data)
 
 @router.patch("/admin/users/update-user-email/", response_model=UserOut)
-async def update_user_email(user_data: AdminUserEmailUpdate, user=Depends(require_admin)):
+async def update_user_email(user_data: AdminUserEmailUpdate, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Update a user's email address.
     """
-    return await user_services.update_user_info_service(user_data.user_id, {"email": user_data.new_email})
+    res = await user_services.update_user_info_service(user_data.user_id, {"email": user_data.new_email})
+
+    if res is not None:
+        # Log the email update action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="update_user_email",
+            target_type="user",
+            target_id=user_data.user_id,
+            details={"new_email": user_data.new_email}
+    )
+
+    return res
 
 @router.get("/admin/users/active", response_model=list[UserOut])
 async def list_active_users(user=Depends(require_admin)):
@@ -76,48 +91,155 @@ async def get_user_by_id(user_id: int, user=Depends(require_admin)):
 
 # Admin Level User Actions
 @router.delete("/admin/users/{user_id}", response_model=bool)
-async def delete_user(user_id: int):  # user=Depends(require_admin)
+async def delete_user(user_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)):  # user=Depends(require_admin)
     """
     Delete a user by their ID.
     """
-    return await user_services.delete_user_service(user_id)
+    
+    res = await user_services.delete_user_service(user_id)
+
+    if res is not None:
+        # Log the user deletion action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="delete_user",
+            target_type="user",
+            target_id=user_id,
+            details={"deleted_user_id": user_id}
+        )
+
+    return res
 
 @router.patch("/admin/users/{user_id}/activate", response_model=UserOut)
-async def activate_user(user_id: int, user=Depends(require_admin)):
+async def activate_user(user_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Activate a user account.
     """
-    return await user_services.reactivate_account_service(user_id)
+    res = await user_services.reactivate_account_service(user_id)
+
+    if res is not None:
+        # Log the user activation action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="activate_user",
+            target_type="user",
+            target_id=user_id,
+            details={"activated_user_id": user_id}
+        )
+
+    return res
 
 @router.patch("/admin/users/{user_id}/deactivate", response_model=UserOut)
-async def deactivate_user(user_id: int, user=Depends(require_admin)):
+async def deactivate_user(user_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Deactivate a user account.
     """
-    return await user_services.deactivate_user_service(user_id)
+    res = await user_services.deactivate_user_service(user_id)
+
+    if res is not None:
+        # Log the user deactivation action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="deactivate_user",
+            target_type="user",
+            target_id=user_id,
+            details={"deactivated_user_id": user_id}
+        )
+
+    return res
 
 @router.patch("/admin/users/{user_id}/verify", response_model=UserOut)
-async def verify_user_email(user_id: int, user=Depends(require_admin)):
+async def verify_user_email(user_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Verify a user's email.
     """
-    return await user_services.verify_user_email_service(user_id)
+    res = await user_services.verify_user_email_service(user_id)
+
+    if res is not None:
+        # Log the user verification action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="verify_user_email",
+            target_type="user",
+            target_id=user_id,
+            details={"verified_user_id": user_id}
+        )
+
+    return res
 
 @router.patch("/admin/users/{user_id}/unverify", response_model=UserOut)
-async def unverify_user_email(user_id: int, user=Depends(require_admin)):
+async def unverify_user_email(user_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Unverify a user's email.
     """
-    return await user_services.unverify_user_email_service(user_id)
+    res = await user_services.unverify_user_email_service(user_id)
+
+    if res is not None:
+        # Log the user unverification action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="unverify_user_email",
+            target_type="user",
+            target_id=user_id,
+            details={"unverified_user_id": user_id}
+        )
+
+    return res
+
+@router.post("/admin/users/{user_id}/resend-verification", response_model=dict)
+async def resend_verification_email(user_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)): # Add background task for email sending
+    """
+    Resend a user's verification email.
+    """
+    res = await user_services.resend_verification_email_service(user_id)
+
+    # TODO: Add background task to send email asynchronously
+
+    if res:
+        # Log the user resend verification email action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="resend_verification_email",
+            target_type="user",
+            target_id=user_id,
+            details={"resend_verification_user_id": user_id}
+        )
+
+    return res
 
 # Admin Role Management
 @router.patch("/admin/users/{user_id}/update-role/{role}", response_model=UserOut)
-async def update_user_role(user_id: int, role: str, user=Depends(require_admin)):
+async def update_user_role(user_id: int, role: str, background_tasks: BackgroundTasks, user=Depends(require_admin)):
     """
     Update a user's role.
     """
-    return await user_services.update_user_role_service(user_id, role)
+    res = await user_services.update_user_role_service(user_id, role)
 
+    if res is not None:
+        # Log the user role update action
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="update_user_role",
+            target_type="user",
+            target_id=user_id,
+            details={"role": role}
+        )
+
+    return res
 
 # Admin Analytics
 @router.get("/admin/analytics/count", response_model=int)

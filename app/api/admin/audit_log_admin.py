@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.security import require_admin
 from app.schemas.audit_log import AuditLogListResponse, AuditLogOut
-import app.services.audit_log_services as svc
+import app.services.audit_log_services as audit_log_services
 
 router = APIRouter()
 
@@ -69,7 +69,7 @@ async def list_audit_logs(
     offset: int = Query(default=0, ge=0, description="Rows to skip for pagination."),
     _current_user=Depends(require_admin),
 ):
-    return await svc.list_audit_logs_service(
+    return await audit_log_services.list_audit_logs_service(
         admin_id=admin_id,
         action=action,
         target_type=target_type,
@@ -90,7 +90,7 @@ async def get_audit_log(
     log_id: int,
     _current_user=Depends(require_admin),
 ):
-    return await svc.get_audit_log_service(log_id)
+    return await audit_log_services.get_audit_log_service(log_id)
 
 
 # ─── My Activity (Profile page — My Activity tab) ────────────────────────────
@@ -106,4 +106,5 @@ async def get_audit_log(
     ),
 )
 async def get_my_activity(current_user=Depends(require_admin)):
-    return await svc.list_my_activity_service(admin_id=current_user.id)
+    """Return all activity for the current admin."""
+    return await audit_log_services.list_my_activity_service(admin_id=current_user.id)

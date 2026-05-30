@@ -1,47 +1,54 @@
 #!/usr/bin/env python3
-"""Event routes for MGLTickets."""
+"""
+Public event routes for MGLTickets.
+
+Both unauthenticated (Events.tsx / EventDetails.tsx) and authenticated
+(BrowseEvents.tsx / BrowseEventDetails.tsx) users hit these same endpoints.
+The frontend decides which component to render; the backend doesn't
+distinguish between the two — both call require_user.
+
+Route ordering rules applied here:
+  1. Fixed paths (/events/latest, /events/search/, etc.) MUST be
+     registered BEFORE parameterised paths (/events/{identifier}).
+     FastAPI matches routes top-to-bottom; if /{identifier} comes
+     first, the word "latest" is treated as the identifier value.
+  2. The original file had TWO conflicting parameterised routes:
+       GET /events/{event_id}   (int)
+       GET /events/{slug}       (str)
+     FastAPI cannot distinguish these — both match any path segment.
+     They are merged into a single smart route that checks whether
+     the identifier is numeric.
+"""
+
+from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from app.schemas.event import EventOut
 import app.services.event_services as event_services
-from datetime import datetime
 from app.core.security import require_user
-
-from typing import Optional
 
 router = APIRouter()
 
 
+# ── Fixed paths first ─────────────────────────────────────────────────────────
+
 @router.get("/events", response_model=list[EventOut])
 async def get_all_approved_events(user=Depends(require_user)):
-    """
-    Get all events.
-    """
+    """Get all approved events."""
     return await event_services.get_approved_events_service()
-
-
-@router.get("/events/{event_id}", response_model=EventOut)
-async def get_event_by_id(event_id: int, user=Depends(require_user)):
-    """
-    Get an event by its ID.
-    """
-    return await event_services.get_event_by_id_service(event_id)
-
-
-@router.get("/events/{slug}", response_model=EventOut)
-async def get_event_by_slug(slug: str, user=Depends(require_user)):
-    """
-    Get an event by its slug.
-    """
-    return await event_services.get_event_by_slug_service(slug)
 
 
 @router.get("/events/latest", response_model=list[EventOut])
 async def get_latest_events(limit: int = 10, user=Depends(require_user)):
-    """
-    Get the latest added events.
-    """
+    """Get the latest approved events."""
     return await event_services.get_latest_events_service(limit)
+
+
+@router.get("/events/count", response_model=int)
+async def get_total_events(user=Depends(require_user)):
+    """Get the total number of approved events."""
+    return await event_services.count_events_service()
 
 
 @router.get("/events/search/", response_model=list[EventOut])
@@ -51,58 +58,48 @@ async def search_events(
     country: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    user=Depends(require_user)
+    user=Depends(require_user),
 ):
-    """
-    Search events by different parameters.
-    """
-    # Search by title
+    """Search approved events by title, venue, country, or date range."""
     if title:
         return await event_services.search_events_by_title_service(title)
-    
-    # Search by venue
     if venue:
         return await event_services.search_events_by_venue_service(venue)
-    
-    # Search by country
     if country:
         return await event_services.get_events_by_country_service(country)
-    
-    # Search by date range
     if start_date and end_date:
         return await event_services.get_events_in_date_range_service(
-            datetime.fromisoformat(start_date), datetime.fromisoformat(end_date)
+            datetime.fromisoformat(start_date),
+            datetime.fromisoformat(end_date),
         )
     return []
 
+
 @router.get("/events/sorted/", response_model=list[EventOut])
-async def get_events_sorted_by_start_time(
-    order: str,
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
-    ascending: bool = True,
-    user=Depends(require_user)
+async def get_events_sorted(
+    order: str = "asc",
+    sort_by: str = "start_time",
+    user=Depends(require_user),
 ):
-    """
-    Get events sorted by start time.
-    """
-    #
-    if order == "desc":
-        ascending = False
-
-    # Sort by start time
-    if start_time:
-        return await event_services.get_events_sorted_by_start_time_service(ascending)
-    
-    # Sort by end time
-    if end_time:
+    """Get approved events sorted by start_time or end_time."""
+    ascending = order.lower() != "desc"
+    if sort_by == "end_time":
         return await event_services.get_events_sorted_by_end_time_service(ascending)
+    return await event_services.get_events_sorted_by_start_time_service(ascending)
 
-    return []
 
-@router.get("/events/count", response_model=int)
-async def get_total_events(user=Depends(require_user)):
+# ── Parameterised path last ───────────────────────────────────────────────────
+
+@router.get("/events/{identifier}", response_model=EventOut)
+async def get_event(identifier: str, user=Depends(require_user)):
     """
-    Get the total number of events.
+    Get an event by its numeric ID or its slug.
+
+    FastAPI cannot have two separate routes for /events/{event_id} (int)
+    and /events/{slug} (str) because both match the same URL shape.
+    This single route handles both: if the identifier is all digits it
+    is treated as an ID, otherwise as a slug.
     """
-    return await event_services.count_events_service()
+    if identifier.isdigit():
+        return await event_services.get_event_by_id_service(int(identifier))
+    return await event_services.get_event_by_slug_service(identifier)

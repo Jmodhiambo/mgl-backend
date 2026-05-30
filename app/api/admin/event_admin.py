@@ -9,6 +9,7 @@ from app.schemas.event import EventOut, EventCreate, EventCreateWithFlyer
 import app.services.event_services as event_services
 import app.services.user_services as user_services
 from app.services.notification_services import notify_event_submitted, notify_event_approved, notify_event_rejected, notify_event_cancelled
+from app.services.audit_log_services import log_admin_action_service
 from app.core.security import require_admin
 from app.utils.generate_image_url import save_flyer_and_get_url
 
@@ -48,6 +49,17 @@ async def create_event(
 
     # Notify organizer about event submission
     background_tasks.add_task(notify_event_submitted, event.id, event.title, event.slug, organizer.name, user.name)
+
+    # Create admin log entry for event creation
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=user.id,
+        admin_name=user.name,
+        action="create_event",
+        target_type="event",
+        target_id=event.id,
+        details={"event_title": event.title, "status": "created"},
+    )
 
     return event
 
@@ -106,6 +118,17 @@ async def approve_event(event_id: int, background_tasks: BackgroundTasks, user=D
     # Notify organizer about event approval
     background_tasks.add_task(notify_event_approved, event.id, event.title, event.slug, user.name, event.organizer_id)
 
+    # Create admin log entry for event approval
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=user.id,
+        admin_name=user.name,
+        action="approve_event",
+        target_type="event",
+        target_id=event.id,
+        details={"approved_event": event.title},
+    )
+
     return event
 
 @router.patch("/admin/events/{event_id}/reject", response_model=bool)
@@ -117,6 +140,17 @@ async def reject_event(event_id: int, background_tasks: BackgroundTasks, user=De
 
     # Notify organizer about event rejection
     background_tasks.add_task(notify_event_rejected, event.id, event.title, event.slug, user.name, event.organizer_id, reason="Your event did not meet our guidelines. Please review and resubmit.")
+
+    # Create admin log entry for event rejection
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=user.id,
+        admin_name=user.name,
+        action="reject_event",
+        target_type="event",
+        target_id=event.id,
+        details={"rejected_event": event.title},
+    )
 
     return event
 
@@ -131,14 +165,37 @@ async def update_event_status(event_id: int, status: str, background_tasks: Back
         # Notify organizer about event cancellation
         background_tasks.add_task(notify_event_cancelled, event.id, event.title, role="admin", name=user.name)
 
+    # Create admin log entry for event status update
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=user.id,
+        admin_name=user.name,
+        action="update_event_status",
+        target_type="event",
+        target_id=event.id,
+        details={"updated_event_": event.title, "status": status},
+    )
+
     return event
 
 @router.delete("/admin/events/{event_id}", response_model=bool)
-async def delete_event(event_id: int, user=Depends(require_admin)):
+async def delete_event(event_id: int, background_task: BackgroundTasks, user=Depends(require_admin)):
     """
     Delete an event by its ID.
     """
-    return await event_services.delete_event_service(event_id)
+    event = await event_services.delete_event_service(event_id)
+
+    if event:
+        # Create admin log entry for event deletion
+        background_task.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="delete_event",
+            target_type="event",
+            target_id=event_id,
+            details={"deleted_event": event.title},
+        )
 
 
 # Admin Advanced Queries

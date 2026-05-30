@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """Database Event model for MGLTickets."""
 
-from sqlalchemy import ForeignKey, Integer, String, DateTime
+from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timezone
 from app.db.session import Base
 
 if TYPE_CHECKING:
-    # Avoid circular imports. User is only imported for type hints, not executed at runtime.
     from app.db.models.user import User
     from app.db.models.booking import Booking
     from app.db.models.ticket_type import TicketType
     from app.db.models.favorites import Favorite
     from app.db.models.co_organizer import CoOrganizer
     from app.db.models.organizer_emails import OrganizerEmails
+
 
 class Event(Base):
     """Event model representing an event in the system."""
@@ -26,42 +26,78 @@ class Event(Base):
     slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, default=None)
     venue: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # ── Location fields ───────────────────────────────────────────────────────
+    city: Mapped[str] = mapped_column(String(100), nullable=False, default="Nairobi")
     country: Mapped[str] = mapped_column(String(100), nullable=False, default="Kenya")
+
+    # ── Category ──────────────────────────────────────────────────────────────
+    category: Mapped[str] = mapped_column(String(100), nullable=False, default="Other")
+
+    # ── Schedule ──────────────────────────────────────────────────────────────
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    original_filename: Mapped[str] = mapped_column(String(200), nullable=False, default=None)
-    flyer_url: Mapped[str] = mapped_column(String(500), nullable=False, default=None)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")  # e.g., upcoming, ongoing, completed, cancelled, deleted
-    approved: Mapped[bool] = mapped_column(nullable=False, default=False)
-    rejected: Mapped[bool] = mapped_column(nullable=False, default=False)
+
+    # ── Flyer ─────────────────────────────────────────────────────────────────
+    original_filename: Mapped[str] = mapped_column(String(200), nullable=False)
+    flyer_url: Mapped[str] = mapped_column(String(500), nullable=False)
+
+    # ── Status / approval ─────────────────────────────────────────────────────
+    # status tracks lifecycle: upcoming | ongoing | completed | cancelled | deleted
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")
+
+    # is_approved: admin approval gate. Renamed from the original `approved`
+    # column to match the OrganizerEventOut / AdminEventOut schema fields and
+    # all repo/service layer references (Event.is_approved.is_(True/False)).
+    # Generate an Alembic migration: op.alter_column('events', 'approved',
+    #   new_column_name='is_approved') if upgrading an existing database.
+    is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # is_active: whether the event is publicly visible. Separate from
+    # is_approved — an approved event can be temporarily hidden.
+    # was missing from the original model.
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # rejected: kept for backwards compatibility. When the admin rejects an
+    # event the repo sets is_approved=False AND is_active=False, so this
+    # column is no longer the primary rejection signal. It can be used as an
+    # audit flag. Will be removed in a future migration.
+    rejected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
 
-    # Foreign key relationship to User (organizer)
-    organizer_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    # ── Relationships ─────────────────────────────────────────────────────────
+    organizer_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     organizer: Mapped["User"] = relationship("User", back_populates="events")
-
-    # Foreign key relationship to Booking (bookings)
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="event")
-    ticket_types: Mapped[list["TicketType"]] = relationship("TicketType", back_populates="event")
-
-    # Foreign key relationship to Favorite (favorites)
-    favorites: Mapped[list["Favorite"]] = relationship("Favorite", back_populates="event")
-
-    # Foreign key relationship to Co-Organizer (co_organizers)
-    co_organizers: Mapped[list["CoOrganizer"]] = relationship("CoOrganizer", back_populates="event")
-
-    # Foreign key relationship to OrganizerEmails (organizer_emails)
-    organizer_emails: Mapped[list["OrganizerEmails"]] = relationship("OrganizerEmails", back_populates="event")
+    ticket_types: Mapped[list["TicketType"]] = relationship(
+        "TicketType", back_populates="event"
+    )
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite", back_populates="event"
+    )
+    co_organizers: Mapped[list["CoOrganizer"]] = relationship(
+        "CoOrganizer", back_populates="event"
+    )
+    organizer_emails: Mapped[list["OrganizerEmails"]] = relationship(
+        "OrganizerEmails", back_populates="event"
+    )
 
     def __repr__(self) -> str:
-        return f"<Event id={self.id} title={self.title} location={self.venue} start_time={self.start_time}>"
+        return (
+            f"<Event id={self.id} title={self.title!r} "
+            f"venue={self.venue!r} start={self.start_time}>"
+        )

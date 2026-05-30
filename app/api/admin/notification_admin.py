@@ -20,10 +20,12 @@ Frontend ↔ backend mapping
   POST  /admin/notifications/cleanup     → prune expired rows (cron / manual)
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from app.schemas.notification import NotificationOut
 from app.core.security import require_admin
 import app.services.notification_services as notification_services
+
+from app.services.audit_log_services import log_admin_action_service
 
 router = APIRouter()
 
@@ -93,17 +95,32 @@ async def get_notification(
 @router.patch("/admin/notifications/{notification_id}/read", response_model=NotificationOut)
 async def mark_notification_read(
     notification_id: int,
+    background_tasks: BackgroundTasks,
     user=Depends(require_admin),
 ):
     """
     Mark a single notification as read.
     Called when the user clicks 'Mark read' or 'View →' on a notification.
     """
-    return await notification_services.mark_notification_read_service(notification_id)
+    notification = await notification_services.mark_notification_read_service(notification_id)
+
+    if notification is not None:
+        # Create admin log entry for marking notification read
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="mark_notification_read",
+            target_type="notification",
+            target_id=notification_id,
+            details={"notification_id": notification_id, "status": "read"},
+        )
+    return notification
 
 
 @router.patch("/admin/notifications/read-all", response_model=dict)
 async def mark_all_admin_notifications_read(
+    background_tasks: BackgroundTasks,
     user=Depends(require_admin),
 ):
     """
@@ -111,7 +128,20 @@ async def mark_all_admin_notifications_read(
     Called by the 'Mark all read' button.
     Returns: { updated: int, message: str }
     """
-    return await notification_services.mark_all_admin_read_service()
+    notification = await notification_services.mark_all_admin_read_service()
+
+    if notification is not None:
+        # Create admin log entry for all notifications read
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="mark_all_notifications_read",
+            target_type="notification",
+            target_id=None,
+            details={"updated": notification["updated"], "status": "all_read"},
+        )
+    return notification
 
 
 # ─── Dismiss / Delete ─────────────────────────────────────────────────────────
@@ -119,17 +149,33 @@ async def mark_all_admin_notifications_read(
 @router.delete("/admin/notifications/{notification_id}", response_model=bool)
 async def dismiss_notification(
     notification_id: int,
+    background_tasks: BackgroundTasks,
     user=Depends(require_admin),
 ):
     """
     Hard-delete a single notification (the 'X' dismiss button).
     Returns True on success.
     """
-    return await notification_services.dismiss_notification_service(notification_id)
+    notification = await notification_services.dismiss_notification_service(notification_id)
+
+    if notification is not None:
+        # Create admin log entry for notification dismissal
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="dismiss_notification",
+            target_type="notification",
+            target_id=notification_id,
+            details={"notification_id": notification_id, "status": "dismissed"},
+        )
+
+    return notification
 
 
 @router.delete("/admin/notifications/clear-read", response_model=dict)
 async def clear_read_notifications(
+    background_tasks: BackgroundTasks,
     user=Depends(require_admin),
 ):
     """
@@ -137,13 +183,28 @@ async def clear_read_notifications(
     Called by the 'Clear read' button.
     Returns: { deleted: int, message: str }
     """
-    return await notification_services.clear_read_admin_notifications_service()
+    res = await notification_services.clear_read_admin_notifications_service()
+
+    if res is not None:
+        # Create admin log entry for clearing read notifications
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="clear_read_notifications",
+            target_type="notification",
+            target_id=None,
+            details={"deleted": res["deleted"], "status": "cleared"},
+        )
+
+    return res
 
 
 # ─── Maintenance ──────────────────────────────────────────────────────────────
 
 @router.post("/admin/notifications/cleanup", response_model=dict)
 async def cleanup_expired_notifications(
+    background_tasks: BackgroundTasks,
     user=Depends(require_admin),
 ):
     """
@@ -152,4 +213,17 @@ async def cleanup_expired_notifications(
     or manually from the Settings page.
     Returns: { deleted: int }
     """
-    return await notification_services.cleanup_expired_notifications_service()
+    res = await notification_services.cleanup_expired_notifications_service()
+
+    if res is not None:
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="cleanup_expired_notifications",
+            target_type="notification",
+            target_id=None,
+            details={"deleted": res["deleted"], "status": "cleaned"},
+        )
+
+    return res

@@ -8,7 +8,7 @@ Rows are INSERT-only; never updated or deleted.  The admin panel
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -47,9 +47,9 @@ class AuditLog(Base):
     """Primary-key of the affected resource.  NULL for platform-level actions."""
 
     # ── Extra context ─────────────────────────────────────────────────────────
-    details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    """JSON string with action-specific metadata, e.g. {"reason": "spam"}.
-    Stored as TEXT to avoid a JSON column type dependency."""
+    details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    """JSON object with action-specific metadata, e.g. {"reason": "spam"}.
+    Stored as JSON to avoid a JSON column type dependency."""
 
     # ── When ──────────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(

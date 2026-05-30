@@ -2,7 +2,7 @@
 """Configuration settings for MGLTickets."""
 
 from starlette.config import Config
-from starlette.datastructures import Secret
+from pydantic import SecretStr
 
 # Load environment variables from a .env.development file in dev and a .env.production file in production
 config = Config(".env.development")
@@ -14,28 +14,22 @@ DEBUG: bool = config("DEBUG", cast=bool, default=False)
 
 # Database connection settings
 DB_USER: str = config("DB_USER")
-DB_PASSWORD: Secret = config("DB_PASSWORD", cast=Secret)
+DB_PASSWORD: SecretStr = config("DB_PASSWORD", cast=SecretStr)
 DB_HOST: str = config("DB_HOST", default="localhost")
 DB_PORT: int = config("DB_PORT", cast=int, default=5432)
 DB_NAME: str = config("DB_NAME")
 
 # Construct the SQLAlchemy Database URI
 # get_secret_value() is used to retrieve the actual password string from the Secret object
-DATABASE_URL: str = config (
-    "SQLITE_DATABASE_URL",
-    default=(
-        f"postgresql+asyncpg://{DB_USER}:{str(DB_PASSWORD)}@"
-        f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    ),
+DATABASE_URL: str = (
+    f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD.get_secret_value()}@"
+    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
 # Change to this in alembic/env.py in production
-ALEMBIC_DATABASE_URL: str = config (
-    "ALEMBIC_DATABASE_URL",
-    default=(
-        f"postgresql+psycopg2://{DB_USER}:{str(DB_PASSWORD)}@"
-        f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    ),
+ALEMBIC_DATABASE_URL: str = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD.get_secret_value()}@"
+    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
 # Optional SQLAlchemy settings
@@ -46,7 +40,7 @@ ENVIRONMENT: str = config("ENVIRONMENT", default="development")
 COOKIE_DOMAIN: str = config("COOKIE_DOMAIN", default=".mgltickets.com")
 
 # Other secrets
-SECRET_KEY: str = config("SECRET_KEY", cast=Secret)
+SECRET_KEY: str = config("SECRET_KEY", cast=SecretStr)
 ALGORITHM: str = config("ALGORITHM", default="HS256")
 
 # Frontend URL
@@ -63,15 +57,15 @@ UPLOADS_EVENTS_DIR: str = config("UPLOADS_EVENTS_DIR", default="app/uploads/even
 UPLOADS_PROFILES_DIR: str = config("UPLOADS_PROFILES_DIR", default="app/uploads/profiles")
 
 #SendGrid email services
-SENDGRID_API_KEY: Secret = config("SENDGRID_API_KEY", cast=Secret)
-SENDGRID_NO_REPLY_EMAIL= config("SENDGRID_NO_REPLY_EMAIL")
-SENDGRID_SUPPORT_EMAIL= config("SENDGRID_SUPPORT_EMAIL")
-SENDGRID_BILLING_EMAIL= config("SENDGRID_BILLING_EMAIL")
-SENDGRID_PRESS_EMAIL= config("SENDGRID_PRESS_EMAIL")
-SENDGRID_PARTNERSHIP_EMAIL= config("SENDGRID_PARTNERSHIP_EMAIL")
-SENDGRID_FROM_NAME= config("SENDGRID_FROM_NAME")
+SENDGRID_API_KEY: SecretStr = config("SENDGRID_API_KEY", cast=SecretStr)
+SENDGRID_NO_REPLY_EMAIL: str = config("SENDGRID_NO_REPLY_EMAIL")
+SENDGRID_SUPPORT_EMAIL: str = config("SENDGRID_SUPPORT_EMAIL")
+SENDGRID_BILLING_EMAIL: str = config("SENDGRID_BILLING_EMAIL")
+SENDGRID_PRESS_EMAIL: str = config("SENDGRID_PRESS_EMAIL")
+SENDGRID_PARTNERSHIP_EMAIL: str = config("SENDGRID_PARTNERSHIP_EMAIL")
+SENDGRID_FROM_NAME: str = config("SENDGRID_FROM_NAME")
 
 # Google reCAPTCHA configuration
-RECAPTCHA_SECRET_KEY: Secret = config("RECAPTCHA_SECRET_KEY", cast=Secret)
+RECAPTCHA_SECRET_KEY: SecretStr = config("RECAPTCHA_SECRET_KEY", cast=SecretStr)
 RECAPTCHA_VERIFY_URL: str = config("RECAPTCHA_VERIFY_URL", default="https://www.google.com/recaptcha/api/siteverify")
 MIN_RECAPTCHA_SCORE: float = config("MIN_RECAPTCHA_SCORE", cast=float, default=0.5)

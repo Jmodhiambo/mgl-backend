@@ -83,22 +83,28 @@ async def list_contact_messages_repo(
 
 async def update_contact_message_repo(
     message_id: int,
-    update_data: ContactMessageUpdate
+    update_data: ContactMessageUpdate | dict
 ) -> Optional[ContactMessageOut]:
-    """Update a contact message."""
+    """Update a contact message. Accepts either a ContactMessageUpdate schema or a plain dict."""
     async with get_async_session() as session:
         result = await session.execute(select(ContactMessage).where(ContactMessage.id == message_id))
         contact = result.scalar_one_or_none()
-        
+
         if not contact:
             return None
-        
-        for field, value in update_data.dict(exclude_unset=True).items():
+
+        # Normalise to a dict regardless of input type
+        if isinstance(update_data, dict):
+            fields = update_data
+        else:
+            fields = update_data.model_dump(exclude_unset=True)
+
+        for field, value in fields.items():
             setattr(contact, field, value)
-        
+
         await session.commit()
         await session.refresh(contact)
-        
+
         return ContactMessageOut.model_validate(contact)
 
 
@@ -111,22 +117,40 @@ async def get_contact_stats_repo() -> ContactMessageStats:
         new_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'new'))
         new = new_result.scalar()
 
+        pending_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'pending'))
+        pending = pending_result.scalar()
+
         responded_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'responded'))
         responded = responded_result.scalar()
 
         closed_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'closed'))
         closed = closed_result.scalar()
 
-        spam = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'spam'))
-        spam = spam.scalar()
-        
+        spam_result = await session.execute(select(func.count(ContactMessage.id)).where(ContactMessage.status == 'spam'))
+        spam = spam_result.scalar()
+
         return ContactMessageStats(
             total=total or 0,
             new=new or 0,
+            pending=pending or 0,
             responded=responded or 0,
             closed=closed or 0,
             spam=spam or 0
         )
+
+
+async def delete_contact_message_repo(message_id: int) -> bool:
+    """Hard-delete a contact message. Returns True if deleted, False if not found."""
+    async with get_async_session() as session:
+        result = await session.execute(select(ContactMessage).where(ContactMessage.id == message_id))
+        contact = result.scalar_one_or_none()
+
+        if not contact:
+            return False
+
+        await session.delete(contact)
+        await session.commit()
+        return True
 
 
 async def count_recent_messages_by_email_repo(email: str, hours: int = 1) -> int:

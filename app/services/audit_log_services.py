@@ -107,7 +107,7 @@ async def list_audit_logs_service(
 async def list_my_activity_service(admin_id: int) -> list[AuditLogOut]:
     """All actions performed by one admin.
 
-    Used by GET /admin/profile/activity (the 'My Activity' profile tab).
+    Used by GET /admin/audit-logs/ (the 'My Activity' profile tab).
     """
     logger.info(f"Fetching activity for admin_id={admin_id}")
     return await repo.list_audit_logs_for_admin_repo(admin_id)

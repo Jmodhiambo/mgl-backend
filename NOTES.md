@@ -1,4 +1,3 @@
-# alembic upgrade head  --> Follow this procedure to avoid multiple heads
 # alembic revision --autogenerate -m "..."
 # alembic upgrade head
 
@@ -52,3 +51,5 @@ Implement sold out, flagged user, all under payment and bookings in notification
 Add admin log write to all the required places. app.services.audit_log_services.py
 
 Work on getting location field in the app.api.auth.auth under login route.
+
+Look into implementing audit logs for other user's apart from admin like in user_admin endpoint.

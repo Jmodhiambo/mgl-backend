@@ -11,6 +11,7 @@ class RefreshSessionOut(BaseModelEAT):
     user_id: int
     refresh_token_hash: str
     expires_at: datetime
+    last_used_at: datetime
     revoked_at: Optional[datetime]
     replaced_by_sid: Optional[str]
     device_info: Optional[str]

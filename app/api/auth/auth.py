@@ -57,7 +57,7 @@ async def register_user(user_data: UserCreate, background_tasks: BackgroundTasks
         user_data.password,
         user_data.phone_number,
     )
-    background_tasks.add_task(notify_user_registered, user.id, user.name)
+    background_tasks.add_task(notify_user_registered, user.id, user.name, user.email)
     return user
 
 
