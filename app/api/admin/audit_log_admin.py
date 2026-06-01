@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
 """FastAPI router — Audit Logs.
-
-Place at:  app/routers/audit_log_router.py
-
-Mount in main.py / app factory:
-    app.include_router(audit_log_router, tags=["Audit Logs"])
-
-All routes require require_admin.
-
-Covered endpoints
------------------
-GET  /admin/audit-logs                 → paginated + filtered list  (AuditLogs.tsx)
-GET  /admin/audit-logs/{log_id}        → single entry detail
-GET  /admin/audit-logs/my              → activity feed for current admin (MyProfile.tsx)
 """
 
 from datetime import datetime
@@ -25,6 +12,25 @@ from app.schemas.audit_log import AuditLogListResponse, AuditLogOut
 import app.services.audit_log_services as audit_log_services
 
 router = APIRouter()
+
+
+# ─── My Activity (Profile page — My Activity tab) ────────────────────────────
+# IMPORTANT: this route MUST come before /{log_id} so FastAPI does not try to
+# cast the literal "my" to an integer and return 422.
+
+@router.get(
+    "/admin/audit-logs/my",
+    response_model=list[AuditLogOut],
+    summary="My admin activity feed",
+    description=(
+        "Returns all audit-log entries created by the currently authenticated "
+        "admin, ordered newest-first.  Used by the 'My Activity' tab on the "
+        "My Profile page."
+    ),
+)
+async def get_my_activity(current_user=Depends(require_admin)):
+    """Return all activity for the current admin."""
+    return await audit_log_services.list_my_activity_service(admin_id=current_user.id)
 
 
 # ─── Main Audit Logs page ─────────────────────────────────────────────────────
@@ -80,6 +86,9 @@ async def list_audit_logs(
     )
 
 
+# ─── Single entry ─────────────────────────────────────────────────────────────
+# Declared LAST so "my" is never mistaken for a log_id integer.
+
 @router.get(
     "/admin/audit-logs/{log_id}",
     response_model=AuditLogOut,
@@ -91,20 +100,3 @@ async def get_audit_log(
     _current_user=Depends(require_admin),
 ):
     return await audit_log_services.get_audit_log_service(log_id)
-
-
-# ─── My Activity (Profile page — My Activity tab) ────────────────────────────
-
-@router.get(
-    "/admin/audit-logs/my",
-    response_model=list[AuditLogOut],
-    summary="My admin activity feed",
-    description=(
-        "Returns all audit-log entries created by the currently authenticated "
-        "admin, ordered newest-first.  Used by the 'My Activity' tab on the "
-        "My Profile page."
-    ),
-)
-async def get_my_activity(current_user=Depends(require_admin)):
-    """Return all activity for the current admin."""
-    return await audit_log_services.list_my_activity_service(admin_id=current_user.id)

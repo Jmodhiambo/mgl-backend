@@ -2,11 +2,11 @@
 """Schemas for User model in MGLTickets."""
 
 from datetime import datetime
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from typing import Optional
-from app.schemas.base import BaseModelEAT
+# from app.schemas.base import BaseModelEAT
 
-class UserOut(BaseModelEAT):
+class UserOut(BaseModel):
     """Schema for outputting User data."""
     id: int
     name: str
@@ -23,7 +23,7 @@ class UserOut(BaseModelEAT):
     class Config:
         from_attributes = True
     
-class UserCreate(BaseModelEAT):
+class UserCreate(BaseModel):
     """Schema for creating a new User."""
     name: str
     email: EmailStr
@@ -33,7 +33,7 @@ class UserCreate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class UserUpdate(BaseModelEAT):
+class UserUpdate(BaseModel):
     """Schema for updating an existing User."""
     name: Optional[str] = None
     # email: Optional[EmailStr] = None
@@ -42,7 +42,7 @@ class UserUpdate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class OrganizerCreate(BaseModelEAT):
+class OrganizerCreate(BaseModel):
     """Schema for creating a new Organizer."""
     bio: Optional[str] = None
     organization_name: Optional[str] = None
@@ -64,7 +64,7 @@ class OrganizerUpdate(UserUpdate):
     class Config:
         from_attributes = True
 
-class OrganizerInfo(BaseModelEAT):
+class OrganizerInfo(BaseModel):
     """Schema for outputting Organizer data."""
     bio: Optional[str] = None
     organization_name: Optional[str] = None
@@ -95,7 +95,7 @@ class UserOutWithPWD(UserOut):
     class Config:
         from_attributes = True
 
-class UserPasswordChange(BaseModelEAT):
+class UserPasswordChange(BaseModel):
     """Schema for updating an existing User."""
     old_password: str
     new_password: str
@@ -103,21 +103,21 @@ class UserPasswordChange(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class UserPasswordUpdate(BaseModelEAT):
+class UserPasswordUpdate(BaseModel):
     """Schema for updating an existing User's password."""
     new_password: str
 
     class Config:
         from_attributes = True
 
-class UserEmailVerification(BaseModelEAT):
+class UserEmailVerification(BaseModel):
     """Schema for verifying a User's email."""
     token: str
 
     class Config:
         from_attributes = True
 
-class UserOrganizerProfileOut(BaseModelEAT):
+class UserOrganizerProfileOut(BaseModel):
     """Schema for outputting organizer profile data. Shows whether they have completed their organizer profile or not."""
     profile_completed: bool
     missing_fields: list[str] = []
@@ -125,7 +125,7 @@ class UserOrganizerProfileOut(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class AdminMeOut(BaseModelEAT):
+class AdminMeOut(BaseModel):
     """Schema for outputting Admin's own data."""
     id: int
     name: str
@@ -140,7 +140,7 @@ class AdminMeOut(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class AdminMeUpdate(BaseModelEAT):
+class AdminMeUpdate(BaseModel):
     """Schema for updating Admin's own data."""
     name: Optional[str] = None
     phone_number: Optional[str] = None
@@ -149,7 +149,7 @@ class AdminMeUpdate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class AdminUserEmailUpdate(BaseModelEAT):
+class AdminUserEmailUpdate(BaseModel):
     """Schema for updating a User's email by an Admin."""
     user_id: int
     new_email: EmailStr

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """User-related services for MGLTickets."""
 
-import app.db.repositories.user_repo as user_repo
+import asyncio
+
 from typing import Optional
 from fastapi import HTTPException, status
 from datetime import datetime
@@ -13,6 +14,10 @@ from app.utils.token_verification import (
 from app.schemas.user import (
     UserOut, UserUpdate, UserPublic
 )
+from app.schemas.organizer import DashboardStats
+import app.db.repositories.user_repo as user_repo
+import app.db.repositories.event_repo as event_repo
+import app.db.repositories.booking_repo as booking_repo
 from app.services.ref_session_services import cleanup_user_sessions_service
 # from app.emails.templates.verification_email import send_verification_email
 # from app.emails.templates.password_reset_email import send_password_reset_email, send_password_changed_notification_email
@@ -526,3 +531,69 @@ async def count_users_created_between_service(start_date: datetime, end_date: da
 async def count_users_updated_between_service(start_date: datetime, end_date: datetime) -> int:
     """Count users updated between two dates."""
     return await user_repo.count_users_updated_between_repo(start_date, end_date)
+
+
+""""Organizer-specific services"""
+async def get_organizer_stats_service(organizer_id: int) -> DashboardStats:
+    """
+    Optimized version that fetches all stats in parallel.
+    
+    Args:
+        organizer_id: The ID of the organizer
+        
+    Returns:
+        DashboardStats: Object containing all dashboard statistics
+    """
+    logger.info(f"Fetching dashboard stats (optimized) for organizer ID: {organizer_id}")
+    
+    try:
+        # Fetch all stats in parallel using asyncio.gather()
+        (
+            total_events,
+            active_events,
+            upcoming_events,
+            completed_events,
+            total_bookings,
+            tickets_sold,
+            total_revenue,
+            current_month_events,
+            last_month_events
+        ) = await asyncio.gather(
+            event_repo.count_events_by_organizer_repo(organizer_id),
+            event_repo.count_active_events_by_organizer_repo(organizer_id),
+            event_repo.count_upcoming_events_by_organizer_repo(organizer_id),
+            event_repo.count_completed_events_by_organizer_repo(organizer_id),
+            booking_repo.count_bookings_by_organizer_repo(organizer_id),
+            booking_repo.count_tickets_sold_by_organizer_repo(organizer_id),
+            booking_repo.calculate_revenue_by_organizer_repo(organizer_id),
+            event_repo.count_events_created_this_month_repo(organizer_id),
+            event_repo.count_events_created_last_month_repo(organizer_id)
+        )
+        
+        # Calculate monthly growth
+        if last_month_events > 0:
+            monthly_growth = ((current_month_events - last_month_events) / last_month_events) * 100
+        elif current_month_events > 0:
+            monthly_growth = 100.0
+        else:
+            monthly_growth = 0.0
+        
+        monthly_growth = round(monthly_growth, 1)
+        
+        stats = DashboardStats(
+            total_events=total_events,
+            total_bookings=total_bookings,
+            total_revenue=total_revenue,
+            active_events=active_events,
+            upcoming_events=upcoming_events,
+            completed_events=completed_events,
+            monthly_growth=monthly_growth,
+            tickets_sold=tickets_sold
+        )
+        
+        logger.info(f"Successfully fetched stats (optimized) for organizer ID: {organizer_id}")
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Error fetching organizer stats for ID {organizer_id}: {str(e)}")
+        raise

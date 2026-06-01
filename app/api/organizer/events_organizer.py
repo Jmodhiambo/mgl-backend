@@ -22,7 +22,6 @@ from app.schemas.event import (
     EventUpdate,
 )
 import app.services.event_services as event_services
-import app.services.event_organizer_services as event_organizer_services
 from app.services.notification_services import notify_event_submitted
 from app.core.security import require_organizer
 from app.utils.generate_image_url import save_flyer_and_get_url
@@ -41,7 +40,7 @@ router = APIRouter()
 )
 async def get_events_by_organizer(organizer: UserOut = Depends(require_organizer)):
     """Get all events for the current organizer with booking/revenue stats."""
-    return await event_organizer_services.get_events_by_organizer_service(organizer.id)
+    return await event_services.get_events_by_organizer_service(organizer.id)
 
 
 @router.get(
@@ -65,7 +64,7 @@ async def get_total_events_by_organizer(organizer: UserOut = Depends(require_org
 )
 async def get_top_events(limit: int = 5, organizer: UserOut = Depends(require_organizer)):
     """Get the top events of the current organizer by revenue."""
-    return await event_organizer_services.get_top_events_by_organizer_service(
+    return await event_services.get_top_events_by_organizer_service(
         organizer.id, limit
     )
 
@@ -113,7 +112,7 @@ async def get_event_stats(
     event_id: int, organizer: UserOut = Depends(require_organizer)
 ):
     """Get statistics for a specific event."""
-    return await event_organizer_services.get_event_stats_service(event_id)
+    return await event_services.get_event_stats_service(event_id)
 
 
 @router.get(
@@ -128,7 +127,7 @@ async def get_event_details(
     Get complete event details: event info, stats, ticket types,
     and the 5 most recent bookings. Single call for the EventDetails page.
     """
-    return await event_organizer_services.get_event_details_service(event_id)
+    return await event_services.get_event_details_service(event_id)
 
 
 @router.put(

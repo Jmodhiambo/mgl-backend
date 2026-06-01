@@ -7,7 +7,6 @@ from app.schemas.user import OrganizerCreate, OrganizerUpdate, OrganizerOut, Org
 from app.schemas.organizer import DashboardStats, TopEvent, RecentBooking
 from app.services.notification_services import notify_organizer_registered
 import app.services.user_services as user_services
-import app.services.user_organizer_services as user_organizer_services
 from app.core.security import require_organizer, require_user
 from app.utils.generate_image_url import save_profile_picture_and_get_url, delete_profile_picture
 
@@ -28,7 +27,7 @@ async def get_organizer_stats(organizer: UserOut = Depends(require_organizer)):
     Get the stats of the current organizer.
     Return total events, bookings, revenue, etc.
     """    
-    return await user_organizer_services.get_organizer_stats_service(organizer.id)
+    return await user_services.get_organizer_stats_service(organizer.id)
 
 
 @router.patch("/organizers/me/promote", response_model=OrganizerOut, status_code=status.HTTP_201_CREATED)#

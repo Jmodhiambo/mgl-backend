@@ -6,7 +6,6 @@ Place at:  app/db/repositories/audit_log_repo.py
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from typing import Optional
 
@@ -20,7 +19,12 @@ from app.schemas.audit_log import AuditLogCreate, AuditLogOut
 # ─── Write ────────────────────────────────────────────────────────────────────
 
 async def create_audit_log_repo(data: AuditLogCreate) -> AuditLogOut:
-    """Append one audit-log entry. details dict is serialised to JSON TEXT."""
+    """Append one audit-log entry.
+
+    FIX: Pass the dict directly to the JSON column — SQLAlchemy + PostgreSQL
+    handle serialisation internally.  The old code called json.dumps() first,
+    which produced a TEXT string that PostgreSQL's JSON column rejected (422).
+    """
     async with get_async_session() as session:
         row = AuditLog(
             admin_id=data.admin_id,
@@ -28,7 +32,7 @@ async def create_audit_log_repo(data: AuditLogCreate) -> AuditLogOut:
             action=data.action,
             target_type=data.target_type,
             target_id=data.target_id,
-            details=json.dumps(data.details or {}),
+            details=data.details or {},   # ← dict, NOT json.dumps(...)
         )
         session.add(row)
         await session.commit()
@@ -57,10 +61,7 @@ async def list_audit_logs_repo(
     limit: int = 200,
     offset: int = 0,
 ) -> list[AuditLogOut]:
-    """Filtered, paginated list — every param is optional.
-
-    Called by the main Audit Logs page with whatever filters the admin set.
-    """
+    """Filtered, paginated list — every param is optional."""
     async with get_async_session() as session:
         stmt = select(AuditLog).order_by(AuditLog.created_at.desc())
 

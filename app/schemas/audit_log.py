@@ -2,6 +2,11 @@
 """Pydantic schemas for AuditLog.
 
 Place at:  app/schemas/audit_log.py
+
+FIX: The model_validator no longer tries to json.loads() the details field.
+PostgreSQL's JSON column already returns a Python dict via SQLAlchemy — calling
+json.loads() on a dict raised a TypeError and corrupted the details payload.
+The validator now only handles the legacy SQLite TEXT case as a fallback.
 """
 
 from __future__ import annotations
@@ -27,7 +32,6 @@ class AuditLogOut(BaseModel):
     target_id: Optional[int] = None
 
     details: Optional[dict[str, Any]] = None
-    """Deserialized from the TEXT column — stored as JSON string in the DB."""
 
     created_at: datetime
 
@@ -36,22 +40,31 @@ class AuditLogOut(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def deserialize_details(cls, data: Any) -> Any:
-        """Convert the raw TEXT `details` column to a dict if it arrives as a string."""
+        """Normalise the details field.
+
+        PostgreSQL JSON column → SQLAlchemy returns a dict already.
+        Legacy SQLite TEXT column → arrives as a JSON string, needs parsing.
+        Anything else (None, already a dict) → pass through untouched.
+        """
+        def _parse(raw: Any) -> Any:
+            if raw is None or isinstance(raw, dict):
+                return raw          # already correct — do nothing
+            if isinstance(raw, str):
+                try:
+                    return json.loads(raw)
+                except (json.JSONDecodeError, TypeError):
+                    return {}
+            return raw              # unexpected type — leave for Pydantic to handle
+
         if hasattr(data, "__dict__"):
-            # SQLAlchemy model instance
+            # SQLAlchemy ORM instance
             raw = getattr(data, "details", None)
-            if isinstance(raw, str):
-                try:
-                    object.__setattr__(data, "details", json.loads(raw))
-                except (json.JSONDecodeError, TypeError):
-                    object.__setattr__(data, "details", {})
+            parsed = _parse(raw)
+            if parsed is not raw:
+                object.__setattr__(data, "details", parsed)
         elif isinstance(data, dict):
-            raw = data.get("details")
-            if isinstance(raw, str):
-                try:
-                    data["details"] = json.loads(raw)
-                except (json.JSONDecodeError, TypeError):
-                    data["details"] = {}
+            data["details"] = _parse(data.get("details"))
+
         return data
 
 
@@ -68,7 +81,7 @@ class AuditLogCreate(BaseModel):
     details: Optional[dict[str, Any]] = None
 
 
-# ─── List response (optional envelope) ───────────────────────────────────────
+# ─── List response ────────────────────────────────────────────────────────────
 
 class AuditLogListResponse(BaseModel):
     total: int

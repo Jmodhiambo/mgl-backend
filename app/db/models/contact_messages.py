@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """ContactMessage model."""
 
-from sqlalchemy import Integer, String, ForeignKey, DateTime
+from sqlalchemy import Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timezone
 from app.db.session import Base
 
@@ -18,32 +17,41 @@ class ContactMessage(Base):
     __tablename__ = "contact_messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    reference_id: Mapped[str] = mapped_column(Integer, index=True, nullable=False)
+    reference_id: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
+
+    # Source distinguishes which form submitted this message.
+    # Values: "user" | "organizer"
+    source: Mapped[str] = mapped_column(String(20), index=True, nullable=False, default="user")
 
     # User Information
+    # Fix: Mapped[str] on nullable columns — must be Mapped[Optional[str]]
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
-    name: Mapped[str] = mapped_column(String(50), nullable=True)
-    email: Mapped[str] = mapped_column(String(100), index=True, nullable=True)
-    phone: Mapped[str] = mapped_column(String(20), nullable=True)
+    name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(100), index=True, nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Message Details
     subject: Mapped[str] = mapped_column(String(100), nullable=False)
     category: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
     message: Mapped[str] = mapped_column(String(2000), nullable=False)
 
+    # Organizer-specific field — human-readable event title for easy admin reference.
+    # Null for user-sourced messages.
+    event_title: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+
     # Status Tracking
-    status: Mapped[str] = mapped_column(String(50), index=True, nullable=False, default="new")   # new, responded, pending, closed, spam
-    priority: Mapped[str] = mapped_column(String(50), nullable=False, default="normal")  # low, normal, high, urgent
+    status: Mapped[str] = mapped_column(String(50), index=True, nullable=False, default="new")   # new, pending, responded, closed, spam
+    priority: Mapped[str] = mapped_column(String(50), nullable=False, default="normal")          # low, normal, high, urgent
 
     # Assignment (for future use)
     assigned_to: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Metadata
-    client_ip: Mapped[str] = mapped_column(String(50), nullable=True)
-    user_agent: Mapped[str] = mapped_column(String(100), nullable=True)
-    recaptcha_score: Mapped[str] = mapped_column(String(50), nullable=True)
+    client_ip: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    recaptcha_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
-    # Timeststamps
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
@@ -54,16 +62,13 @@ class ContactMessage(Base):
         DateTime(timezone=True),
         default=datetime.now(timezone.utc),
         onupdate=datetime.now(timezone.utc),
-        nullable=False
+        nullable=False,
     )
-    responded_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
-    )
-    closed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    responded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="contact_messages")
+    user: Mapped[Optional["User"]] = relationship("User", back_populates="contact_messages")
 
     def __repr__(self) -> str:
-        return f"<ContactMessage id={self.id} name={self.name} email={self.email}>"
+        return f"<ContactMessage id={self.id} source={self.source} ref={self.reference_id} event_title={self.event_title}>"

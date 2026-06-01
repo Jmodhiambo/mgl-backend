@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Schemas for ContactMessage model in MGLTickets."""
+"""
+Pydantic schemas for ContactMessage.
+"""
 
-from datetime import datetime
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
-from pydantic import EmailStr, field_validator
-from app.schemas.base import BaseModelEAT
+from datetime import datetime
 
 
-class ContactMessageBase(BaseModelEAT):
-    """Base schema for ContactMessage."""
+# ── Shared base ───────────────────────────────────────────────────────────────
+
+class ContactMessageBase(BaseModel):
     name: str
     email: EmailStr
     phone: Optional[str] = None
@@ -16,107 +18,90 @@ class ContactMessageBase(BaseModelEAT):
     category: str
     message: str
 
-    @field_validator('name')
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        if len(v.strip()) < 2:
-            raise ValueError('Name must be at least 2 characters long')
-        return v.strip()
 
-    @field_validator('subject')
-    @classmethod
-    def validate_subject(cls, v: str) -> str:
-        if len(v.strip()) < 3:
-            raise ValueError('Subject must be at least 3 characters long')
-        return v.strip()
-
-    @field_validator('message')
-    @classmethod
-    def validate_message(cls, v: str) -> str:
-        if len(v.strip()) < 10:
-            raise ValueError('Message must be at least 10 characters long')
-        return v.strip()
-
-    @field_validator('category')
-    @classmethod
-    def validate_category(cls, v: str) -> str:
-        allowed_categories = [
-            'general', 'support', 'billing', 'refund', 
-            'organizer', 'partnership', 'feedback'
-        ]
-        if v not in allowed_categories:
-            raise ValueError(f'Category must be one of: {", ".join(allowed_categories)}')
-        return v
-
+# ── Create schemas ────────────────────────────────────────────────────────────
 
 class ContactMessageCreate(ContactMessageBase):
-    """Schema for creating a new ContactMessage."""
+    """Used by the user/public contact endpoint."""
     recaptcha_token: str
-    user_id: Optional[int] = None  # Set by backend if user is logged in
 
-    class Config:
-        from_attributes = True
+    @field_validator("name")
+    @classmethod
+    def name_min_length(cls, v: str) -> str:
+        if len(v.strip()) < 2:
+            raise ValueError("Name must be at least 2 characters")
+        return v.strip()
 
+    @field_validator("subject")
+    @classmethod
+    def subject_min_length(cls, v: str) -> str:
+        if len(v.strip()) < 3:
+            raise ValueError("Subject must be at least 3 characters")
+        return v.strip()
+
+    @field_validator("message")
+    @classmethod
+    def message_min_length(cls, v: str) -> str:
+        if len(v.strip()) < 10:
+            raise ValueError("Message must be at least 10 characters")
+        return v.strip()
+
+
+class OrganizerContactMessageCreate(ContactMessageCreate):
+    """
+    Used by the organizer contact endpoint.
+    Extends ContactMessageCreate with the optional event_title field.
+    Storing the title (not the ID) means the admin can read it directly
+    without making a separate event lookup.
+    """
+    event_title: Optional[str] = None
+
+
+# ── Out schema ────────────────────────────────────────────────────────────────
 
 class ContactMessageOut(ContactMessageBase):
-    """Schema for outputting ContactMessage data."""
+    """Returned by all contact message endpoints and the admin list."""
     id: int
     reference_id: str
+    source: str                           # "user" | "organizer"
+    event_title: Optional[str] = None    # only populated for organizer messages; human-readable title
     user_id: Optional[int] = None
     status: str
     priority: str
     assigned_to: Optional[int] = None
     client_ip: Optional[str] = None
+    user_agent: Optional[str] = None
     recaptcha_score: Optional[float] = None
     created_at: datetime
     updated_at: datetime
     responded_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
-class ContactMessageUpdate(BaseModelEAT):
-    """Schema for updating a ContactMessage (admin only)."""
+# ── Update schema ─────────────────────────────────────────────────────────────
+
+class ContactMessageUpdate(BaseModel):
+    """Used by admin to update mutable fields on a contact message."""
     status: Optional[str] = None
     priority: Optional[str] = None
     assigned_to: Optional[int] = None
     responded_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 
-    @field_validator('status')
-    @classmethod
-    def validate_status(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            allowed_statuses = ['new', 'responded', 'closed', 'spam']
-            if v not in allowed_statuses:
-                raise ValueError(f'Status must be one of: {", ".join(allowed_statuses)}')
-        return v
 
-    @field_validator('priority')
-    @classmethod
-    def validate_priority(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            allowed_priorities = ['low', 'normal', 'high', 'urgent']
-            if v not in allowed_priorities:
-                raise ValueError(f'Priority must be one of: {", ".join(allowed_priorities)}')
-        return v
+# ── Stats schema ──────────────────────────────────────────────────────────────
 
-
-class ContactMessageStats(BaseModelEAT):
-    """Schema for contact message statistics."""
+class ContactMessageStats(BaseModel):
     total: int
     new: int
     pending: int
     responded: int
     closed: int
     spam: int
-    
-    class Config:
-        from_attributes = True
 
-class ContactMessageStatusUpdate(BaseModelEAT):
+class ContactMessageStatusUpdate(BaseModel):
     """Schema for updating the status of a contact message."""
     status: str  # new | pending | responded | closed | spam
 

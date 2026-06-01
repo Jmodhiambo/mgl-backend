@@ -483,6 +483,12 @@ async def count_events_repo() -> int:
 
 
 # ─── Organizer count helpers ──────────────────────────────────────────────────
+async def get_events_by_organizer_repo(organizer_id: int) -> list[EventOut]:
+    async with get_async_session() as session:
+        stmt = select(Event).where(Event.organizer_id == organizer_id)
+        events = (await session.scalars(stmt)).all()
+        return [EventOut.model_validate(e) for e in events]
+    
 
 async def count_events_by_organizer_repo(organizer_id: int) -> int:
     async with get_async_session() as session:

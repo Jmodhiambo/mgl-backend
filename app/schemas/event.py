@@ -2,13 +2,14 @@
 """Event schemas for MGLTickets."""
 
 from datetime import datetime
-from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel
+# from app.schemas.base import BaseModelEAT
 from typing import Optional
 
 
 # ─── Public / User-facing ─────────────────────────────────────────────────────
 
-class EventOut(BaseModelEAT):
+class EventOut(BaseModel):
     """
     Public event schema — returned to unauthenticated and authenticated users
     browsing events. Only contains what a ticket buyer needs to see.
@@ -33,7 +34,7 @@ class EventOut(BaseModelEAT):
 
 # ─── Organizer portal ─────────────────────────────────────────────────────────
 
-class OrganizerEventOut(BaseModelEAT):
+class OrganizerEventOut(BaseModel):
     """
     Organizer event schema — returned to the organizer portal for their own
     events. Includes approval state and aggregated booking/revenue stats.
@@ -76,7 +77,7 @@ class AdminEventOut(OrganizerEventOut):
 
 # ─── Create / Update ──────────────────────────────────────────────────────────
 
-class EventCreate(BaseModelEAT):
+class EventCreate(BaseModel):
     """Schema for creating a new Event (user-supplied fields only)."""
     title: str
     description: Optional[str] = None
@@ -102,7 +103,7 @@ class EventCreateWithFlyer(EventCreate):
     flyer_url: str
 
 
-class EventUpdate(BaseModelEAT):
+class EventUpdate(BaseModel):
     """Schema for updating an existing Event. All fields optional."""
     title: Optional[str] = None
     description: Optional[str] = None
@@ -119,7 +120,7 @@ class EventUpdate(BaseModelEAT):
 
 # ─── Organizer detail views ───────────────────────────────────────────────────
 
-class EventStats(BaseModelEAT):
+class EventStats(BaseModel):
     """Aggregated statistics for a single event."""
     total_bookings: int
     total_revenue: float
@@ -130,7 +131,7 @@ class EventStats(BaseModelEAT):
         from_attributes = True
 
 
-class TicketTypeOut(BaseModelEAT):
+class TicketTypeOut(BaseModel):
     """TicketType data returned to the frontend."""
     id: int
     event_id: int
@@ -147,7 +148,7 @@ class TicketTypeOut(BaseModelEAT):
         from_attributes = True
 
 
-class BookingOut(BaseModelEAT):
+class BookingOut(BaseModel):
     """Booking data used inside EventDetails."""
     id: int
     user_id: int
@@ -162,7 +163,7 @@ class BookingOut(BaseModelEAT):
         from_attributes = True
 
 
-class EventDetails(BaseModelEAT):
+class EventDetails(BaseModel):
     """
     Full event detail bundle returned by the organizer
     GET /organizers/me/events/{id}/details endpoint.
@@ -176,7 +177,7 @@ class EventDetails(BaseModelEAT):
         from_attributes = True
 
 
-class TopEvent(BaseModelEAT):
+class TopEvent(BaseModel):
     """Top-performing event summary for the organizer dashboard."""
     id: int
     title: str

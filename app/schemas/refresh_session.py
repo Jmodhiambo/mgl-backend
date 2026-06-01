@@ -2,10 +2,11 @@
 """Schemas for RefreshSession model in MGLTickets."""
 
 from datetime import datetime
-from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel
+# from app.schemas.base import BaseModelEAT
 from typing import Optional
 
-class RefreshSessionOut(BaseModelEAT):
+class RefreshSessionOut(BaseModel):
     """Schema for outputting RefreshSession data."""
     session_id: str
     user_id: int
@@ -22,7 +23,7 @@ class RefreshSessionOut(BaseModelEAT):
         from_attributes = True
 
 
-class RefreshSessionCreate(BaseModelEAT):
+class RefreshSessionCreate(BaseModel):
     """For creating a new RefreshSession."""
     session_id: str
     user_id: int
@@ -36,7 +37,7 @@ class RefreshSessionCreate(BaseModelEAT):
         from_attributes = True
 
 
-class RefreshSessionUpdate(BaseModelEAT):
+class RefreshSessionUpdate(BaseModel):
     """For updating a RefreshSession, e.g. to mark it as revoked."""
     session_id: Optional[str]
     refresh_token_hash: Optional[str]
@@ -50,7 +51,7 @@ class RefreshSessionUpdate(BaseModelEAT):
 
 # ─── Response models ──────────────────────────────────────────────────────────
 
-class RevokeAllOtherSessionsRequest(BaseModelEAT):
+class RevokeAllOtherSessionsRequest(BaseModel):
     """The caller's own session_id (from their JWT 'sid' claim).
     This one will be kept; all others are revoked."""
     current_session_id: str
@@ -59,14 +60,14 @@ class RevokeAllOtherSessionsRequest(BaseModelEAT):
         from_attributes = True
 
 
-class RevokeAllOtherSessionsResponse(BaseModelEAT):
+class RevokeAllOtherSessionsResponse(BaseModel):
     revoked_count: int
     message: str
 
     class Config:
         from_attributes = True
 
-class RevokeSessionRequest(BaseModelEAT):
+class RevokeSessionRequest(BaseModel):
     """Optional body for single-session revoke endpoints.
  
     All three routers (admin, user, organizer) accept this body on

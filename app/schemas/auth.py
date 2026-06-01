@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Auth schemas for MGLTickets."""
 
-from app.schemas.base import BaseModelEAT
-from pydantic import EmailStr
+# from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
-class Login(BaseModelEAT):
+class Login(BaseModel):
 
     email: EmailStr
     password: str
@@ -14,21 +14,21 @@ class Login(BaseModelEAT):
         from_attributes = True
 
 
-class EmailVerifyRequest(BaseModelEAT):
+class EmailVerifyRequest(BaseModel):
     token: str
 
     class Config:
         from_attributes = True
 
 
-class ResendVerificationRequest(BaseModelEAT):
+class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
     class Config:
         from_attributes = True
 
 
-class EmailVerifiyResponse(BaseModelEAT):
+class EmailVerifiyResponse(BaseModel):
     success: bool
     message: str
     user: Optional[dict] = None
@@ -37,23 +37,23 @@ class EmailVerifiyResponse(BaseModelEAT):
         from_attributes = True
 
 
-class ForgotPasswordRequest(BaseModelEAT):
+class ForgotPasswordRequest(BaseModel):
     """Schema for forgot password request."""
     email: EmailStr
 
 
-class ResetPasswordRequest(BaseModelEAT):
+class ResetPasswordRequest(BaseModel):
     """Schema for reset password request."""
     token: str
     new_password: str
 
 
-class ReactivateAccountRequest(BaseModelEAT):
+class ReactivateAccountRequest(BaseModel):
     """Schema for reactivate account request."""
     email: EmailStr
 
 
-class PasswordResetResponse(BaseModelEAT):
+class PasswordResetResponse(BaseModel):
     """Schema for password reset response."""
     success: bool
     message: str
