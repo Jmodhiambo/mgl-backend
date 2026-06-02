@@ -2,14 +2,14 @@
 """Schemas for TicketType model in MGLTickets."""
 
 from datetime import datetime
+from pydantic import BaseModel
 from typing import Optional
 
-from app.schemas.base import BaseModelEAT
 # from app.schemas.event import EventOut
 # from app.schemas.booking import BookingOut
 # from app.schemas.ticket_instance import TicketInstanceOut
 
-class TicketTypeOut(BaseModelEAT):
+class TicketTypeOut(BaseModel):
     """Schema for outputting TicketType data."""
     id: int
     event_id: int
@@ -28,7 +28,7 @@ class TicketTypeOut(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class TicketTypeCreate(BaseModelEAT):
+class TicketTypeCreate(BaseModel):
     """Schema for creating a new TicketType."""
     event_id: int
     name: str
@@ -40,7 +40,7 @@ class TicketTypeCreate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class TicketTypeUpdate(BaseModelEAT):
+class TicketTypeUpdate(BaseModel):
     """Schema for updating an existing TicketType."""
     name: Optional[str] = None
     description: Optional[str] = None

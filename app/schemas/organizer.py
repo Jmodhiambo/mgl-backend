@@ -2,12 +2,9 @@
 """Schemas for User-Organizer model in MGLTickets."""
 
 from datetime import datetime
-from pydantic import EmailStr
-from typing import Optional
-from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel
 
-
-class DashboardStats(BaseModelEAT):
+class DashboardStats(BaseModel):
     """Schema for the organizer's dashboard stats."""
     total_events: int
     total_bookings: int
@@ -22,7 +19,7 @@ class DashboardStats(BaseModelEAT):
         from_attributes = True
 
 
-class RecentBooking(BaseModelEAT):
+class RecentBooking(BaseModel):
     """Schema for the organizer's recent bookings."""
     id: int
     event_title: str
@@ -36,7 +33,7 @@ class RecentBooking(BaseModelEAT):
         from_attributes = True
 
 
-class TopEvent(BaseModelEAT):
+class TopEvent(BaseModel):
     """Schema for the organizer's top events."""
     id: int
     title: str

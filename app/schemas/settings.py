@@ -50,6 +50,9 @@ class PlatformSettingsOut(BaseModel):
     updated_at: datetime
     updated_by_user_id: Optional[int] = None
 
+    class Config:
+        from_attributes = True
+
 
 class PlatformSettingsUpdate(BaseModel):
     """
@@ -78,6 +81,9 @@ class PlatformSettingsUpdate(BaseModel):
 
     maintenance_mode: Optional[bool] = None
 
+    class Config:
+        from_attributes = True
+
 
 # ─── Admin Notification Preferences ──────────────────────────────────────────
 
@@ -97,6 +103,9 @@ class AdminNotificationPrefsOut(BaseModel):
     notify_refund_request: bool
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
+
 
 class AdminNotificationPrefsUpdate(BaseModel):
     """
@@ -109,3 +118,6 @@ class AdminNotificationPrefsUpdate(BaseModel):
     notify_payment_failure: Optional[bool] = None
     notify_new_organizer: Optional[bool] = None
     notify_refund_request: Optional[bool] = None
+
+    class Config:
+        from_attributes = True

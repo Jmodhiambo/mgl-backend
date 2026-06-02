@@ -4,7 +4,6 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-# from app.schemas.base import BaseModelEAT
 
 class UserOut(BaseModel):
     """Schema for outputting User data."""

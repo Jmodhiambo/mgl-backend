@@ -3,12 +3,12 @@
 
 from datetime import datetime
 from typing import Optional
-from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel
 # from app.schemas.booking import BookingOut
 # from app.schemas.ticket_type import TicketTypeOut
 # from app.schemas.user import UserOut
 
-class TicketInstanceOut(BaseModelEAT):
+class TicketInstanceOut(BaseModel):
     """Schema for outputting TicketInstance data."""
     id: int
     booking_id: int
@@ -28,7 +28,7 @@ class TicketInstanceOut(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class TicketInstanceCreate(BaseModelEAT):
+class TicketInstanceCreate(BaseModel):
     """Schema for creating a new TicketInstance."""
     booking_id: int
     ticket_type_id: int
@@ -41,7 +41,7 @@ class TicketInstanceCreate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class TicketInstanceUpdate(BaseModelEAT):
+class TicketInstanceUpdate(BaseModel):
     """Schema for updating an existing TicketInstance."""
     status: Optional[str] = None
     issued_to: Optional[str] = None

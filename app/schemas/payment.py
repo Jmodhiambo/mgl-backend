@@ -3,10 +3,10 @@
 
 from datetime import datetime
 from typing import Optional
-from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel
 from app.schemas.booking import BookingOut
 
-class PaymentOut(BaseModelEAT):
+class PaymentOut(BaseModel):
     """Schema for outputting Payment data."""
     id: int
     booking_id: int
@@ -23,7 +23,8 @@ class PaymentOut(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class PaymentCreate(BaseModelEAT):
+
+class PaymentCreate(BaseModel):
     """Schema for creating a new Payment."""
     booking_id: int
     amount: int
@@ -35,7 +36,7 @@ class PaymentCreate(BaseModelEAT):
     class Config:
         from_attributes = True
 
-class PaymentUpdate(BaseModelEAT):
+class PaymentUpdate(BaseModel):
     """Schema for updating an existing Payment."""
     amount: Optional[int] = None
     currency: Optional[str] = None

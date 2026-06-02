@@ -2,14 +2,13 @@
 """Schemas for OrganizerEmails model in MGLTickets."""
 
 from datetime import datetime
+from pydantic import BaseModel
 from pydantic import EmailStr, Field, field_validator
 from typing import Optional, List, Literal
-from app.schemas.base import BaseModelEAT
-
 
 # ==================== OrganizerEmails Schemas ====================
 
-class OrganizerEmailCreate(BaseModelEAT):
+class OrganizerEmailCreate(BaseModel):
     """Schema for creating a new organizer email."""
     event_id: Optional[int] = None
     booking_ids: List[int] = Field(..., min_length=1, description="List of booking IDs to send email to")
@@ -41,7 +40,7 @@ class OrganizerEmailCreate(BaseModelEAT):
         }
 
 
-class OrganizerEmailOut(BaseModelEAT):
+class OrganizerEmailOut(BaseModel):
     """Schema for outputting organizer email data."""
     id: int
     organizer_id: int
@@ -71,7 +70,7 @@ class OrganizerEmailDetail(OrganizerEmailOut):
         from_attributes = True
 
 
-class SendEmailRequest(BaseModelEAT):
+class SendEmailRequest(BaseModel):
     """Schema for sending email request."""
     event_id: Optional[int] = Field(None, description="Event ID (optional)")
     booking_ids: List[int] = Field(..., min_length=1, description="List of booking IDs to send email to")
@@ -103,7 +102,7 @@ class SendEmailRequest(BaseModelEAT):
         }
 
 
-class SendEmailResponse(BaseModelEAT):
+class SendEmailResponse(BaseModel):
     """Schema for send email response."""
     email_id: int = Field(..., description="ID of the created email record")
     recipient_count: int = Field(..., description="Total number of recipients")
@@ -126,7 +125,7 @@ class SendEmailResponse(BaseModelEAT):
         }
 
 
-class EmailHistoryQuery(BaseModelEAT):
+class EmailHistoryQuery(BaseModel):
     """Schema for email history query parameters."""
     event_id: Optional[int] = None
     status: Optional[str] = None
@@ -137,7 +136,7 @@ class EmailHistoryQuery(BaseModelEAT):
         from_attributes = True
 
 
-class EmailHistoryResponse(BaseModelEAT):
+class EmailHistoryResponse(BaseModel):
     """Schema for email history response."""
     emails: List[OrganizerEmailOut]
     total: int
@@ -148,7 +147,7 @@ class EmailHistoryResponse(BaseModelEAT):
         from_attributes = True
 
 
-class EmailStatsResponse(BaseModelEAT):
+class EmailStatsResponse(BaseModel):
     """Schema for email statistics response."""
     total_sent: int = Field(..., description="Total number of emails sent")
     total_recipients: int = Field(..., description="Total number of recipients")
@@ -182,7 +181,7 @@ class EmailStatsResponse(BaseModelEAT):
         }
 
 
-class TemplateInfoResponse(BaseModelEAT):
+class TemplateInfoResponse(BaseModel):
     """Schema for template information."""
     id: str = Field(..., description="Template ID")
     name: str = Field(..., description="Template display name")
@@ -212,7 +211,7 @@ class TemplateInfoResponse(BaseModelEAT):
         }
 
 
-class TemplateListResponse(BaseModelEAT):
+class TemplateListResponse(BaseModel):
     """Schema for list of available templates."""
     templates: dict = Field(..., description="Dictionary of available templates")
     
@@ -222,7 +221,7 @@ class TemplateListResponse(BaseModelEAT):
 
 # ==================== OrganizerEmailRecipients Schemas ====================
 
-class OrganizerEmailRecipientCreate(BaseModelEAT):
+class OrganizerEmailRecipientCreate(BaseModel):
     """Schema for creating an email recipient."""
     email_id: int
     booking_id: int
@@ -233,7 +232,7 @@ class OrganizerEmailRecipientCreate(BaseModelEAT):
         from_attributes = True
 
 
-class OrganizerEmailRecipientOut(BaseModelEAT):
+class OrganizerEmailRecipientOut(BaseModel):
     """Schema for outputting email recipient data."""
     id: int
     email_id: int
@@ -252,7 +251,7 @@ class OrganizerEmailRecipientOut(BaseModelEAT):
         from_attributes = True
 
 
-class OrganizerEmailRecipientUpdate(BaseModelEAT):
+class OrganizerEmailRecipientUpdate(BaseModel):
     """Schema for updating email recipient status."""
     status: Optional[Literal['pending', 'sent', 'failed', 'bounced']] = None
     sent_at: Optional[datetime] = None

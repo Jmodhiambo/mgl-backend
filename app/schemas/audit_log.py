@@ -66,6 +66,9 @@ class AuditLogOut(BaseModel):
             data["details"] = _parse(data.get("details"))
 
         return data
+    
+    class Config:
+        from_attributes = True
 
 
 # ─── Write (internal — services call this, never exposed directly) ────────────
@@ -80,9 +83,15 @@ class AuditLogCreate(BaseModel):
     target_id: Optional[int] = None
     details: Optional[dict[str, Any]] = None
 
+    class Config:
+        from_attributes = True
+
 
 # ─── List response ────────────────────────────────────────────────────────────
 
 class AuditLogListResponse(BaseModel):
     total: int
     items: list[AuditLogOut]
+
+    class Config:
+        from_attributes = True

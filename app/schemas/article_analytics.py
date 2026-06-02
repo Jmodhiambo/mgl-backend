@@ -2,11 +2,10 @@
 """Schemas for Article Analytics model in MGLTickets."""
 
 from datetime import datetime
-from app.schemas.base import BaseModelEAT
 from typing import Optional
-from pydantic import Field, validator
+from pydantic import BaseModel, Field, field_validator
 
-class ArticleViewOut(BaseModelEAT):
+class ArticleViewOut(BaseModel):
     """Schema for Article View model in MGLTickets."""
     id: int
     article_slug: str
@@ -23,7 +22,7 @@ class ArticleViewOut(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleViewCreate(BaseModelEAT):
+class ArticleViewCreate(BaseModel):
     """Schema for Article View model in MGLTickets."""
     article_slug: str
     session_id: str
@@ -37,7 +36,7 @@ class ArticleViewCreate(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleEngagementOut(BaseModelEAT):
+class ArticleEngagementOut(BaseModel):
     """Schema for Article Engagement model in MGLTickets."""
     id: int
     article_slug: str
@@ -51,7 +50,7 @@ class ArticleEngagementOut(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleEngagementCreate(BaseModelEAT):
+class ArticleEngagementCreate(BaseModel):
     """Schema for Article Engagement model in MGLTickets."""
     article_slug: str
     session_id: str
@@ -62,7 +61,7 @@ class ArticleEngagementCreate(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleFeedbackOut(BaseModelEAT):
+class ArticleFeedbackOut(BaseModel):
     """Schema for Article Feedback model in MGLTickets."""
     id: int
     article_slug: str
@@ -76,7 +75,7 @@ class ArticleFeedbackOut(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleFeedbackCreate(BaseModelEAT):
+class ArticleFeedbackCreate(BaseModel):
     """Schema for Article Feedback model in MGLTickets."""
     article_slug: str
     feedback: str
@@ -85,7 +84,7 @@ class ArticleFeedbackCreate(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleSearchQueryOut(BaseModelEAT):
+class ArticleSearchQueryOut(BaseModel):
     """Schema for outputting article search query data."""
     
     id: int
@@ -100,7 +99,7 @@ class ArticleSearchQueryOut(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleSearchQueryCreate(BaseModelEAT):
+class ArticleSearchQueryCreate(BaseModel):
     """Schema for creating an article search query record."""
     
     query: str = Field(..., min_length=1, max_length=500, description="Search query text")
@@ -111,7 +110,7 @@ class ArticleSearchQueryCreate(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleSearchClickCreate(BaseModelEAT):
+class ArticleSearchClickCreate(BaseModel):
     """Schema for creating an article search click record."""
     
     search_query_id: int = Field(..., description="ID of the search query")
@@ -120,7 +119,7 @@ class ArticleSearchClickCreate(BaseModelEAT):
     result_position: Optional[int] = Field(None, ge=1, description="Position in search results (1-indexed)")
     time_to_click_seconds: Optional[int] = Field(None, ge=0, description="Seconds between search and click")
     
-    @validator('result_position')
+    @field_validator('result_position')
     def validate_position(cls, v):
         if v is not None and v < 1:
             raise ValueError('Result position must be at least 1')
@@ -130,7 +129,7 @@ class ArticleSearchClickCreate(BaseModelEAT):
         from_attributes = True
 
 
-class ArticleSearchClickOut(BaseModelEAT):
+class ArticleSearchClickOut(BaseModel):
     """Schema for outputting article search click data."""
     
     id: int
@@ -145,7 +144,7 @@ class ArticleSearchClickOut(BaseModelEAT):
         from_attributes = True
 
 
-class SearchAnalytics(BaseModelEAT):
+class SearchAnalytics(BaseModel):
     """Aggregated search analytics."""
     
     total_searches: int
@@ -161,7 +160,7 @@ class SearchAnalytics(BaseModelEAT):
         from_attributes = True
 
 
-class PopularSearchTerm(BaseModelEAT):
+class PopularSearchTerm(BaseModel):
     """Popular search term with metadata."""
     
     query: str

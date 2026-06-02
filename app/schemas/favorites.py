@@ -2,11 +2,11 @@
 """Schemas for Favorite model in MGLTickets."""
 
 from datetime import datetime
-from app.schemas.base import BaseModelEAT
+from pydantic import BaseModel
 from app.schemas.event import EventOut
 
 
-class FavoriteOut(BaseModelEAT):
+class FavoriteOut(BaseModel):
     """
     Bare favorite record — contains only IDs and timestamps.
     Used internally and for create/delete responses.
@@ -21,7 +21,7 @@ class FavoriteOut(BaseModelEAT):
         from_attributes = True
 
 
-class FavoriteWithEventOut(BaseModelEAT):
+class FavoriteWithEventOut(BaseModel):
     """
     Favorite record with the full event object embedded.
     Returned by GET /users/me/favorites so the frontend gets
@@ -37,7 +37,7 @@ class FavoriteWithEventOut(BaseModelEAT):
         from_attributes = True
 
 
-class FavoriteCreate(BaseModelEAT):
+class FavoriteCreate(BaseModel):
     """Payload for creating a favorite. user_id comes from the auth token."""
     event_id: int
 

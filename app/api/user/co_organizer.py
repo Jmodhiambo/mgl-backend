@@ -2,7 +2,6 @@
 """Co-organizer routes accessible to any authenticated user in MGLTickets."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.schemas.event import EventOut
 from app.schemas.user import UserOut
 from app.schemas.co_organizer import CoOrganizerOut, CoOrganizerWithEvent
 import app.services.co_organizer_services as co_services

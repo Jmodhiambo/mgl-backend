@@ -18,6 +18,9 @@ class ContactMessageBase(BaseModel):
     category: str
     message: str
 
+    class Config:
+        from_attributes = True
+
 
 # ── Create schemas ────────────────────────────────────────────────────────────
 
@@ -45,6 +48,9 @@ class ContactMessageCreate(ContactMessageBase):
         if len(v.strip()) < 10:
             raise ValueError("Message must be at least 10 characters")
         return v.strip()
+    
+    class Config:
+        from_attributes = True
 
 
 class OrganizerContactMessageCreate(ContactMessageCreate):
@@ -77,7 +83,8 @@ class ContactMessageOut(ContactMessageBase):
     responded_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
 
 
 # ── Update schema ─────────────────────────────────────────────────────────────
@@ -90,6 +97,9 @@ class ContactMessageUpdate(BaseModel):
     responded_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 
+    class Config:
+        from_attributes = True
+
 
 # ── Stats schema ──────────────────────────────────────────────────────────────
 
@@ -100,6 +110,9 @@ class ContactMessageStats(BaseModel):
     responded: int
     closed: int
     spam: int
+
+    class Config:
+        from_attributes = True
 
 class ContactMessageStatusUpdate(BaseModel):
     """Schema for updating the status of a contact message."""

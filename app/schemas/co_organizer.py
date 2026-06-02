@@ -2,12 +2,12 @@
 """Schemas for Co-Organizer model in MGLTickets."""
 
 from datetime import datetime
+from pydantic import BaseModel
 from typing import Optional
-from app.schemas.base import BaseModelEAT
 from app.schemas.event import EventOut
 
 
-class CoOrganizerOut(BaseModelEAT):
+class CoOrganizerOut(BaseModel):
     """Co-Organizer schema for API responses."""
     id: int
     user_id: int
@@ -22,7 +22,7 @@ class CoOrganizerOut(BaseModelEAT):
         from_attributes = True
 
 
-class CoOrganizerCreate(BaseModelEAT):
+class CoOrganizerCreate(BaseModel):
     """Co-Organizer schema for API requests."""
     user_id: int
     organizer_id: int
@@ -32,7 +32,7 @@ class CoOrganizerCreate(BaseModelEAT):
         from_attributes = True
 
 
-class CoOrganizerUpdate(BaseModelEAT):
+class CoOrganizerUpdate(BaseModel):
     """Co-Organizer schema for update requests."""
     create_co_organizer: bool
 
@@ -40,7 +40,7 @@ class CoOrganizerUpdate(BaseModelEAT):
         from_attributes = True
 
 
-class CoOrganizerWithEvent(BaseModelEAT):
+class CoOrganizerWithEvent(BaseModel):
     """
     Enriched co-organizer response that bundles the full event alongside the
     co-organizer relationship metadata.  Used by the MyEvents page so the

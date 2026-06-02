@@ -26,6 +26,9 @@ class NotificationCreate(BaseModel):
     action_url: Optional[str] = None
     expires_at: Optional[datetime] = None
 
+    class Config:
+        from_attributes = True
+
 
 class NotificationOut(BaseModel):
     """Public-facing schema returned by all notification endpoints.
@@ -48,3 +51,6 @@ class NotificationOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     expires_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
