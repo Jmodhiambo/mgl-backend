@@ -35,8 +35,6 @@ class AuditLogOut(BaseModel):
 
     created_at: datetime
 
-    model_config = {"from_attributes": True}
-
     @model_validator(mode="before")
     @classmethod
     def deserialize_details(cls, data: Any) -> Any:

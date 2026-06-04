@@ -61,6 +61,10 @@ class OrganizerContactMessageCreate(ContactMessageCreate):
     without making a separate event lookup.
     """
     event_title: Optional[str] = None
+    recaptcha_token: str = ""   # overridden as optional — backend skips verification for organizers
+
+    class Config:
+        from_attributes = True
 
 
 # ── Out schema ────────────────────────────────────────────────────────────────

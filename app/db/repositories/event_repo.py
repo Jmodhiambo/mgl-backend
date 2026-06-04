@@ -36,6 +36,7 @@ def _admin_row_to_schema(row) -> AdminEventOut:
         category=event.category,
         start_time=event.start_time,
         end_time=event.end_time,
+        original_filename=event.original_filename,
         flyer_url=event.flyer_url,
         status=event.status,
         is_approved=event.is_approved,
@@ -63,6 +64,7 @@ def _organizer_row_to_schema(row) -> OrganizerEventOut:
         category=event.category,
         start_time=event.start_time,
         end_time=event.end_time,
+        original_filename=event.original_filename,
         flyer_url=event.flyer_url,
         status=event.status,
         is_approved=event.is_approved,
@@ -144,7 +146,7 @@ async def delete_event_repo(event_id: int) -> bool:
         return True
 
 
-async def update_event_status_repo(event_id: int, new_status: str) -> Optional[EventOut]:
+async def update_event_status_repo(event_id: int, new_status: str) -> Optional[AdminEventOut]:
     """Update the status field of an event."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
@@ -154,7 +156,7 @@ async def update_event_status_repo(event_id: int, new_status: str) -> Optional[E
         event.status = new_status
         await session.commit()
         await session.refresh(event)
-        return EventOut.model_validate(event)
+        return AdminEventOut.model_validate(event)
 
 
 # ─── Approval ────────────────────────────────────────────────────────────────

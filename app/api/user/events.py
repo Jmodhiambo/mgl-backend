@@ -26,7 +26,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from app.schemas.event import EventOut
 import app.services.event_services as event_services
-from app.core.security import require_user
+from app.core.security import require_user, get_current_user_optional
 
 router = APIRouter()
 
@@ -34,13 +34,13 @@ router = APIRouter()
 # ── Fixed paths first ─────────────────────────────────────────────────────────
 
 @router.get("/events", response_model=list[EventOut])
-async def get_all_approved_events(user=Depends(require_user)):
+async def get_all_approved_events(user=Depends(get_current_user_optional)):
     """Get all approved events."""
     return await event_services.get_approved_events_service()
 
 
 @router.get("/events/latest", response_model=list[EventOut])
-async def get_latest_events(limit: int = 10, user=Depends(require_user)):
+async def get_latest_events(limit: int = 10, user=Depends(get_current_user_optional)):
     """Get the latest approved events."""
     return await event_services.get_latest_events_service(limit)
 
@@ -58,7 +58,7 @@ async def search_events(
     country: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    user=Depends(require_user),
+    user=Depends(get_current_user_optional),
 ):
     """Search approved events by title, venue, country, or date range."""
     if title:

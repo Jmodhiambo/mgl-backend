@@ -7,7 +7,7 @@ Naming convention matches the rest of the project:
   - *Update → request body for PUT/PATCH endpoints
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
 
@@ -20,9 +20,6 @@ class PlatformSettingsOut(BaseModel):
     Mirrors the PlatformSettings model exactly so the frontend
     can replace its defaultSettings object wholesale.
     """
-
-    model_config = ConfigDict(from_attributes=True)
-
     # General
     platform_name: str
     platform_email: str
@@ -92,9 +89,6 @@ class AdminNotificationPrefsOut(BaseModel):
     Notification preferences for the currently-authenticated admin.
     Returned by GET /admin/settings/notifications.
     """
-
-    model_config = ConfigDict(from_attributes=True)
-
     user_id: int
     notify_new_event: bool
     notify_new_message: bool

@@ -50,6 +50,7 @@ class OrganizerEventOut(BaseModel):
     category: str
     start_time: datetime
     end_time: datetime
+    original_filename: str
     flyer_url: str
     status: str
     is_approved: bool

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import HTTPException
 from app.core.logging_config import logger
-from app.schemas.contact_message import ContactMessageCreate, ContactMessageUpdate
+from app.schemas.contact_message import ContactMessageCreate, ContactMessageUpdate, OrganizerContactMessageCreate
 import app.db.repositories.contact_messages_repo as contact_repo
 from app.utils.generate_reference_id import generate_reference_id
 from app.core.recaptcha import verify_recaptcha
@@ -15,7 +15,7 @@ VALID_STATUSES = {"new", "pending", "responded", "closed", "spam"}
 
 
 async def create_contact_message_service(
-    contact_data: ContactMessageCreate,
+    contact_data: ContactMessageCreate | OrganizerContactMessageCreate,
     client_ip: str,
     user_agent: str,
     user_id: Optional[int],
@@ -24,7 +24,7 @@ async def create_contact_message_service(
     """
     Create a new contact message.
 
-    - Verifies reCAPTCHA
+    - Verifies reCAPTCHA (user submissions only — organizer submissions skip it)
     - Checks rate limits (per email and per IP)
     - Stores in database
     - Sends confirmation email to user        (commented out — pending email integration)
@@ -33,19 +33,19 @@ async def create_contact_message_service(
     """
     logger.info(f"Processing contact form from {contact_data.email} (source={source})")
 
-    # Verify reCAPTCHA
-    recaptcha_score = await verify_recaptcha(
-        token=contact_data.recaptcha_token,
-        action="contact_form",
-        email=contact_data.email,
-        client_ip=client_ip,
-    )
-
-    if not recaptcha_score or recaptcha_score < 0.5:
-        logger.warning(f"reCAPTCHA failed for {contact_data.email} (score: {recaptcha_score})")
-        raise HTTPException(
-            status_code=400,
-            detail="reCAPTCHA verification failed. Please try again.",
+    # Verify reCAPTCHA — user submissions only.
+    # Organizer submissions are already authenticated via require_organizer,
+    # so bot detection is unnecessary for them.
+    # verify_recaptcha raises HTTPException directly on all failure cases
+    # (expired token, invalid token, score too low, action mismatch) so
+    # there is no need to check the return value — just capture it for storage.
+    recaptcha_score: Optional[float] = None
+    if source == "user":
+        recaptcha_score = await verify_recaptcha(
+            token=contact_data.recaptcha_token,
+            action="contact_form",
+            email=contact_data.email,
+            client_ip=client_ip,
         )
 
     # Rate limit — per email

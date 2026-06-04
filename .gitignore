@@ -7,14 +7,14 @@ __pycache__/
 .venv
 
 # Ignore everything in the uploads and logs folders
-backend/app/uploads/events/*
-backend/app/uploads/profiles/*
-backend/app/logs/*
+app/uploads/events/*
+app/uploads/profiles/*
+app/logs/*
 
 # But keep this one file to ensure the folders exists in git
-!backend/app/uploads/events/.gitkeep
-!backend/app/uploads/profiles/.gitkeep
-!backend/app/logs/.gitkeep
+!app/uploads/events/.gitkeep
+!app/uploads/profiles/.gitkeep
+!app/logs/.gitkeep
 
 
 # Unit test / coverage reports

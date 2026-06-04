@@ -10,7 +10,7 @@ from app.services.notification_services import notify_new_contact_message
 router = APIRouter()
 
 
-@router.post("organizer/contact", response_model=ContactMessageOut, status_code=status.HTTP_201_CREATED)
+@router.post("/organizers/me/contact", response_model=ContactMessageOut, status_code=status.HTTP_201_CREATED)
 async def submit_organizer_contact_form(
     contact: OrganizerContactMessageCreate,
     request: Request,
@@ -21,9 +21,12 @@ async def submit_organizer_contact_form(
     Submit a contact/support message from an organizer.
 
     Requires organizer authentication.
-    Accepts an optional event_title to identify which event the message relates to.
+    Accepts an optional event_title (human-readable) to identify which event
+    the message relates to — stored directly so admin can read it without a
+    separate event lookup.
     source is hardcoded to "organizer"; the client never controls it.
-    Protected by reCAPTCHA and rate limiting (shared limits with user endpoint).
+    reCAPTCHA is skipped — the organizer is already authenticated, so bot
+    detection serves no purpose here. Rate limiting still applies.
     """
     client_ip = request.headers.get("X-Real-IP") or (request.client.host if request.client else None)
     user_agent = request.headers.get("user-agent", "Unknown")

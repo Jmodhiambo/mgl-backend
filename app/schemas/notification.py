@@ -7,7 +7,7 @@ Mirrors the pattern used in app/schemas/user.py:
     (not directly exposed as a request body, but available if needed).
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
@@ -34,9 +34,6 @@ class NotificationOut(BaseModel):
     """Public-facing schema returned by all notification endpoints.
     Matches the Notification interface expected by the React frontend.
     """
-
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     title: str
     message: str

@@ -1,102 +1,144 @@
 #!/usr/bin/env python3
-"""Save file and Generate a unique URL for the uploaded images."""
+"""Save file and generate a unique URL for uploaded images."""
 
-from uuid import uuid4
 import os
+from uuid import uuid4
+
 import aiofiles
-from fastapi import UploadFile, HTTPException, status
+from fastapi import HTTPException, UploadFile, status
+
+from app.core.config import (
+    API_URL,
+    UPLOADS_EVENTS_DIR,
+    UPLOADS_EVENTS_URL_PATH,
+    UPLOADS_PROFILES_DIR,
+    UPLOADS_PROFILES_URL_PATH,
+)
 from app.core.logging_config import logger
 
-# Upload directories
-EVENTS_UPLOAD_DIR = "app/uploads/events"
-PROFILES_UPLOAD_DIR = "app/uploads/profiles"
+# ── Create upload sub-directories on startup ──────────────────────────────────
+os.makedirs(UPLOADS_EVENTS_DIR, exist_ok=True)
+os.makedirs(UPLOADS_PROFILES_DIR, exist_ok=True)
+
+# ── Allowed extensions ────────────────────────────────────────────────────────
+EVENT_ALLOWED_EXTENSIONS:   set[str] = {".jpg", ".jpeg", ".png", ".gif", ".pdf"}
+PROFILE_ALLOWED_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png"}
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
-# Create the events and profiles upload sub-directories in the uploads folder
-os.makedirs(EVENTS_UPLOAD_DIR, exist_ok=True)
-os.makedirs(PROFILES_UPLOAD_DIR, exist_ok=True)
+# ── Internal helpers ──────────────────────────────────────────────────────────
 
-# Allowed file extensions
-EVENT_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".pdf"}
-PROFILE_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+async def _read_and_validate(image: UploadFile, allowed_exts: set[str]) -> bytes:
+    """
+    Read the file contents once, validate extension and size, then return the
+    raw bytes so the caller can write them without a second read().
 
-MAX_FILE_SIZE = 5 * 1024 * 1024
-
-async def validate_file(image: UploadFile, allowed_exts: set[str]) -> None:
-    """Validate file type and size."""
-    ext = os.path.splitext(image.filename)[1].lower()
+    Raises HTTP 400 on invalid extension or oversized file.
+    """
+    ext = os.path.splitext(image.filename or "")[1].lower()
 
     if ext not in allowed_exts:
-        logger.error(f"Invalid file type: {ext}")
+        logger.error(f"Invalid file type uploaded: {ext!r}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Allowed types: " + ", ".join(allowed_exts),
+            detail=f"Invalid file type '{ext}'. Allowed: {', '.join(sorted(allowed_exts))}",
         )
 
-    # Check file size (UploadFile does not expose size, so read chunk)
     contents = await image.read()
+
     if len(contents) > MAX_FILE_SIZE:
-        logger.error("File size exceeds the maximum allowed size (5MB).")
+        logger.error(f"Upload rejected — file size {len(contents)} exceeds 5 MB limit.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds the maximum allowed size (5MB)."
+            detail="File size exceeds the maximum allowed size (5 MB).",
         )
 
-    # Reset the pointer since we already consumed read()
-    await image.seek(0)
-
-async def save_image_and_get_url(image: UploadFile, url_prefix: str, upload_dir: str, allowed_exts: set[str], ) -> str:
-    """Save an uploaded image and return its URL."""
-    # Validate image
-    await validate_file(image, allowed_exts)
-
-    # Extract the file extension and generate unique filename
-    file_extension = os.path.splitext(image.filename)[1].lower()
-    unique_filename = f"mgltickets-{uuid4().hex}{file_extension}"
-
-    file_path = os.path.join(upload_dir, unique_filename)
-    url = f"/uploads/{url_prefix}/{unique_filename}"
-
-    # Save image to the specified path
-    logger.info(f"Saving image to {file_path}")
-    async with aiofiles.open(file_path, "wb") as buffer:
-        await buffer.write(await image.read())
-
-    logger.info(f"Saved image to {file_path}")
-
-    return url
-
-async def save_flyer_and_get_url(flyer: UploadFile) -> str:
-    """Save flyer and return the URL."""
-    return await save_image_and_get_url(
-        flyer, "events", EVENTS_UPLOAD_DIR, EVENT_ALLOWED_EXTENSIONS
-    )
-
-async def save_profile_picture_and_get_url(profile_picture: UploadFile) -> str:
-    """Save profile picture and return the URL."""
-    return await save_image_and_get_url(
-        profile_picture, "profiles", PROFILES_UPLOAD_DIR, PROFILE_ALLOWED_EXTENSIONS
-    )
+    return contents
 
 
-async def delete_image(image_url: str, upload_dir: str) -> bool:
-    """Delete the image from the disk based on URL."""
-    filename = os.path.basename(image_url)
+async def _save_image(
+    image: UploadFile,
+    upload_dir: str,
+    url_path: str,
+    allowed_exts: set[str],
+) -> str:
+    """
+    Validate, save an uploaded image to *upload_dir*, and return its
+    fully-qualified public URL built from API_URL + url_path.
+
+    Args:
+        image:        The FastAPI UploadFile instance.
+        upload_dir:   Filesystem directory to write the file into.
+        url_path:     URL path segment that maps to upload_dir via the
+                      static-files mount (e.g. "uploads/events").
+        allowed_exts: Set of permitted file extensions.
+
+    Returns:
+        Absolute URL string, e.g.
+        "https://api.mgltickets.com/uploads/events/mgltickets-<uuid>.png"
+    """
+    contents = await _read_and_validate(image, allowed_exts)
+
+    ext             = os.path.splitext(image.filename or "")[1].lower()
+    unique_filename = f"mgltickets-{uuid4().hex}{ext}"
+    file_path       = os.path.join(upload_dir, unique_filename)
+
+    logger.info(f"Saving uploaded file to {file_path}")
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(contents)
+    logger.info(f"Saved uploaded file to {file_path}")
+
+    # Build a full absolute URL — frontend uses this directly as <img src>
+    return f"{API_URL.rstrip('/')}/{url_path.strip('/')}/{unique_filename}"
+
+
+async def _delete_image(image_url: str, upload_dir: str) -> bool:
+    """
+    Delete an image from disk given its public URL and the corresponding
+    upload directory.
+
+    Returns True if deleted, False if the file was not found.
+    """
+    filename  = os.path.basename(image_url)
     file_path = os.path.join(upload_dir, filename)
 
     if os.path.exists(file_path):
         os.remove(file_path)
-        logger.info(f"Deleted image from {file_path}")
+        logger.info(f"Deleted image at {file_path}")
         return True
-    
-    logger.warning(f"Image {file_path} not found for deletion")
-    
+
+    logger.warning(f"Image not found for deletion: {file_path}")
     return False
 
+
+# ── Public API ────────────────────────────────────────────────────────────────
+
+async def save_flyer_and_get_url(flyer: UploadFile) -> str:
+    """Save an event flyer and return its absolute URL."""
+    return await _save_image(
+        flyer,
+        upload_dir=UPLOADS_EVENTS_DIR,
+        url_path=UPLOADS_EVENTS_URL_PATH,
+        allowed_exts=EVENT_ALLOWED_EXTENSIONS,
+    )
+
+
+async def save_profile_picture_and_get_url(profile_picture: UploadFile) -> str:
+    """Save a user/organizer profile picture and return its absolute URL."""
+    return await _save_image(
+        profile_picture,
+        upload_dir=UPLOADS_PROFILES_DIR,
+        url_path=UPLOADS_PROFILES_URL_PATH,
+        allowed_exts=PROFILE_ALLOWED_EXTENSIONS,
+    )
+
+
 async def delete_event_flyer(flyer_url: str) -> bool:
-    """Delete the flyer from the server."""
-    return await delete_image(flyer_url, EVENTS_UPLOAD_DIR)
+    """Delete an event flyer from disk given its public URL."""
+    return await _delete_image(flyer_url, UPLOADS_EVENTS_DIR)
+
 
 async def delete_profile_picture(profile_picture_url: str) -> bool:
-    """Delete the profile picture from the server."""
-    return await delete_image(profile_picture_url, PROFILES_UPLOAD_DIR)
+    """Delete a profile picture from disk given its public URL."""
+    return await _delete_image(profile_picture_url, UPLOADS_PROFILES_DIR)
