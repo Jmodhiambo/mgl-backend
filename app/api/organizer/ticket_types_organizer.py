@@ -10,12 +10,17 @@ from app.core.security import require_organizer
 router = APIRouter()
 
 @router.post("/organizers/me/events/{event_id}/ticket-types", response_model=TicketTypeOut)
-async def create_ticket_type(event_id: int, ticket_type_in: TicketTypeCreate, organizer: UserOut=Depends(require_organizer)):
+async def create_ticket_type(
+    event_id: int, ticket_type_in: TicketTypeCreate, organizer: UserOut = Depends(require_organizer)
+):
     """Create a new TicketType."""
-    return await tt_services.create_ticket_type_service(event_id, ticket_type_in)
+    # Keyword args: service signature is (ticket_type_in, event_id=None)
+    return await tt_services.create_ticket_type_service(ticket_type_in=ticket_type_in, event_id=event_id)
 
 @router.put("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
-async def update_ticket_type(ticket_type_id: int, ticket_type_in: TicketTypeUpdate, organizer: UserOut=Depends(require_organizer)):
+async def update_ticket_type(
+    ticket_type_id: int, ticket_type_in: TicketTypeUpdate, organizer: UserOut = Depends(require_organizer)
+):
     """Update an existing TicketType."""
     ticket_type = await tt_services.update_ticket_type_service(ticket_type_id, ticket_type_in)
     if not ticket_type:
@@ -23,7 +28,9 @@ async def update_ticket_type(ticket_type_id: int, ticket_type_in: TicketTypeUpda
     return ticket_type
 
 @router.delete("/organizers/me/ticket-types/{ticket_type_id}", response_model=dict)
-async def delete_ticket_type(ticket_type_id: int, organizer: UserOut=Depends(require_organizer)):
+async def delete_ticket_type(
+    ticket_type_id: int, organizer: UserOut = Depends(require_organizer)
+):
     """Delete a TicketType by ID."""
     success = await tt_services.delete_ticket_type_service(ticket_type_id)
     if not success:
@@ -31,12 +38,16 @@ async def delete_ticket_type(ticket_type_id: int, organizer: UserOut=Depends(req
     return {"detail": "TicketType deleted successfully"}
 
 @router.get("/organizers/me/events/{event_id}/ticket-types", response_model=list[TicketTypeOut])
-async def get_ticket_types_by_event(event_id: int, organizer: UserOut=Depends(require_organizer)):
+async def get_ticket_types_by_event(
+    event_id: int, organizer: UserOut = Depends(require_organizer)
+):
     """Get TicketTypes for a specific event."""
     return await tt_services.list_ticket_types_by_event_id_service(event_id)
 
 @router.get("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
-async def fetch_ticket_type(ticket_type_id: int, organizer: UserOut=Depends(require_organizer)):
+async def fetch_ticket_type(
+    ticket_type_id: int, organizer: UserOut = Depends(require_organizer)
+):
     """Get a specific TicketType by ID."""
     ticket_type = await tt_services.get_ticket_type_by_id_service(ticket_type_id)
     if not ticket_type:

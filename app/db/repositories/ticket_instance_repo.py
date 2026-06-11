@@ -134,3 +134,50 @@ async def get_ticket_instance_by_seat_number_repo(
         if ticket_instance:
             return TicketInstanceOut.model_validate(ticket_instance)
         return None
+    
+
+# Enriched query for MyTickets.tsx — joins event, ticket type for display fields
+
+async def get_ticket_instances_by_user_enriched_repo(user_id: int) -> list:
+    """List ticket instances for a user with event and ticket type context.
+    Returns the enriched shape that MyTickets.tsx expects."""
+    from app.db.models.booking import Booking
+    from app.db.models.event import Event
+    from app.db.models.ticket_type import TicketType
+
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(
+                TicketInstance,
+                Event.title,
+                Event.venue,
+                Event.start_time,
+                TicketType.name,
+            )
+            .join(TicketType, TicketInstance.ticket_type_id == TicketType.id)
+            .join(Booking, TicketInstance.booking_id == Booking.id)
+            .join(Event, Booking.event_id == Event.id)
+            .where(TicketInstance.user_id == user_id)
+            .order_by(TicketInstance.created_at.desc())
+        )
+        instances = []
+        for ti, event_title, venue, start_time, ticket_type_name in result:
+            instances.append({
+                'id': ti.id,
+                'booking_id': ti.booking_id,
+                'ticket_type_id': ti.ticket_type_id,
+                'user_id': ti.user_id,
+                'code': ti.code,
+                'status': ti.status,
+                'price': ti.price,
+                'issued_to': ti.issued_to,
+                'created_at': ti.created_at,
+                'updated_at': ti.updated_at,
+                'used_at': ti.used_at,
+                # enriched fields
+                'event_title': event_title,
+                'venue': venue,
+                'event_date': start_time.isoformat() if start_time else None,
+                'ticket_type_name': ticket_type_name,
+            })
+        return instances

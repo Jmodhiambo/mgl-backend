@@ -2,42 +2,91 @@
 """Schemas for Booking model in MGLTickets."""
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
-# from app.schemas.ticket_type import TicketTypeOut
-# from app.schemas.user import UserOut
+
 
 class BookingOut(BaseModel):
     """Schema for outputting Booking data."""
     id: int
     user_id: int
+    event_id: int              # was missing — model has it NOT NULL, needed by frontend
     ticket_type_id: int
     quantity: int
     status: str
     total_price: int
     created_at: datetime
     updated_at: datetime
-    # user: UserOut
-    # ticket_type: list[TicketTypeOut]
-
+ 
     class Config:
         from_attributes = True
-
+ 
+ 
 class BookingCreate(BaseModel):
     """Schema for creating a new Booking."""
-    user_id: int
-    ticket_type_id: int
+    ticket_type_id: int        # event_id derived server-side from ticket_type; user_id injected from token
     quantity: int
     total_price: int
-
+ 
     class Config:
         from_attributes = True
-
+ 
+ 
 class BookingUpdate(BaseModel):
     """Schema for updating an existing Booking."""
     quantity: int
     status: str
     total_price: int
+ 
+    class Config:
+        from_attributes = True
+
+
+# Enriched output schemas for admin and organizer pages
+
+class BookingEnrichedOut(BaseModel):
+    """Enriched booking schema with denormalized display fields.
+    Returned by admin list and organizer event booking endpoints."""
+    id: int
+    user_id: int
+    event_id: int
+    ticket_type_id: int
+    customer_name: str
+    customer_email: str
+    event_title: str
+    ticket_type_name: str
+    venue: Optional[str] = None
+    event_date: Optional[str] = None
+    quantity: int
+    status: str
+    total_price: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TicketInstanceEnrichedOut(BaseModel):
+    """Enriched ticket instance schema with event context.
+    Returned by GET /users/me/ticket-instances."""
+    id: int
+    booking_id: int
+    ticket_type_id: int
+    user_id: int
+    code: str
+    status: str
+    price: int
+    issued_to: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    used_at: Optional[datetime] = None
+    # enriched
+    event_title: str
+    venue: str
+    event_date: Optional[str] = None
+    ticket_type_name: str
 
     class Config:
         from_attributes = True

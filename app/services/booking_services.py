@@ -132,3 +132,17 @@ async def get_recent_bookings_by_organizer_service(organizer_id: int, limit: int
     """Service to list the most recent bookings for a specific organizer."""
     logger.info("Listing recent bookings by organizer", extra={"extra": {"organizer_id": organizer_id, "limit": limit}})
     return await booking_repo.get_recent_bookings_by_organizer_repo(organizer_id, limit)
+
+
+async def list_bookings_enriched_service() -> list[dict]:
+    """List all bookings with joined customer, event, and ticket type data.
+    Used by GET /admin/bookings — returns AdminBooking-shaped rows."""
+    logger.info("Listing all bookings (enriched)")
+    return await booking_repo.list_bookings_enriched_repo()
+ 
+ 
+async def list_event_bookings_enriched_service(event_id: int) -> list[dict]:
+    """List bookings for an event with joined data.
+    Used by organizer event booking endpoints."""
+    logger.info(f"Listing enriched bookings for event {event_id}")
+    return await booking_repo.list_event_bookings_enriched_repo(event_id)

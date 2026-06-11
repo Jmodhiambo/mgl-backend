@@ -68,12 +68,19 @@ ALLOWED_ORIGINS: list[str] = config(
 ).split(",")
 
 # Upload directories
-# config.py — add these two lines near UPLOADS_EVENTS_DIR
 UPLOADS_EVENTS_DIR: str = config("UPLOADS_EVENTS_DIR", default="app/uploads/events")
 UPLOADS_EVENTS_URL_PATH: str = config("UPLOADS_EVENTS_URL_PATH", default="uploads/events")
 
 UPLOADS_PROFILES_DIR: str = config("UPLOADS_PROFILES_DIR", default="app/uploads/profiles")
 UPLOADS_PROFILES_URL_PATH: str = config("UPLOADS_PROFILES_URL_PATH", default="uploads/profiles")
+
+# M-Pesa / Daraja settings
+MPESA_CONSUMER_KEY: str = config("MPESA_CONSUMER_KEY", default="")
+MPESA_CONSUMER_SECRET: str = config("MPESA_CONSUMER_SECRET", default="")
+MPESA_SHORTCODE: str = config("MPESA_SHORTCODE", default="")
+MPESA_PASSKEY: str = config("MPESA_PASSKEY", default="")
+MPESA_CALLBACK_URL: str = config("MPESA_CALLBACK_URL", default="")
+MPESA_ENV: str = config("MPESA_ENV", default="sandbox")
 
 #SendGrid email services
 SENDGRID_API_KEY: SecretStr = config("SENDGRID_API_KEY", cast=SecretStr)

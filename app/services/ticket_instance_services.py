@@ -51,3 +51,10 @@ async def get_ticket_instance_by_seat_number(seat_number: str) -> Optional[dict]
     """Retrieve a TicketInstance by its seat number."""
     logger.info(f"Retrieving TicketInstance with seat number: {seat_number}")
     return await ti_repo.get_ticket_instance_by_seat_number_repo(seat_number)
+
+
+async def get_ticket_instances_by_user_enriched(user_id: int) -> list[dict]:
+    """Retrieve enriched ticket instances for MyTickets.tsx.
+    Includes event_title, venue, event_date, ticket_type_name via join."""
+    logger.info(f"Retrieving enriched TicketInstances for user ID: {user_id}")
+    return await ti_repo.get_ticket_instances_by_user_enriched_repo(user_id)

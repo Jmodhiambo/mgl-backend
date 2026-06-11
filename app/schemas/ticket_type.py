@@ -5,10 +5,6 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-# from app.schemas.event import EventOut
-# from app.schemas.booking import BookingOut
-# from app.schemas.ticket_instance import TicketInstanceOut
-
 class TicketTypeOut(BaseModel):
     """Schema for outputting TicketType data."""
     id: int
@@ -17,17 +13,16 @@ class TicketTypeOut(BaseModel):
     description: Optional[str] = None
     price: int
     is_active: bool = True
-    quantity_available: int
+    total_quantity: int        # the ceiling — never changes after creation
+    quantity_available: int    # computed property: total_quantity - quantity_sold
     quantity_sold: int
     created_at: datetime
     updated_at: datetime
-    # event: EventOut
-    # bookings: list[BookingOut] = []
-    # ticket_instances: list[TicketInstanceOut] = []
-
+ 
     class Config:
         from_attributes = True
-
+ 
+ 
 class TicketTypeCreate(BaseModel):
     """Schema for creating a new TicketType."""
     event_id: int
@@ -35,18 +30,19 @@ class TicketTypeCreate(BaseModel):
     description: Optional[str] = None
     price: int
     is_active: Optional[bool] = True
-    quantity_available: int
-
+    total_quantity: int        # maps directly to the model column
+ 
     class Config:
         from_attributes = True
-
+ 
+ 
 class TicketTypeUpdate(BaseModel):
     """Schema for updating an existing TicketType."""
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[int] = None
     is_active: Optional[bool] = None
-    quantity_available: Optional[int] = None
-
+    total_quantity: Optional[int] = None   # organizer can raise/lower the ceiling
+ 
     class Config:
         from_attributes = True
