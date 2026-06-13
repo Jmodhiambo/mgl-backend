@@ -46,6 +46,7 @@ from app.api.admin.session_admin import router as admin_session_router
 from app.api.admin.notification_admin import router as admin_notification_router
 from app.api.admin.audit_log_admin import router as admin_audit_log_router
 from app.api.admin.settings_admin import router as admin_settings_router
+from app.api.admin.analytics_admin import router as admin_analytics_router  # Only in the Admin and serves Analytics and Dashboard pages
 
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
@@ -91,4 +92,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(admin_notification_router, prefix="/api/v1", tags=["Notification-Admin"])
     app.include_router(admin_audit_log_router, prefix="/api/v1", tags=["Audit Log-Admin"])
     app.include_router(admin_settings_router, prefix="/api/v1", tags=["Settings-Admin"])
-    
+    app.include_router(admin_analytics_router, prefix="/api/v1", tags=["Analytics-Admin"])

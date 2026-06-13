@@ -105,6 +105,6 @@ async def delete_ticket_type_service(ticket_type_id: int) -> bool:
 async def list_ticket_types_by_event_id_service(event_id: int) -> list[dict]:
     """List all TicketTypes for a given Event ID."""
     logger.info(f"Listing TicketTypes for Event ID: {event_id}")
-    ticket_types = await tt_repo.list_ticket_types_event_id_repo(event_id)
+    ticket_types = await tt_repo.list_ticket_types_by_event_id_repo(event_id)
     logger.info(f"Found {len(ticket_types)} TicketTypes for Event ID: {event_id}")
     return ticket_types
