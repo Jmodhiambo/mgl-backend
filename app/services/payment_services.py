@@ -90,6 +90,13 @@ async def get_latest_payments_service(limit: int = 10) -> list[dict]:
     return await payment_repo.get_latest_payments_repo(limit)
 
 
+async def list_payments_enriched_service() -> list[dict]:
+    """List all payments with user name via order join.
+    Used by GET /admin/payments — returns AdminPayment-shaped rows."""
+    logger.info("Listing all payment records (enriched).")
+    return await payment_repo.list_payments_enriched_repo()
+
+
 # ── M-Pesa flow ───────────────────────────────────────────────────────────────
 
 async def initiate_mpesa_payment_service(

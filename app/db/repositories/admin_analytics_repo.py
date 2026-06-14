@@ -2,18 +2,14 @@
 """Repository layer for admin analytics queries.
 
 All queries are read-only aggregations — no writes here.
-Place at: app/db/repositories/analytics_repo.py
+Place at: app/db/repositories/admin_analytics_repo.py
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
-from typing import Optional
 
-from sqlalchemy import func, select, case, and_
-from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.sql.expression import cast
-import sqlalchemy.types as types
+from sqlalchemy import func, select, and_
 
 from app.db.models.audit_log import AuditLog
 from app.db.models.booking import Booking
@@ -24,16 +20,36 @@ from app.db.models.user import User
 from app.db.session import get_async_session
 
 
+# ─── Bucket helper ────────────────────────────────────────────────────────────
+
+def _month_buckets(months: int) -> list[datetime]:
+    """
+    Return the first day of each of the last N months, oldest first.
+
+    Uses proper month arithmetic instead of timedelta(days=28) which drifts
+    badly over long ranges and can produce duplicate or missing month labels.
+    """
+    now = datetime.now(timezone.utc)
+    buckets: list[datetime] = []
+    for i in range(months - 1, -1, -1):
+        month = now.month - i
+        year  = now.year
+        while month <= 0:
+            month += 12
+            year  -= 1
+        buckets.append(datetime(year, month, 1, tzinfo=timezone.utc))
+    return buckets
+
+
 # ─── Dashboard Stats ──────────────────────────────────────────────────────────
 
 async def get_dashboard_stats_repo() -> dict:
     """
-    Single-query aggregation for the admin dashboard KPI cards.
-    Runs all counts in parallel within one session to minimise round-trips.
+    Single-session aggregation for the admin dashboard KPI cards.
     """
     async with get_async_session() as session:
-        now = datetime.now(timezone.utc)
-        week_ago = now - timedelta(days=7)
+        now         = datetime.now(timezone.utc)
+        week_ago    = now - timedelta(days=7)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         # User counts
@@ -63,7 +79,7 @@ async def get_dashboard_stats_repo() -> dict:
                 and_(
                     Event.is_approved.is_(True),
                     Event.start_time <= now,
-                    Event.end_time >= now,
+                    Event.end_time   >= now,
                 )
             )
         ) or 0
@@ -79,7 +95,7 @@ async def get_dashboard_stats_repo() -> dict:
             select(func.count()).select_from(Booking)
         ) or 0
 
-        # Revenue — from completed payments
+        # Revenue — completed payments only
         total_revenue = await session.scalar(
             select(func.coalesce(func.sum(Payment.amount), 0))
             .select_from(Payment)
@@ -91,13 +107,13 @@ async def get_dashboard_stats_repo() -> dict:
             .select_from(Payment)
             .where(
                 and_(
-                    Payment.status == "completed",
+                    Payment.status   == "completed",
                     Payment.created_at >= month_start,
                 )
             )
         ) or 0
 
-        # Open messages (new + pending)
+        # Open contact messages
         open_messages = await session.scalar(
             select(func.count()).select_from(ContactMessage).where(
                 ContactMessage.status.in_(["new", "pending"])
@@ -105,16 +121,16 @@ async def get_dashboard_stats_repo() -> dict:
         ) or 0
 
         return {
-            "total_users":        total_users,
-            "total_organizers":   total_organizers,
-            "total_events":       total_events,
-            "total_bookings":     total_bookings,
-            "total_revenue":      float(total_revenue),
-            "active_events":      active_events,
-            "pending_approvals":  pending_approvals,
-            "open_messages":      open_messages,
+            "total_users":         total_users,
+            "total_organizers":    total_organizers,
+            "total_events":        total_events,
+            "total_bookings":      total_bookings,
+            "total_revenue":       float(total_revenue),
+            "active_events":       active_events,
+            "pending_approvals":   pending_approvals,
+            "open_messages":       open_messages,
             "new_users_this_week": new_users_this_week,
-            "revenue_this_month": float(revenue_this_month),
+            "revenue_this_month":  float(revenue_this_month),
         }
 
 
@@ -122,38 +138,37 @@ async def get_dashboard_stats_repo() -> dict:
 
 async def get_revenue_chart_repo(months: int = 7) -> list[dict]:
     """
-    Monthly revenue totals for the last N months.
-    Returns [{label: 'Jan', value: 120000}, ...] oldest-first.
+    Monthly revenue totals (completed payments) for the last N months.
+    Returns [{label: 'Jan', value: 120000.0}, ...] oldest-first.
+
+    Fix: replaced text("date_trunc(...) AS month") with
+    func.date_trunc(...).label("month") so SQLAlchemy exposes the column
+    as r.month on the result row instead of raising AttributeError.
     """
-    from sqlalchemy import text
-
     async with get_async_session() as session:
-        now = datetime.now(timezone.utc)
-
-        # Build month buckets oldest → newest
-        buckets = []
-        for i in range(months - 1, -1, -1):
-            # First day of each month going back
-            month_date = (now.replace(day=1) - timedelta(days=i * 28)).replace(day=1)
-            buckets.append(month_date)
+        buckets   = _month_buckets(months)
+        month_col = func.date_trunc("month", Payment.created_at).label("month")
 
         result = await session.execute(
             select(
-                text("date_trunc('month', payments.created_at) AS month"),
+                month_col,
                 func.coalesce(func.sum(Payment.amount), 0).label("total"),
             )
             .where(
                 and_(
-                    Payment.status == "completed",
+                    Payment.status     == "completed",
                     Payment.created_at >= buckets[0],
                 )
             )
-            .group_by(text("date_trunc('month', payments.created_at)"))
-            .order_by(text("date_trunc('month', payments.created_at)"))
+            .group_by(month_col)
+            .order_by(month_col)
         )
+
+        # Key by abbreviated month name; last write wins for same-label months
+        # (not possible with proper bucket arithmetic, but safe either way)
         rows = {r.month.strftime("%b"): float(r.total) for r in result}
 
-        # Fill in zeros for months with no payments
+        # Fill zeros for months that had no completed payments
         return [
             {"label": b.strftime("%b"), "value": rows.get(b.strftime("%b"), 0.0)}
             for b in buckets
@@ -166,26 +181,25 @@ async def get_user_growth_chart_repo(months: int = 6) -> list[dict]:
     """
     New user registrations per month for the last N months.
     Returns [{label: 'Jan', value: 42}, ...] oldest-first.
+
+    Fix: same text() → func.date_trunc().label() fix as revenue chart,
+    plus replaced drifting timedelta(days=28) bucket logic with
+    _month_buckets() which uses proper calendar month arithmetic.
     """
-    from sqlalchemy import text
-
     async with get_async_session() as session:
-        now = datetime.now(timezone.utc)
-
-        buckets = []
-        for i in range(months - 1, -1, -1):
-            month_date = (now.replace(day=1) - timedelta(days=i * 28)).replace(day=1)
-            buckets.append(month_date)
+        buckets   = _month_buckets(months)
+        month_col = func.date_trunc("month", User.created_at).label("month")
 
         result = await session.execute(
             select(
-                text("date_trunc('month', users.created_at) AS month"),
+                month_col,
                 func.count(User.id).label("total"),
             )
             .where(User.created_at >= buckets[0])
-            .group_by(text("date_trunc('month', users.created_at)"))
-            .order_by(text("date_trunc('month', users.created_at)"))
+            .group_by(month_col)
+            .order_by(month_col)
         )
+
         rows = {r.month.strftime("%b"): r.total for r in result}
 
         return [
@@ -198,8 +212,8 @@ async def get_user_growth_chart_repo(months: int = 6) -> list[dict]:
 
 async def get_events_by_category_repo() -> list[dict]:
     """
-    Count of approved events grouped by category.
-    Returns [{label: 'Music', value: 12}, ...] sorted by count desc.
+    Count of approved events grouped by category, sorted by count desc.
+    Returns [{label: 'Music', value: 12}, ...]
     """
     async with get_async_session() as session:
         result = await session.execute(
@@ -219,7 +233,7 @@ async def get_events_by_category_repo() -> list[dict]:
 async def get_booking_statuses_repo() -> list[dict]:
     """
     Count of bookings grouped by status.
-    Returns [{label: 'Confirmed', value: 340}, ...].
+    Returns [{label: 'Confirmed', value: 340}, ...]
     """
     async with get_async_session() as session:
         result = await session.execute(
@@ -251,46 +265,45 @@ async def get_activity_feed_repo(limit: int = 20) -> list[dict]:
         )
         rows = result.scalars().all()
 
-        # Map action strings to icon keys the frontend expects
-        icon_map = {
-            "user_deactivated":    "user",
-            "user_activated":      "user",
-            "user_role_changed":   "user",
-            "user_verified":       "user",
-            "user_deleted":        "user",
-            "user_created":        "user",
-            "event_approved":      "check",
-            "event_rejected":      "calendar",
-            "event_deleted":       "calendar",
-            "create_event":        "calendar",
-            "booking_refunded":    "money",
-            "booking_deleted":     "ticket",
-            "update_booking":      "ticket",
+        icon_map: dict[str, str] = {
+            "user_deactivated":      "user",
+            "user_activated":        "user",
+            "user_role_changed":     "user",
+            "user_verified":         "user",
+            "user_deleted":          "user",
+            "user_created":          "user",
+            "event_approved":        "check",
+            "event_rejected":        "calendar",
+            "event_deleted":         "calendar",
+            "create_event":          "calendar",
+            "booking_refunded":      "money",
+            "booking_deleted":       "ticket",
+            "update_booking":        "ticket",
             "update_booking_status": "ticket",
-            "message_marked_spam": "message",
-            "message_closed":      "message",
-            "message_responded":   "message",
-            "session_revoked":     "user",
-            "settings_updated":    "check",
+            "message_marked_spam":   "message",
+            "message_closed":        "message",
+            "message_responded":     "message",
+            "session_revoked":       "user",
+            "settings_updated":      "check",
         }
 
         def _human_message(row: AuditLog) -> str:
             details = row.details or {}
-            action  = row.action
             name    = row.admin_name
+            action  = row.action
 
-            templates = {
+            templates: dict[str, object] = {
                 "user_deactivated":      lambda d: f"{name} deactivated user #{row.target_id}",
                 "user_activated":        lambda d: f"{name} activated user #{row.target_id}",
-                "user_role_changed":     lambda d: f"{name} changed role of user #{row.target_id} to {d.get('new_role','?')}",
+                "user_role_changed":     lambda d: f"{name} changed role of user #{row.target_id} to {d.get('new_role', '?')}",
                 "user_verified":         lambda d: f"{name} verified user #{row.target_id}",
                 "user_deleted":          lambda d: f"{name} deleted user #{row.target_id}",
                 "event_approved":        lambda d: f"{name} approved '{d.get('approved_event', 'event')}'",
                 "event_rejected":        lambda d: f"{name} rejected '{d.get('rejected_event', 'event')}'",
                 "event_deleted":         lambda d: f"{name} deleted event #{row.target_id}",
-                "create_event":          lambda d: f"{name} created event '{d.get('event_title','')}'",
+                "create_event":          lambda d: f"{name} created event '{d.get('event_title', '')}'",
                 "booking_refunded":      lambda d: f"{name} refunded booking #{row.target_id}",
-                "update_booking_status": lambda d: f"{name} updated booking #{row.target_id} to '{d.get('updated_status','')}'",
+                "update_booking_status": lambda d: f"{name} updated booking #{row.target_id} to '{d.get('updated_status', '')}'",
                 "message_marked_spam":   lambda d: f"{name} marked message #{row.target_id} as spam",
                 "message_closed":        lambda d: f"{name} closed message #{row.target_id}",
                 "message_responded":     lambda d: f"{name} responded to message #{row.target_id}",
@@ -299,7 +312,7 @@ async def get_activity_feed_repo(limit: int = 20) -> list[dict]:
             }
 
             fn = templates.get(action)
-            return fn(details) if fn else f"{name} performed {action}"
+            return fn(details) if fn else f"{name} performed {action}"  # type: ignore[operator]
 
         return [
             {

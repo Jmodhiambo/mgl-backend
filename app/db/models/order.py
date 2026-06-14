@@ -45,7 +45,7 @@ class Order(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="orders")
-    event: Mapped["Event"] = relationship("Event")
+    event: Mapped["Event"] = relationship("Event", back_populates="orders")
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="order")
     payment: Mapped["Payment"] = relationship("Payment", back_populates="order", uselist=False)
 

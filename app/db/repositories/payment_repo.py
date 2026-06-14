@@ -3,6 +3,7 @@
 
 from typing import Optional, List
 from sqlalchemy import select, func
+from app.db.models.booking import Booking
 from app.db.models.payment import Payment
 from app.db.session import get_async_session
 from app.schemas.payment import PaymentOut, PaymentCreate, PaymentUpdate
@@ -188,14 +189,14 @@ async def get_latest_payments_repo(limit: int = 10) -> List[PaymentOut]:
 async def list_payments_enriched_repo() -> list:
     """List all payments with user name via booking join.
     Used by GET /admin/payments to return AdminPayment-shaped rows."""
-    from app.db.models.booking import Booking
+    from app.db.models.order import Order
     from app.db.models.user import User
 
     async with get_async_session() as session:
         result = await session.execute(
             select(Payment, User.name)
-            .join(Booking, Payment.booking_id == Booking.id)
-            .join(User, Booking.user_id == User.id)
+            .join(Order, Payment.order_id == Order.id)
+            .join(User, Order.user_id == User.id)
             .order_by(Payment.created_at.desc())
         )
         payments = []

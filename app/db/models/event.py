@@ -9,6 +9,7 @@ from app.db.session import Base
 
 if TYPE_CHECKING:
     from app.db.models.user import User
+    from app.db.models.order import Order
     from app.db.models.booking import Booking
     from app.db.models.ticket_type import TicketType
     from app.db.models.favorites import Favorite
@@ -82,6 +83,7 @@ class Event(Base):
         Integer, ForeignKey("users.id"), nullable=False
     )
     organizer: Mapped["User"] = relationship("User", back_populates="events")
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="event")
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="event")
     ticket_types: Mapped[list["TicketType"]] = relationship(
         "TicketType", back_populates="event"

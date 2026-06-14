@@ -19,16 +19,19 @@ async def create_order_service(order_data: OrderCreate, user_id: int) -> OrderOu
 
 
 async def get_order_by_id_service(order_id: int) -> Optional[OrderOut]:
+    """Get an order by ID."""
     logger.info(f"Retrieving order {order_id}")
     return await order_repo.get_order_by_id_repo(order_id)
 
 
 async def list_orders_by_user_service(user_id: int) -> list[OrderOut]:
+    """List orders for a specific user."""
     logger.info(f"Listing orders for user {user_id}")
     return await order_repo.list_orders_by_user_repo(user_id)
 
 
 async def update_order_status_service(order_id: int, status: str) -> None:
+    """Update the status of an order."""
     logger.info(f"Updating order {order_id} status to {status}")
     await order_repo.update_order_status_repo(order_id, status)
 

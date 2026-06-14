@@ -167,7 +167,7 @@ async def get_order_bookings_repo(order_id: int) -> list[BookingOut]:
             select(Booking).where(Booking.order_id == order_id)
         )
         return [BookingOut.model_validate(b) for b in result.scalars().all()]
-    
+
 
 async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
     """List all orders with customer, event, payment, and line-item details.
@@ -176,7 +176,7 @@ async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
     from app.db.models.event import Event
     from app.db.models.payment import Payment
     from app.db.models.ticket_type import TicketType
- 
+
     async with get_async_session() as session:
         result = await session.execute(
             select(Order, User.name, User.email, Event.title, Payment)
@@ -186,7 +186,7 @@ async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
             .order_by(Order.created_at.desc())
         )
         rows = result.all()
- 
+
         orders_out = []
         for order, customer_name, customer_email, event_title, payment in rows:
             # Fetch this order's booking line items with ticket type names
@@ -206,7 +206,7 @@ async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
                 )
                 for booking, ticket_type_name in b_result.all()
             ]
- 
+
             orders_out.append(OrderEnrichedOut(
                 id=order.id,
                 user_id=order.user_id,
@@ -225,14 +225,14 @@ async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
                 mpesa_phone=payment.mpesa_phone if payment else None,
                 bookings=bookings,
             ))
- 
+
         return orders_out
- 
- 
+
+
 async def delete_order_repo(order_id: int) -> bool:
     """
     Delete an Order and its Bookings/Payment, cascading.
- 
+
     Refuses to delete (returns False) if any Booking under this order has
     issued TicketInstances — i.e. the order was confirmed and tickets are
     already in customers' hands. In that case the order should be cancelled
@@ -240,17 +240,17 @@ async def delete_order_repo(order_id: int) -> bool:
     """
     from app.db.models.payment import Payment
     from app.db.models.ticket_instance import TicketInstance
- 
+
     async with get_async_session() as session:
         order = await session.get(Order, order_id)
         if not order:
             return False
- 
+
         b_result = await session.execute(
             select(Booking).where(Booking.order_id == order_id)
         )
         bookings = b_result.scalars().all()
- 
+
         for booking in bookings:
             ti_result = await session.execute(
                 select(TicketInstance).where(TicketInstance.booking_id == booking.id)
@@ -260,7 +260,7 @@ async def delete_order_repo(order_id: int) -> bool:
                     f"Order {order_id} has issued ticket instances and cannot be "
                     f"deleted. Cancel the order instead to preserve audit history."
                 )
- 
+
         # No issued instances — safe to cascade delete
         p_result = await session.execute(
             select(Payment).where(Payment.order_id == order_id)
@@ -268,10 +268,10 @@ async def delete_order_repo(order_id: int) -> bool:
         payment = p_result.scalars().first()
         if payment:
             await session.delete(payment)
- 
+
         for booking in bookings:
             await session.delete(booking)
- 
+
         await session.delete(order)
         await session.commit()
         return True

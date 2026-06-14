@@ -8,7 +8,7 @@ Two consumers:
   2. The router calls list_audit_logs_service() / list_my_activity_service()
      to read them back to the frontend.
 """
-
+# Make sure to add all the action to the frontend filter list in AuditLogs.tsx when you add new ones here. This helps with filtering and display on the frontend.
 from __future__ import annotations
 
 from datetime import datetime
