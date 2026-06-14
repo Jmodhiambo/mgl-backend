@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Payment model for MGLTickets."""
+"""Payment model for MGLTickets.
+
+A Payment belongs to an Order (which may contain multiple Bookings —
+one per ticket type). One STK push pays for the entire Order.
+"""
 
 from sqlalchemy import ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,15 +12,15 @@ from datetime import datetime, timezone
 from app.db.session import Base
 
 if TYPE_CHECKING:
-    from app.db.models.booking import Booking
+    from app.db.models.order import Order
 
 class Payment(Base):
-    """Payment model representing a payment in the system."""
+    """Payment model representing a payment for an Order."""
 
     __tablename__ = "payments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    booking_id: Mapped[int] = mapped_column(Integer, ForeignKey("bookings.id"), nullable=False)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), nullable=False)
     amount: Mapped[float] = mapped_column(nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="KES")
     method: Mapped[str] = mapped_column(String(50), nullable=False)  # mpesa | card (future)
@@ -38,10 +42,11 @@ class Payment(Base):
         nullable=False
     )
 
-    booking: Mapped["Booking"] = relationship("Booking", back_populates="payment")
+    # Relationships
+    order: Mapped["Order"] = relationship("Order", back_populates="payment")
 
     def __repr__(self) -> str:
         return (
-            f"<Payment id={self.id} booking_id={self.booking_id} "
+            f"<Payment id={self.id} order_id={self.order_id} "
             f"amount={self.amount} method={self.method!r} status={self.status!r}>"
         )

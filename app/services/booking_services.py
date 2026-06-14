@@ -5,15 +5,12 @@ from datetime import datetime
 
 from app.core.logging_config import logger
 import app.db.repositories.booking_repo as booking_repo
-from app.schemas.booking import BookingCreate, BookingUpdate
+from app.schemas.booking import BookingUpdate
 from typing import Optional
 
-async def create_booking_service(booking_data: BookingCreate) -> dict:
-    """Service to create a new booking."""
-    logger.info("Creating a new booking")
-    booking = await booking_repo.create_booking_repo(booking_data)
-    logger.info(f"Created booking with ID: {booking.id}")
-    return booking
+# NOTE: create_booking_service was removed. Bookings are now created via
+# order_services.create_order_service(), which creates an Order plus one
+# Booking per ticket type in a single transaction.
 
 async def get_booking_by_id_service(booking_id: int) -> Optional[dict]:
     """Service to retrieve a booking by its ID."""

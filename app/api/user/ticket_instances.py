@@ -17,7 +17,7 @@ async def get_ticket_instances_by_user(user=Depends(require_user)):
     """Get all ticket instances for the current user.
 
     Returns enriched rows including event_title, venue, event_date,
-    ticket_type_name via a joined query. MyTickets.tsx depends on these fields.
+    ticket_type_name via a joined query. MyTickets.tsx and Dashboard depends on these fields.
     """
     return await ti_services.get_ticket_instances_by_user_enriched(user.id)
 

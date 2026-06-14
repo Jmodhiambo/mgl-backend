@@ -4,6 +4,7 @@ from app.db.models.ticket_type import TicketType
 from app.db.models.ticket_instance import TicketInstance
 from app.db.models.booking import Booking
 from app.db.models.payment import Payment
+from app.db.models.order import Order
 from app.db.models.refresh_sessions import RefreshSession
 from app.db.models.favorites import Favorite
 from app.db.models.co_organizer import CoOrganizer
@@ -23,6 +24,7 @@ __all__ = [  # Dunder module attribute to export
     "TicketInstance",
     "Booking",
     "Payment",
+    "Order",
     "RefreshSession",
     "Favorite",
     "CoOrganizer",

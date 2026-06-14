@@ -19,8 +19,8 @@ async def initiate_mpesa_payment(
     user=Depends(require_user),
 ):
     """
-    Trigger an M-Pesa STK push.
-    Frontend sends booking_id + phone_number.
+    Trigger an M-Pesa STK push for an Order (covers all ticket types in the order).
+    Frontend sends order_id + phone_number.
     Returns payment_id + checkout_request_id for polling.
     """
     try:
@@ -39,7 +39,8 @@ async def initiate_mpesa_payment(
 async def mpesa_callback(request: Request):
     """
     Daraja callback endpoint — NO auth (Safaricom calls this directly).
-    Validates the booking, updates payment status, confirms booking on success.
+    On success: confirms the Order and all its Bookings, then issues
+    TicketInstances for every line item.
     """
     body = await request.json()
     await payment_services.handle_mpesa_callback_service(body)
@@ -53,7 +54,7 @@ async def mpesa_callback(request: Request):
     status_code=status.HTTP_200_OK,
 )
 async def get_payment_by_id(payment_id: int, user=Depends(require_user)):
-    """Get a single payment by ID (user must own the booking it belongs to)."""
+    """Get a single payment by ID (user must own the order it belongs to)."""
     payment = await payment_services.get_payment_by_id_service(payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -61,9 +62,9 @@ async def get_payment_by_id(payment_id: int, user=Depends(require_user)):
 
 
 @router.get(
-    "/users/me/bookings/{booking_id}/payments",
+    "/users/me/orders/{order_id}/payments",
     response_model=list[PaymentOut],
 )
-async def get_payments_by_booking(booking_id: int, user=Depends(require_user)):
-    """Get all payments for a specific booking."""
-    return await payment_services.get_payments_by_booking_id_service(booking_id)
+async def get_payments_by_order(order_id: int, user=Depends(require_user)):
+    """Get all payments for a specific order."""
+    return await payment_services.get_payments_by_order_id_service(order_id)

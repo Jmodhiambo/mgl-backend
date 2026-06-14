@@ -11,7 +11,7 @@ from app.schemas.payment import PaymentOut, PaymentCreate, PaymentUpdate
 async def create_payment_repo(payment: PaymentCreate) -> PaymentOut:
     async with get_async_session() as session:
         db_payment = Payment(
-            booking_id=payment.booking_id,
+            order_id=payment.order_id,
             amount=payment.amount,
             currency=payment.currency,
             method=payment.method,
@@ -107,10 +107,10 @@ async def list_payments_repo() -> List[PaymentOut]:
         return [PaymentOut.model_validate(p) for p in result.scalars().all()]
 
 
-async def get_payments_by_booking_id_repo(booking_id: int) -> List[PaymentOut]:
+async def get_payments_by_order_id_repo(order_id: int) -> List[PaymentOut]:
     async with get_async_session() as session:
         result = await session.execute(
-            select(Payment).where(Payment.booking_id == booking_id)
+            select(Payment).where(Payment.order_id == order_id)
         )
         return [PaymentOut.model_validate(p) for p in result.scalars().all()]
 
@@ -151,10 +151,10 @@ async def count_payments_repo() -> int:
         return result.scalar_one()
 
 
-async def get_total_amount_by_booking_id_repo(booking_id: int) -> float:
+async def get_total_amount_by_order_id_repo(order_id: int) -> float:
     async with get_async_session() as session:
         result = await session.execute(
-            select(func.sum(Payment.amount)).where(Payment.booking_id == booking_id)
+            select(func.sum(Payment.amount)).where(Payment.order_id == order_id)
         )
         return float(result.scalar() or 0.0)
 
@@ -202,7 +202,7 @@ async def list_payments_enriched_repo() -> list:
         for payment, user_name in result:
             payments.append({
                 'id': payment.id,
-                'booking_id': payment.booking_id,
+                'order_id': payment.order_id,
                 'amount': payment.amount,
                 'currency': payment.currency,
                 'method': payment.method,

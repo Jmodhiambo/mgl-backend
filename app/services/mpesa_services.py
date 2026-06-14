@@ -35,7 +35,7 @@ def _base_url() -> str:
 
 
 # ── Access token ──────────────────────────────────────────────────────────────
-
+ 
 async def get_mpesa_access_token() -> str:
     """
     Fetch a short-lived OAuth token from Daraja.
@@ -44,7 +44,7 @@ async def get_mpesa_access_token() -> str:
     credentials = base64.b64encode(
         f"{MPESA_CONSUMER_KEY}:{MPESA_CONSUMER_SECRET}".encode()
     ).decode()
-
+ 
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{_base_url()}/oauth/v1/generate?grant_type=client_credentials",
@@ -53,33 +53,33 @@ async def get_mpesa_access_token() -> str:
         )
         response.raise_for_status()
         return response.json()["access_token"]
-
-
+ 
+ 
 # ── STK push ──────────────────────────────────────────────────────────────────
-
+ 
 async def initiate_stk_push(
     phone_number: str,
     amount: int,
-    booking_id: int,
+    order_id: int,
     account_reference: str = "MGLTickets",
 ) -> dict:
     """
     Trigger an STK push to the user's phone.
-
+ 
     Returns the full Daraja response dict, which includes:
       - CheckoutRequestID  (store this in payment row for callback matching)
       - ResponseCode       ("0" = success)
       - CustomerMessage
-
+ 
     phone_number must be in format 2547XXXXXXXX (no +, no leading 0).
     """
     token = await get_mpesa_access_token()
-
+ 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     password = base64.b64encode(
         f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{timestamp}".encode()
     ).decode()
-
+ 
     payload = {
         "BusinessShortCode": MPESA_SHORTCODE,
         "Password": password,
@@ -91,9 +91,9 @@ async def initiate_stk_push(
         "PhoneNumber": phone_number,
         "CallBackURL": MPESA_CALLBACK_URL,
         "AccountReference": account_reference,
-        "TransactionDesc": f"Booking #{booking_id}",
+        "TransactionDesc": f"Order #{order_id}",
     }
-
+ 
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{_base_url()}/mpesa/stkpush/v1/processrequest",
@@ -103,16 +103,16 @@ async def initiate_stk_push(
         )
         response.raise_for_status()
         data = response.json()
-        logger.info(f"STK push response for booking {booking_id}: {data}")
+        logger.info(f"STK push response for order {order_id}: {data}")
         return data
-
-
+ 
+ 
 # ── Callback parsing ──────────────────────────────────────────────────────────
-
+ 
 def parse_mpesa_callback(body: dict) -> dict:
     """
     Extract the key fields from a Daraja STK callback body.
-
+ 
     Returns a dict with:
       checkout_request_id  — matches what we stored at STK push time
       result_code          — "0" = success, anything else = failure
@@ -125,18 +125,19 @@ def parse_mpesa_callback(body: dict) -> dict:
     result_code = str(stk_callback.get("ResultCode", "1"))
     result_desc = stk_callback.get("ResultDesc", "Unknown")
     checkout_request_id = stk_callback.get("CheckoutRequestID", "")
-
+ 
     mpesa_ref = None
     amount = None
     phone = None
-
+ 
     if result_code == "0":
+        # Success — metadata items are in a list of {Name, Value} dicts
         items = stk_callback.get("CallbackMetadata", {}).get("Item", [])
         meta = {item["Name"]: item.get("Value") for item in items}
         mpesa_ref = meta.get("MpesaReceiptNumber")
         amount = meta.get("Amount")
         phone = str(meta.get("PhoneNumber", ""))
-
+ 
     return {
         "checkout_request_id": checkout_request_id,
         "result_code": result_code,

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 class BookingOut(BaseModel):
     """Schema for outputting Booking data."""
     id: int
+    order_id: int              # groups this booking with sibling line items under one Order
     user_id: int
     event_id: int              # was missing — model has it NOT NULL, needed by frontend
     ticket_type_id: int
@@ -24,8 +25,12 @@ class BookingOut(BaseModel):
  
  
 class BookingCreate(BaseModel):
-    """Schema for creating a new Booking."""
-    ticket_type_id: int        # event_id derived server-side from ticket_type; user_id injected from token
+    """Internal schema — used by order_repo when creating Booking rows for an Order.
+    Not exposed directly via any user-facing endpoint; POST /users/me/orders is
+    the entry point for creating bookings now."""
+    order_id: int
+    event_id: int
+    ticket_type_id: int
     quantity: int
     total_price: int
  

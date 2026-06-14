@@ -7,35 +7,13 @@ from sqlalchemy import select, func
 from app.db.session import get_async_session
 from app.db.models.booking import Booking
 from app.db.models.ticket_type import TicketType
-from app.schemas.booking import BookingOut, BookingCreate, BookingUpdate
+from app.schemas.booking import BookingOut, BookingUpdate
 
-
-async def create_booking_repo(booking_data: BookingCreate, user_id: int) -> BookingOut:
-    """Create a new booking in the database.
-    
-    user_id is passed explicitly (injected from auth token in the router,
-    never trusted from the request body).
-    event_id is derived from the ticket_type row to avoid the caller
-    having to know or pass it.
-    """
-    async with get_async_session() as session:
-        # Derive event_id from ticket_type — single source of truth
-        ticket_type = await session.get(TicketType, booking_data.ticket_type_id)
-        if not ticket_type:
-            raise ValueError(f"TicketType {booking_data.ticket_type_id} not found")
-
-        new_booking = Booking(
-            user_id=user_id,
-            event_id=ticket_type.event_id,
-            ticket_type_id=booking_data.ticket_type_id,
-            quantity=booking_data.quantity,
-            total_price=booking_data.total_price,
-            status="pending",
-        )
-        session.add(new_booking)
-        await session.commit()
-        await session.refresh(new_booking)
-        return BookingOut.model_validate(new_booking)
+# NOTE: Bookings are no longer created directly via this repo.
+# order_repo.create_order_repo() creates Order + Booking rows together in
+# one transaction (one Booking per ticket type line item). This keeps
+# pricing validation, availability checks, and atomicity in one place.
+# BookingCreate/create_booking_repo were removed — see order_repo.py.
 
 
 async def get_booking_by_id_repo(booking_id: int) -> Optional[BookingOut]:

@@ -5,9 +5,11 @@ import json
 from typing import Optional
 from datetime import datetime
 import app.db.repositories.payment_repo as payment_repo
-import app.db.repositories.booking_repo as booking_repo
+import app.db.repositories.order_repo as order_repo
+import app.db.repositories.ticket_type_repo as ticket_type_repo
 from app.schemas.payment import PaymentCreate, PaymentUpdate, MpesaStkPushRequest, MpesaStkPushResponse
 from app.services.mpesa_services import initiate_stk_push, parse_mpesa_callback
+from app.services.ticket_instance_services import create_ticket_instances_for_booking
 from app.core.logging_config import logger
 
 
@@ -43,9 +45,9 @@ async def list_payments_service() -> list[dict]:
     return await payment_repo.list_payments_repo()
 
 
-async def get_payments_by_booking_id_service(booking_id: int) -> list[dict]:
-    logger.info(f"Retrieving payments for booking ID: {booking_id}.")
-    return await payment_repo.get_payments_by_booking_id_repo(booking_id)
+async def get_payments_by_order_id_service(order_id: int) -> list[dict]:
+    logger.info(f"Retrieving payments for order ID: {order_id}.")
+    return await payment_repo.get_payments_by_order_id_repo(order_id)
 
 
 async def record_payment_callback_service(payment_id: int, callback_payload: str) -> Optional[dict]:
@@ -68,9 +70,9 @@ async def count_payments_service() -> int:
     return await payment_repo.count_payments_repo()
 
 
-async def get_total_by_booking_id_service(booking_id: int) -> float:
-    logger.info(f"Calculating total payment amount for booking ID: {booking_id}.")
-    return await payment_repo.get_total_amount_by_booking_id_repo(booking_id)
+async def get_total_by_order_id_service(order_id: int) -> float:
+    logger.info(f"Calculating total payment amount for order ID: {order_id}.")
+    return await payment_repo.get_total_amount_by_order_id_repo(order_id)
 
 
 async def get_payments_created_after_service(date_time: datetime) -> list[dict]:
@@ -87,12 +89,6 @@ async def get_latest_payments_service(limit: int = 10) -> list[dict]:
     logger.info(f"Retrieving the latest {limit} payment records.")
     return await payment_repo.get_latest_payments_repo(limit)
 
-async def list_payments_enriched_service() -> list[dict]:
-    """List all payments with user name via booking join.
-    Used by GET /admin/payments — returns AdminPayment-shaped rows."""
-    logger.info("Listing all payment records (enriched).")
-    return await payment_repo.list_payments_enriched_repo()
-
 
 # ── M-Pesa flow ───────────────────────────────────────────────────────────────
 
@@ -101,29 +97,29 @@ async def initiate_mpesa_payment_service(
 ) -> MpesaStkPushResponse:
     """
     Orchestrates the STK push flow:
-      1. Validate the booking exists and is still pending.
-      2. Call Daraja STK push.
-      3. Create a Payment row (status=pending) with CheckoutRequestID.
+      1. Validate the order exists and is still pending.
+      2. Call Daraja STK push for the order's total_price (covers all line items).
+      3. Create a Payment row (status=pending) with CheckoutRequestID, linked to the order.
       4. Return payment_id + checkout_request_id to the caller.
     """
-    # 1. Validate booking
-    booking = await booking_repo.get_booking_by_id_repo(request.booking_id)
-    if not booking:
-        raise ValueError(f"Booking {request.booking_id} not found")
-    if booking.status not in ("pending", "confirmed"):
-        raise ValueError(f"Booking {request.booking_id} has status '{booking.status}' — cannot pay")
+    # 1. Validate order
+    order = await order_repo.get_order_by_id_repo(request.order_id)
+    if not order:
+        raise ValueError(f"Order {request.order_id} not found")
+    if order.status not in ("pending", "confirmed"):
+        raise ValueError(f"Order {request.order_id} has status '{order.status}' — cannot pay")
 
     # 2. Normalise phone: strip leading 0 or + and ensure 2547XXXXXXXX format
     phone = request.phone_number.strip().lstrip("+")
     if phone.startswith("0"):
         phone = "254" + phone[1:]
 
-    # 3. Initiate STK push
-    logger.info(f"Initiating STK push for booking {request.booking_id} to {phone}")
+    # 3. Initiate STK push for the order's total (sum of all line items)
+    logger.info(f"Initiating STK push for order {request.order_id} to {phone}")
     daraja_response = await initiate_stk_push(
         phone_number=phone,
-        amount=booking.total_price,
-        booking_id=request.booking_id,
+        amount=order.total_price,
+        order_id=request.order_id,  # used only for the Daraja TransactionDesc label
     )
 
     if str(daraja_response.get("ResponseCode", "1")) != "0":
@@ -133,11 +129,11 @@ async def initiate_mpesa_payment_service(
 
     checkout_request_id = daraja_response["CheckoutRequestID"]
 
-    # 4. Persist a pending payment row
+    # 4. Persist a pending payment row, linked to the order
     payment = await payment_repo.create_payment_repo(
         PaymentCreate(
-            booking_id=request.booking_id,
-            amount=booking.total_price,
+            order_id=request.order_id,
+            amount=order.total_price,
             currency="KES",
             method="mpesa",
             mpesa_phone=phone,
@@ -145,7 +141,7 @@ async def initiate_mpesa_payment_service(
         )
     )
 
-    logger.info(f"Created pending payment {payment.id} for booking {request.booking_id}")
+    logger.info(f"Created pending payment {payment.id} for order {request.order_id}")
 
     return MpesaStkPushResponse(
         payment_id=payment.id,
@@ -158,10 +154,12 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
     """
     Processes the Daraja callback:
       1. Parse the callback to extract result + mpesa_ref.
-      2. Look up the Payment row by CheckoutRequestID.
+      2. Look up the Payment row by CheckoutRequestID → get its order_id.
       3. Update payment status (completed | failed) + store mpesa_ref.
-      4. On success, confirm the Booking status → 'confirmed'.
-      5. On success, decrement ticket quantity_sold (handled by booking confirm logic).
+      4. On success:
+         - confirm the Order and ALL of its Bookings (one per ticket type)
+         - for EACH booking, look up its ticket type's price and create
+           `quantity` TicketInstances, then increment quantity_sold
     """
     parsed = parse_mpesa_callback(raw_body)
     checkout_request_id = parsed["checkout_request_id"]
@@ -177,16 +175,46 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
     await payment_repo.record_callback_payload_repo(payment.id, json.dumps(raw_body))
 
     if parsed["result_code"] == "0":
-        # Success
+        # Success — update payment, confirm order + all its bookings, issue tickets
         await payment_repo.update_payment_mpesa_success_repo(
             payment_id=payment.id,
             mpesa_ref=parsed["mpesa_ref"],
         )
-        # Confirm the booking
-        await booking_repo.update_booking_status_repo(payment.booking_id, "confirmed")
+
+        # Confirm the order — cascades status="confirmed" to every booking under it
+        await order_repo.update_order_status_repo(payment.order_id, "confirmed")
+
+        # Fetch all booking line items (one per ticket type) under this order
+        bookings = await order_repo.get_order_bookings_repo(payment.order_id)
+
+        total_instances = 0
+        for booking in bookings:
+            # Look up this line item's ticket type to get the correct price —
+            # never trust a client-supplied price. One DB read per line item,
+            # in a background callback with no user waiting.
+            ticket_type = await ticket_type_repo.get_ticket_type_by_id_repo(
+                booking.ticket_type_id
+            )
+            price_per_ticket = ticket_type.price if ticket_type else 0
+
+            await create_ticket_instances_for_booking(
+                booking_id=booking.id,
+                user_id=booking.user_id,
+                ticket_type_id=booking.ticket_type_id,
+                quantity=booking.quantity,
+                price_per_ticket=price_per_ticket,
+            )
+
+            await ticket_type_repo.increment_quantity_sold_repo(
+                booking.ticket_type_id, booking.quantity
+            )
+
+            total_instances += booking.quantity
+
         logger.info(
             f"Payment {payment.id} completed (ref: {parsed['mpesa_ref']}). "
-            f"Booking {payment.booking_id} confirmed."
+            f"Order {payment.order_id} confirmed with {len(bookings)} booking line(s). "
+            f"{total_instances} ticket instance(s) issued in total."
         )
     else:
         # Failure

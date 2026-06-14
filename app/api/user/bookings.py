@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
-"""User-facing booking routes for MGLTickets."""
+"""User-facing booking routes for MGLTickets.
+ 
+NOTE: There is no POST endpoint here. Bookings are created as part of an
+Order — see orders_user_router.py (POST /users/me/orders), which creates
+one Booking per ticket type line item in a single transaction.
+"""
 
 from fastapi import APIRouter, Depends, status
-from app.schemas.booking import BookingOut, BookingCreate, BookingUpdate
+from app.schemas.booking import BookingOut, BookingUpdate
 from app.core.security import require_user
 import app.services.booking_services as booking_services
 
 router = APIRouter()
-
-@router.post("/users/me/bookings", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
-async def create_booking(booking: BookingCreate, user=Depends(require_user)):
-    """
-    Create a new booking.
-    user_id is injected from the auth token — never trusted from the request body.
-    event_id is derived server-side from the ticket_type.
-    """
-    return await booking_services.create_booking_service(booking, user_id=user.id)
 
 # Specific paths BEFORE /{booking_id} to prevent route shadowing
 @router.get("/users/me/bookings/count", response_model=int, status_code=status.HTTP_200_OK)

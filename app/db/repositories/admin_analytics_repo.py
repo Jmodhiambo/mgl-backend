@@ -2,6 +2,7 @@
 """Repository layer for admin analytics queries.
 
 All queries are read-only aggregations — no writes here.
+Place at: app/db/repositories/analytics_repo.py
 """
 
 from __future__ import annotations
@@ -124,6 +125,8 @@ async def get_revenue_chart_repo(months: int = 7) -> list[dict]:
     Monthly revenue totals for the last N months.
     Returns [{label: 'Jan', value: 120000}, ...] oldest-first.
     """
+    from sqlalchemy import text
+
     async with get_async_session() as session:
         now = datetime.now(timezone.utc)
 
@@ -136,7 +139,7 @@ async def get_revenue_chart_repo(months: int = 7) -> list[dict]:
 
         result = await session.execute(
             select(
-                func.date_trunc("month", Payment.created_at).label("month"),
+                text("date_trunc('month', payments.created_at) AS month"),
                 func.coalesce(func.sum(Payment.amount), 0).label("total"),
             )
             .where(
@@ -145,8 +148,8 @@ async def get_revenue_chart_repo(months: int = 7) -> list[dict]:
                     Payment.created_at >= buckets[0],
                 )
             )
-            .group_by(func.date_trunc("month", Payment.created_at))
-            .order_by(func.date_trunc("month", Payment.created_at))
+            .group_by(text("date_trunc('month', payments.created_at)"))
+            .order_by(text("date_trunc('month', payments.created_at)"))
         )
         rows = {r.month.strftime("%b"): float(r.total) for r in result}
 
@@ -164,6 +167,8 @@ async def get_user_growth_chart_repo(months: int = 6) -> list[dict]:
     New user registrations per month for the last N months.
     Returns [{label: 'Jan', value: 42}, ...] oldest-first.
     """
+    from sqlalchemy import text
+
     async with get_async_session() as session:
         now = datetime.now(timezone.utc)
 
@@ -174,12 +179,12 @@ async def get_user_growth_chart_repo(months: int = 6) -> list[dict]:
 
         result = await session.execute(
             select(
-                func.date_trunc("month", User.created_at).label("month"),
+                text("date_trunc('month', users.created_at) AS month"),
                 func.count(User.id).label("total"),
             )
             .where(User.created_at >= buckets[0])
-            .group_by(func.date_trunc("month", User.created_at))
-            .order_by(func.date_trunc("month", User.created_at))
+            .group_by(text("date_trunc('month', users.created_at)"))
+            .order_by(text("date_trunc('month', users.created_at)"))
         )
         rows = {r.month.strftime("%b"): r.total for r in result}
 

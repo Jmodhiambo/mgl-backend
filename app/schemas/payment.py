@@ -9,7 +9,7 @@ from pydantic import BaseModel
 class PaymentOut(BaseModel):
     """Schema for outputting Payment data."""
     id: int
-    booking_id: int
+    order_id: int
     amount: int
     currency: str
     method: str
@@ -27,7 +27,7 @@ class PaymentOut(BaseModel):
  
 class PaymentCreate(BaseModel):
     """Schema for creating a new Payment record (internal use — not directly called by frontend)."""
-    booking_id: int
+    order_id: int
     amount: int
     currency: str = "KES"
     method: str
@@ -58,7 +58,7 @@ class PaymentEnrichedOut(BaseModel):
     """Enriched payment schema with user name via booking join.
     Returned by GET /admin/payments."""
     id: int
-    booking_id: int
+    order_id: int
     amount: int
     currency: str
     method: str
@@ -80,7 +80,7 @@ class PaymentEnrichedOut(BaseModel):
  
 class MpesaStkPushRequest(BaseModel):
     """Frontend sends this to trigger an STK push."""
-    booking_id: int
+    order_id: int
     phone_number: str   # format: 2547XXXXXXXX
  
  
