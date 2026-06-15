@@ -46,7 +46,7 @@ async def get_latest_events(limit: int = 10, user=Depends(get_current_user_optio
 
 
 @router.get("/events/count", response_model=int)
-async def get_total_events(user=Depends(require_user)):
+async def get_total_events(user=Depends(get_current_user_optional)):
     """Get the total number of approved events."""
     return await event_services.count_events_service()
 
@@ -88,18 +88,40 @@ async def get_events_sorted(
     return await event_services.get_events_sorted_by_start_time_service(ascending)
 
 
-# ── Parameterised path last ───────────────────────────────────────────────────
+@router.get("/events/id/{event_id}", response_model=EventOut)
+async def get_event_by_id(event_id: int, user=Depends(get_current_user_optional)):
+    """Get an event by its numeric ID."""
+    return await event_services.get_event_by_id_service(event_id)
 
-@router.get("/events/{identifier}", response_model=EventOut)
-async def get_event(identifier: str, user=Depends(require_user)):
-    """
-    Get an event by its numeric ID or its slug.
 
-    FastAPI cannot have two separate routes for /events/{event_id} (int)
-    and /events/{slug} (str) because both match the same URL shape.
-    This single route handles both: if the identifier is all digits it
-    is treated as an ID, otherwise as a slug.
-    """
-    if identifier.isdigit():
-        return await event_services.get_event_by_id_service(int(identifier))
-    return await event_services.get_event_by_slug_service(identifier)
+@router.get("/events/slug/{slug}", response_model=EventOut)
+async def get_event_by_slug(slug: str, user=Depends(get_current_user_optional)):
+    """Get an event by its slug."""
+    return await event_services.get_event_by_slug_service(slug)
+
+
+# ── Parameterised path last. Keep it as some paths could be using it ───────────────────────────────────────────────────
+
+# @router.get("/events/{identifier}", response_model=EventOut)
+# async def get_event_by_id_or_slug(identifier: str, user=Depends(get_current_user_optional)):
+#     """
+#     Get an event by its numeric ID or its slug.
+
+#     FastAPI cannot have two separate routes for /events/{event_id} (int)
+#     and /events/{slug} (str) because both match the same URL shape.
+#     This single route handles both: if the identifier is all digits it
+#     is treated as an ID, otherwise as a slug.
+
+#     Deprecated compatibility route.
+
+#     Supports legacy clients using:
+#         /events/{id}
+#         /events/{slug}
+
+#     New clients should use:
+#         /events/id/{event_id}
+#         /events/slug/{slug}
+#     """
+#     if identifier.isdigit():
+#         return await event_services.get_event_by_id_service(int(identifier))
+#     return await event_services.get_event_by_slug_service(identifier)
