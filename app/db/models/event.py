@@ -47,18 +47,21 @@ class Event(Base):
     # status tracks lifecycle: upcoming | ongoing | completed | cancelled | deleted
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")
 
-    # is_approved: admin approval gate. Renamed from the original `approved`
-    # column to match the OrganizerEventOut / AdminEventOut schema fields and
-    # all repo/service layer references (Event.is_approved.is_(True/False)).
-    # Generate an Alembic migration: op.alter_column('events', 'approved',
-    #   new_column_name='is_approved') if upgrading an existing database.
+    # is_approved: admin approval gate
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    # is_active: whether the event is publicly visible. Separate from
-    # is_approved — an approved event can be temporarily hidden.
-    # was missing from the original model.
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-
+    # is_active: Show if the event is currently happening. When time is in-between start and end, is_active=True.
+    # When the event is cancelled or deleted, is_active=False. This is the primary signal for whether the event is currently active.
+    @property
+    def is_active(self) -> bool:
+        """Determine if the event is currently active based on its status and approval."""
+        now = datetime.now(timezone.utc)
+        return (
+            self.is_approved
+            and self.status != "cancelled"
+            and self.start_time <= now <= self.end_time
+        )
+    
     # rejected: kept for backwards compatibility. When the admin rejects an
     # event the repo sets is_approved=False AND is_active=False, so this
     # column is no longer the primary rejection signal. It can be used as an

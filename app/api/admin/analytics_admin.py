@@ -4,11 +4,12 @@
 from fastapi import APIRouter, Depends, Query
 import app.services.admin_analytics_services as analytics_services
 from app.core.security import require_admin
+from app.schemas.analytics import DashboardStatsOut
 
 router = APIRouter()
 
 
-@router.get("/admin/analytics/dashboard")
+@router.get("/admin/analytics/dashboard", response_model=DashboardStatsOut)
 async def get_dashboard_stats(user=Depends(require_admin)):
     """
     Aggregated KPI stats for the admin dashboard stat cards.

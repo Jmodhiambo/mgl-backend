@@ -61,6 +61,10 @@ async def get_dashboard_stats_repo() -> dict:
             select(func.count()).select_from(User).where(User.role == "organizer")
         ) or 0
 
+        total_admins = await session.scalar(
+            select(func.count()).select_from(User).where(User.role == "admin")
+        ) or 0
+
         new_users_this_week = await session.scalar(
             select(func.count()).select_from(User).where(
                 User.created_at >= week_ago
@@ -123,6 +127,7 @@ async def get_dashboard_stats_repo() -> dict:
         return {
             "total_users":         total_users,
             "total_organizers":    total_organizers,
+            "total_admins":        total_admins,
             "total_events":        total_events,
             "total_bookings":      total_bookings,
             "total_revenue":       float(total_revenue),
