@@ -19,7 +19,7 @@ router = APIRouter()
 async def list_orders(user=Depends(require_admin)):
     """List all orders with customer, event, payment, and ticket-type
     line-item details — the data source for the admin Orders page."""
-    return await order_services.list_orders_enriched_service()
+    return await order_services.list_orders_enriched_admin_app_service()
 
 
 @router.delete("/admin/orders/{order_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -6,6 +6,28 @@ from pydantic import BaseModel
 from typing import Optional
 
 
+# ─── Commission breakdown (computed, not stored) ───────────────────────────────
+ 
+class CommissionBreakdown(BaseModel):
+    """
+    Revenue split for a single event, computed server-side from
+    total_revenue and commission_rate.
+ 
+    gross_revenue   = total confirmed booking revenue
+    platform_cut    = gross_revenue * (commission_rate / 100)
+    organizer_net   = gross_revenue - platform_cut
+    commission_rate = the rate that was locked in at event creation
+    """
+    gross_revenue: float
+    platform_cut: float
+    organizer_net: float
+    commission_rate: float
+    commission_source: str
+ 
+    class Config:
+        from_attributes = True
+
+
 # ─── Public / User-facing ─────────────────────────────────────────────────────
 
 class EventOut(BaseModel):
@@ -19,6 +41,7 @@ class EventOut(BaseModel):
     organizer_id: int
     description: Optional[str] = None
     venue: str
+    category: str
     start_time: datetime
     end_time: datetime
     original_filename: str
@@ -33,12 +56,13 @@ class EventOut(BaseModel):
 
 # ─── Organizer portal ─────────────────────────────────────────────────────────
 
+
 class OrganizerEventOut(BaseModel):
     """
     Organizer event schema — returned to the organizer portal for their own
-    events. Includes approval state and aggregated booking/revenue stats.
-    Does NOT include organizer identity fields (the organizer already knows
-    who they are).
+    events. Includes approval state, aggregated booking/revenue stats, and
+    the commission breakdown so the organizer can see gross / platform cut /
+    their net payout.
     """
     id: int
     title: str
@@ -55,11 +79,26 @@ class OrganizerEventOut(BaseModel):
     status: str
     is_approved: bool
     is_active: bool
+ 
+    # ── Aggregated stats ──────────────────────────────────────────────────────
     total_bookings: int = 0
-    total_revenue: float = 0.0
+    total_revenue: float = 0.0          # gross confirmed revenue
+ 
+    # ── Commission ────────────────────────────────────────────────────────────
+    commission_rate: float
+    commission_source: str = "platform_default"
+    # Negotiation fields — only populated when commission_source == 'negotiated'
+    commission_approved_by: Optional[int] = None
+    commission_approved_by_name: Optional[str] = None
+    commission_approved_at: Optional[datetime] = None
+ 
+    # ── Computed revenue split (populated by the repo/service layer) ──────────
+    platform_cut: float = 0.0          # total_revenue * (commission_rate / 100)
+    organizer_net: float = 0.0         # total_revenue - platform_cut
+ 
     created_at: datetime
     updated_at: datetime
-
+ 
     class Config:
         from_attributes = True
 
@@ -101,6 +140,8 @@ class EventCreateWithFlyer(EventCreate):
     organizer_id: int
     original_filename: str
     flyer_url: str
+    commission_rate: float
+    commission_source: str = "platform_default"
 
 
 class EventUpdate(BaseModel):
@@ -126,6 +167,10 @@ class EventStats(BaseModel):
     total_revenue: float
     tickets_sold: int
     tickets_remaining: int
+    # Commission breakdown
+    commission_rate: float = 0.0
+    platform_cut: float = 0.0
+    organizer_net: float = 0.0
 
     class Config:
         from_attributes = True
@@ -152,6 +197,8 @@ class BookingOut(BaseModel):
     """Booking data used inside EventDetails."""
     id: int
     user_id: int
+    order_id: int
+    event_id: int
     ticket_type_id: int
     quantity: int
     status: str
@@ -184,6 +231,8 @@ class TopEvent(BaseModel):
     bookings: int
     revenue: float
     tickets_sold: int
+    platform_cut: float
+    organizer_net: float
 
     class Config:
         from_attributes = True
@@ -203,3 +252,4 @@ EventUpdate.model_rebuild()
 EventStats.model_rebuild()
 EventDetails.model_rebuild()
 TopEvent.model_rebuild()
+CommissionBreakdown.model_rebuild()

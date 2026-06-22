@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Favorite routes for MGLTickets."""
+"""Co-organizer routes for MGLTickets."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.user import UserOut
@@ -18,6 +18,7 @@ async def create_co_organizer(event_id: int, email: str, organizer=Depends(requi
     organizer_id = organizer.id
     return await co_services.create_co_organizer_service(email, organizer_id, event_id, invited_by)
 
+
 @router.patch("/organizers/me/co-organizers/{co_organizer_id}", status_code=status.HTTP_200_OK)
 async def update_create_co_organizer_status(co_organizer_id: int, create_co_organizer: bool, organizer=Depends(require_organizer)):
     """Update the create_co_organizer status of a co-organizer."""
@@ -31,9 +32,23 @@ async def update_create_co_organizer_status(co_organizer_id: int, create_co_orga
 
 
 @router.get("/organizers/me/co-organizers", response_model=list[UserOut], status_code=status.HTTP_200_OK)
-async def get_all_co_organizers(event_id: int, organizer=Depends(require_organizer)):
-    """List all co-organizers (User access only)."""
-    co_organizers = await co_services.get_all_event_co_organizers_service(event_id)
+async def get_all_co_organizers(organizer=Depends(require_organizer)):
+    """List co-organizers across ALL of the current organizer's events."""
+    co_organizers = await co_services.get_all_co_organizers_service(organizer.id)
+    return [await user_services.get_user_by_id_service(co_organizer.user_id) for co_organizer in co_organizers]
+
+
+@router.get("/organizers/me/co-organizers/event/{event_id}", response_model=list[UserOut], status_code=status.HTTP_200_OK)
+async def get_co_organizers_for_event(event_id: int, organizer=Depends(require_organizer)):
+    """
+    List co-organizers for a single event owned by the current organizer.
+
+    Path is /co-organizers/event/{event_id} rather than /co-organizers/{event_id}
+    to avoid colliding with the /co-organizers/{co_organizer_id} shape used by
+    the PATCH and DELETE routes below — both are integer path params and would
+    otherwise be ambiguous to FastAPI's router matching.
+    """
+    co_organizers = await co_services.get_co_organizers_for_event_service(organizer.id, event_id)
     return [await user_services.get_user_by_id_service(co_organizer.user_id) for co_organizer in co_organizers]
 
 

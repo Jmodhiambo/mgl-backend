@@ -59,6 +59,17 @@ async def update_ticket_type_service(
     ticket_type_id: int, ticket_type_in: TicketTypeUpdate
 ) -> Optional[dict]:
     """Update an existing TicketType."""
+    # Ensure total quantity is not less than quantity sold
+    ticket = await get_ticket_type_by_id_service(ticket_type_id)
+    if ticket_type_in.total_quantity < ticket.quantity_sold:
+        logger.warning(
+            f"Total quantity cannot be less than quantity sold for TicketType with ID {ticket_type_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Total quantity cannot be less than quantity sold",
+    )
+
     logger.info(
         f"Updating TicketType with ID: {ticket_type_id} "
         f"using data: {ticket_type_in.model_dump(exclude_unset=True)}"

@@ -18,6 +18,7 @@ from app.api.user.co_organizer import router as co_organizer_router
 from app.api.user.article_analytics import router as article_analytics_router
 from app.api.user.contact_messages import router as contact_messages_router
 from app.api.user.sessions import router as user_session_router
+from app.api.user.order import router as order_router
 
 # Organizer routes
 from app.api.organizer.user_organizer import router as organizer_user_router
@@ -47,7 +48,7 @@ from app.api.admin.notification_admin import router as admin_notification_router
 from app.api.admin.audit_log_admin import router as admin_audit_log_router
 from app.api.admin.settings_admin import router as admin_settings_router
 from app.api.admin.analytics_admin import router as admin_analytics_router  # Only in the Admin and serves Analytics and Dashboard pages
-from app.api.admin.order_admin import router as admin_order_router # Only in the Admin and serves enriched order data for the Admin Orders page
+from app.api.admin.order_admin import router as admin_order_router
 
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
@@ -65,7 +66,8 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(co_organizer_router, prefix="/api/v1", tags=["Co-Organizer"])
     app.include_router(article_analytics_router, prefix="/api/v1", tags=["Article Analytics"])
     app.include_router(contact_messages_router, prefix="/api/v1", tags=["Contact Messages"])
-    app.include_router(user_session_router, prefix="/api/v1", tags=["Session-User"])
+    app.include_router(user_session_router, prefix="/api/v1", tags=["Sessions"])
+    app.include_router(order_router, prefix="/api/v1", tags=["Orders"])
 
     # Organizer routes
     app.include_router(organizer_user_router, prefix="/api/v1", tags=["Users-Organizer"])

@@ -69,10 +69,29 @@ async def update_create_co_organizer_status_service(
     )
 
 
-async def get_all_event_co_organizers_service(event_id: int) -> Optional[list[CoOrganizerOut]]:
-    """Get all co-organizer records for a given event."""
-    logger.info(f"Getting all co-organizers for event {event_id}")
-    return await co_repo.get_all_event_co_organizers_repo(event_id=event_id)
+async def get_all_co_organizers_service(organizer_id: int) -> list[CoOrganizerOut]:
+    """
+    Get every co-organizer across ALL events owned by this organizer.
+    Used by GET /organizers/me/co-organizers.
+    """
+    logger.info(f"Getting all co-organizers for organizer {organizer_id} (all events)")
+    return await co_repo.get_co_organizers_by_organizer_repo(organizer_id=organizer_id)
+
+
+async def get_co_organizers_for_event_service(
+    organizer_id: int, event_id: int
+) -> list[CoOrganizerOut]:
+    """
+    Get co-organizers for a single event, scoped to the requesting organizer.
+
+    organizer_id is the ownership boundary — without it, any organizer could
+    pass any event_id and see co-organizers for an event they don't own.
+    Used by GET /organizers/me/co-organizers/event/{event_id}.
+    """
+    logger.info(f"Getting co-organizers for organizer {organizer_id}, event {event_id}")
+    return await co_repo.get_co_organizers_by_organizer_repo(
+        organizer_id=organizer_id, event_id=event_id
+    )
 
 
 async def get_user_co_organizing_events_service(user_id: int) -> Optional[list[CoOrganizerOut]]:

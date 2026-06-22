@@ -2,7 +2,7 @@
 """User-facing order routes for MGLTickets."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.schemas.order import OrderCreate, OrderOut
+from app.schemas.order import OrderCreate, OrderOut, OrderEnrichedOut
 from app.core.security import require_user
 import app.services.order_services as order_services
 
@@ -24,9 +24,29 @@ async def create_order(order: OrderCreate, user=Depends(require_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ── Fixed paths BEFORE /{order_id} ────────────────────────────────────────────
+
+@router.get("/users/me/orders/enriched", response_model=list[OrderEnrichedOut])
+async def list_my_orders_enriched(user=Depends(require_user)):
+    """
+    List the current user's orders, enriched with event title, payment
+    status/method, M-Pesa reference, and per-ticket-type booking line items.
+
+    This is the single source of truth for the user Dashboard and My Tickets
+    pages — it replaces the old pattern of separately fetching plain
+    bookings + ticket instances and joining them client-side by event title,
+    which silently broke for pending orders that had no issued ticket
+    instances yet (and therefore no event_title to join on).
+
+    Mirrors GET /admin/orders (list_orders_enriched_service) but scoped to
+    the authenticated user.
+    """
+    return await order_services.list_orders_enriched_user_app_service(user.id)
+
+
 @router.get("/users/me/orders", response_model=list[OrderOut])
 async def list_orders(user=Depends(require_user)):
-    """List all orders for the current user."""
+    """List all orders for the current user (plain shape, no joins)."""
     return await order_services.list_orders_by_user_service(user.id)
 
 
@@ -36,4 +56,6 @@ async def get_order(order_id: int, user=Depends(require_user)):
     order = await order_services.get_order_by_id_service(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    if order.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this order")
     return order

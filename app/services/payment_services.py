@@ -90,12 +90,12 @@ async def get_latest_payments_service(limit: int = 10) -> list[dict]:
     return await payment_repo.get_latest_payments_repo(limit)
 
 
+
 async def list_payments_enriched_service() -> list[dict]:
     """List all payments with user name via order join.
     Used by GET /admin/payments — returns AdminPayment-shaped rows."""
     logger.info("Listing all payment records (enriched).")
     return await payment_repo.list_payments_enriched_repo()
-
 
 # ── M-Pesa flow ───────────────────────────────────────────────────────────────
 
@@ -103,11 +103,21 @@ async def initiate_mpesa_payment_service(
     request: MpesaStkPushRequest,
 ) -> MpesaStkPushResponse:
     """
-    Orchestrates the STK push flow:
+    Orchestrates the payment flow for an order.
+
+    For FREE orders (total_price == 0):
+      - No STK push is initiated (Daraja rejects zero-amount requests).
+      - A Payment row is created immediately with status='completed'.
+      - The order and all its bookings are confirmed right away.
+      - Ticket instances are issued just as they would be after a paid callback.
+      - Returns a response flagged as free (payment_id set, checkout_request_id=None).
+
+    For PAID orders:
       1. Validate the order exists and is still pending.
-      2. Call Daraja STK push for the order's total_price (covers all line items).
-      3. Create a Payment row (status=pending) with CheckoutRequestID, linked to the order.
-      4. Return payment_id + checkout_request_id to the caller.
+      2. Normalise phone number to 2547XXXXXXXX format.
+      3. Call Daraja STK push for the order's total_price.
+      4. Create a Payment row (status=pending) with CheckoutRequestID.
+      5. Return payment_id + checkout_request_id to the caller for polling.
     """
     # 1. Validate order
     order = await order_repo.get_order_by_id_repo(request.order_id)
@@ -115,6 +125,56 @@ async def initiate_mpesa_payment_service(
         raise ValueError(f"Order {request.order_id} not found")
     if order.status not in ("pending", "confirmed"):
         raise ValueError(f"Order {request.order_id} has status '{order.status}' — cannot pay")
+
+    # ── Free order fast-path ───────────────────────────────────────────────────
+    if order.total_price == 0:
+        logger.info(f"Order {request.order_id} is free — bypassing STK push")
+
+        # Create a completed payment record for audit purposes
+        payment = await payment_repo.create_payment_repo(
+            PaymentCreate(
+                order_id=request.order_id,
+                amount=0,
+                currency="KES",
+                method="free",
+                mpesa_phone=None,
+                mpesa_checkout_request_id=None,
+            )
+        )
+        await payment_repo.update_payment_status_repo(payment.id, "completed")
+
+        # Confirm order + all bookings immediately
+        await order_repo.update_order_status_repo(request.order_id, "confirmed")
+
+        # Issue ticket instances for every booking line item
+        bookings = await order_repo.get_order_bookings_repo(request.order_id)
+        for booking in bookings:
+            ticket_type = await ticket_type_repo.get_ticket_type_by_id_repo(
+                booking.ticket_type_id
+            )
+            await create_ticket_instances_for_booking(
+                booking_id=booking.id,
+                user_id=booking.user_id,
+                ticket_type_id=booking.ticket_type_id,
+                quantity=booking.quantity,
+                price_per_ticket=0,
+            )
+            await ticket_type_repo.increment_quantity_sold_repo(
+                booking.ticket_type_id, booking.quantity
+            )
+
+        logger.info(
+            f"Free order {request.order_id} confirmed — "
+            f"{len(bookings)} booking line(s), ticket instances issued."
+        )
+
+        return MpesaStkPushResponse(
+            payment_id=payment.id,
+            checkout_request_id=None,   # signals to frontend: no PIN needed
+            message="Free tickets confirmed. Check your email for your tickets.",
+        )
+
+    # ── Paid order — normal STK push flow ─────────────────────────────────────
 
     # 2. Normalise phone: strip leading 0 or + and ensure 2547XXXXXXXX format
     phone = request.phone_number.strip().lstrip("+")
@@ -126,7 +186,7 @@ async def initiate_mpesa_payment_service(
     daraja_response = await initiate_stk_push(
         phone_number=phone,
         amount=order.total_price,
-        order_id=request.order_id,  # used only for the Daraja TransactionDesc label
+        order_id=request.order_id,
     )
 
     if str(daraja_response.get("ResponseCode", "1")) != "0":

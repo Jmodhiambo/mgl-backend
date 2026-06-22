@@ -87,7 +87,7 @@ class MpesaStkPushRequest(BaseModel):
 class MpesaStkPushResponse(BaseModel):
     """Returned to frontend after STK push is initiated."""
     payment_id: int
-    checkout_request_id: str
+    checkout_request_id: Optional[str] = None
     message: str        # e.g. "STK push sent to 2547XXXXXXXX"
  
  

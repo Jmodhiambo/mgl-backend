@@ -73,7 +73,7 @@ class User(Base):
     """URL to organizer's profile image."""
 
     social_media_links: Mapped[Optional[list[str]]] = mapped_column(String(500), nullable=True)
-    """JSON string containing social media links."""
+    """String containing social media links."""
 
     tax_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     """Tax identification number for legal or payout purposes."""
@@ -82,7 +82,7 @@ class User(Base):
     """The type of events the organizer specializes in (e.g., Music, Workshops)."""
 
     # Relationships
-    events: Mapped[list["Event"]] = relationship("Event", back_populates="organizer")
+    events: Mapped[list["Event"]] = relationship("Event", back_populates="organizer", foreign_keys="[Event.organizer_id]")
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="user")
     ticket_instances: Mapped[list["TicketInstance"]] = relationship("TicketInstance", back_populates="user")

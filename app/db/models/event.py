@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Database Event model for MGLTickets."""
 
-from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime
+from sqlalchemy import ForeignKey, Integer, String, Boolean, DateTime, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timezone
@@ -44,11 +44,9 @@ class Event(Base):
     flyer_url: Mapped[str] = mapped_column(String(500), nullable=False)
 
     # ── Status / approval ─────────────────────────────────────────────────────
-    # status tracks lifecycle: upcoming | ongoing | completed | cancelled | deleted
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")
-
-    # is_approved: admin approval gate
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    rejected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # is_active: Show if the event is currently happening. When time is in-between start and end, is_active=True.
     # When the event is cancelled or deleted, is_active=False. This is the primary signal for whether the event is currently active.
@@ -58,15 +56,37 @@ class Event(Base):
         now = datetime.now(timezone.utc)
         return (
             self.is_approved
-            and self.status != "cancelled"
+            and self.status not in ["deleted", "cancelled"]  # "deleted" and "cancelled"
             and self.start_time <= now <= self.end_time
         )
-    
-    # rejected: kept for backwards compatibility. When the admin rejects an
-    # event the repo sets is_approved=False AND is_active=False, so this
-    # column is no longer the primary rejection signal. It can be used as an
-    # audit flag. Will be removed in a future migration.
-    rejected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # ── Commission ────────────────────────────────────────────────────────────
+    # commission_rate is copied from platform_settings.platform_fee_percent at
+    # event creation time so that a later change to the platform default does
+    # not retroactively alter existing events.
+    commission_rate: Mapped[float] = mapped_column(
+        Numeric(5, 2), nullable=False, default=7.0,
+        comment="Platform fee % locked in at event creation time",
+    )
+    commission_source: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="platform_default",
+        comment="platform_default | negotiated",
+    )
+    # Populated only when commission_source == 'negotiated'
+    commission_approved_by: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="Admin user ID who approved a negotiated rate",
+    )
+    commission_approved_by_name: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True,
+        comment="Denormalised admin display name — avoids a join on every read",
+    )
+    commission_approved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+        comment="Timestamp when the negotiated rate was approved",
+    )
 
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(
@@ -85,7 +105,9 @@ class Event(Base):
     organizer_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False
     )
-    organizer: Mapped["User"] = relationship("User", back_populates="events")
+    organizer: Mapped["User"] = relationship(
+        "User", back_populates="events", foreign_keys=[organizer_id]
+    )
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="event")
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="event")
     ticket_types: Mapped[list["TicketType"]] = relationship(

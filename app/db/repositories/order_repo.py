@@ -169,7 +169,7 @@ async def get_order_bookings_repo(order_id: int) -> list[BookingOut]:
         return [BookingOut.model_validate(b) for b in result.scalars().all()]
 
 
-async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
+async def list_orders_enriched_admin_app_repo() -> list[OrderEnrichedOut]:
     """List all orders with customer, event, payment, and line-item details.
     Used by GET /admin/orders."""
     from app.db.models.user import User
@@ -190,6 +190,69 @@ async def list_orders_enriched_repo() -> list[OrderEnrichedOut]:
         orders_out = []
         for order, customer_name, customer_email, event_title, payment in rows:
             # Fetch this order's booking line items with ticket type names
+            b_result = await session.execute(
+                select(Booking, TicketType.name)
+                .join(TicketType, Booking.ticket_type_id == TicketType.id)
+                .where(Booking.order_id == order.id)
+            )
+            bookings = [
+                OrderBookingLineOut(
+                    id=booking.id,
+                    ticket_type_id=booking.ticket_type_id,
+                    ticket_type_name=ticket_type_name,
+                    quantity=booking.quantity,
+                    total_price=booking.total_price,
+                    status=booking.status,
+                )
+                for booking, ticket_type_name in b_result.all()
+            ]
+
+            orders_out.append(OrderEnrichedOut(
+                id=order.id,
+                user_id=order.user_id,
+                customer_name=customer_name,
+                customer_email=customer_email,
+                event_id=order.event_id,
+                event_title=event_title,
+                total_price=order.total_price,
+                status=order.status,
+                created_at=order.created_at,
+                updated_at=order.updated_at,
+                payment_id=payment.id if payment else None,
+                payment_method=payment.method if payment else None,
+                payment_status=payment.status if payment else None,
+                mpesa_ref=payment.mpesa_ref if payment else None,
+                mpesa_phone=payment.mpesa_phone if payment else None,
+                bookings=bookings,
+            ))
+
+        return orders_out
+
+
+async def list_orders_enriched_user_app_repo(user_id: int) -> list[OrderEnrichedOut]:
+    """List a single user's orders with event, payment, and line-item details.
+    Scoped version of list_orders_enriched_repo() above — identical join
+    shape and field mapping, with one added filter: Order.user_id == user_id.
+    Used by GET /users/me/orders/enriched (Dashboard, My Tickets) so a user
+    only ever sees their own orders, never the full platform list."""
+    from app.db.models.user import User
+    from app.db.models.event import Event
+    from app.db.models.payment import Payment
+    from app.db.models.ticket_type import TicketType
+
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(Order, User.name, User.email, Event.title, Payment)
+            .join(User, Order.user_id == User.id)
+            .join(Event, Order.event_id == Event.id)
+            .outerjoin(Payment, Payment.order_id == Order.id)
+            .where(Order.user_id == user_id)
+            .order_by(Order.created_at.desc())
+        )
+        rows = result.all()
+
+        orders_out = []
+        for order, customer_name, customer_email, event_title, payment in rows:
             b_result = await session.execute(
                 select(Booking, TicketType.name)
                 .join(TicketType, Booking.ticket_type_id == TicketType.id)

@@ -36,12 +36,20 @@ async def update_order_status_service(order_id: int, status: str) -> None:
     await order_repo.update_order_status_repo(order_id, status)
 
 
-async def list_orders_enriched_service() -> list[OrderEnrichedOut]:
+async def list_orders_enriched_admin_app_service() -> list[OrderEnrichedOut]:
     """List all orders with customer, event, payment, and line-item details.
     Used by GET /admin/orders."""
     logger.info("Listing all orders (enriched)")
-    return await order_repo.list_orders_enriched_repo()
+    return await order_repo.list_orders_enriched_admin_app_repo()
  
+
+async def list_orders_enriched_user_app_service(user_id: int) -> list[OrderEnrichedOut]:
+    """List a single user's orders with event, payment, and line-item details.
+    Used by GET /users/me/orders/enriched — the data source for the user
+    Dashboard and My Tickets pages."""
+    logger.info(f"Listing enriched orders for user {user_id}")
+    return await order_repo.list_orders_enriched_user_app_repo(user_id)
+
  
 async def delete_order_service(order_id: int) -> bool:
     """Delete an order. Raises ValueError if the order has issued ticket

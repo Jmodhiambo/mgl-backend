@@ -40,9 +40,33 @@ async def update_create_co_organizer_status_repo(co_organizer_id: int, create_co
         await session.commit()
 
 async def get_all_event_co_organizers_repo(event_id: int) -> Optional[list[CoOrganizerOut]]:
-    """Get all co-organizers for an event."""
+    """Get all co-organizers for a single event (no organizer-ownership check —
+    callers must verify the event belongs to the requesting organizer first,
+    or prefer get_co_organizers_by_organizer_repo for a self-scoped query)."""
     async with get_async_session() as session:
         result = await session.execute(select(CoOrganizer).where(CoOrganizer.event_id == event_id))
+        co_organizers = result.scalars().unique().all()
+        return [CoOrganizerOut.model_validate(co_organizer) for co_organizer in co_organizers]
+    
+async def get_co_organizers_by_organizer_repo(organizer_id: int, event_id: Optional[int] = None) -> list[CoOrganizerOut]:
+    """
+    Get co-organizers belonging to a specific organizer, optionally filtered
+    to a single event.
+
+    organizer_id is always required and comes from the authenticated
+    organizer's own ID — this is the ownership boundary. event_id is an
+    optional additional filter; when None, returns co-organizers across
+    ALL of the organizer's events ("All Events" view on the frontend).
+
+    This replaces the previous unscoped get_all_event_co_organizers_repo
+    call site in the GET /organizers/me/co-organizers route, which accepted
+    any event_id with no check that it belonged to the requesting organizer.
+    """
+    async with get_async_session() as session:
+        stmt = select(CoOrganizer).where(CoOrganizer.organizer_id == organizer_id)
+        if event_id is not None:
+            stmt = stmt.where(CoOrganizer.event_id == event_id)
+        result = await session.execute(stmt)
         co_organizers = result.scalars().unique().all()
         return [CoOrganizerOut.model_validate(co_organizer) for co_organizer in co_organizers]
     

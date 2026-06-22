@@ -35,6 +35,20 @@ async def get_ticket_type_by_id_repo(
         return None
 
 
+async def increment_quantity_sold_repo(ticket_type_id: int, quantity: int) -> Optional[TicketTypeOut]:
+    """Increment the quantity sold for a TicketType."""
+    async with get_async_session() as session:
+        ticket_type = await session.get(TicketType, ticket_type_id)
+        if not ticket_type:
+            return None
+
+        ticket_type.quantity_sold += quantity
+        session.add(ticket_type)
+        await session.commit()
+        await session.refresh(ticket_type)
+        return TicketTypeOut.model_validate(ticket_type)
+
+
 async def update_ticket_type_repo(
     ticket_type_id: int,
     ticket_type_in: TicketTypeUpdate,

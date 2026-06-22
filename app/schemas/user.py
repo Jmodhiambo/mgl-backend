@@ -1,9 +1,42 @@
 #!/usr/bin/env python3
 """Schemas for User model in MGLTickets."""
 
+import json
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
+
+
+def _decode_json_list(value):
+    """
+    Shared validator: the User.social_media_links / User.area_of_expertise
+    columns are plain VARCHAR — not JSON or ARRAY — so whatever lands in
+    them from a DB read arrives as a JSON-encoded string (e.g. '[]' or
+    '["https://..."]'), never a real Python list.
+
+    Every schema below that types these fields as Optional[list[str]] needs
+    this decode step, or Pydantic raises "Input should be a valid list"
+    whenever a raw User row (string column) is validated straight into one
+    of these schemas — which is exactly what UserPublic.model_validate(user)
+    does inside update_user_info_repo.
+
+    Accepts None, an already-decoded list (so constructing the schema
+    directly from Python code, e.g. in a service layer, still works), or a
+    JSON-encoded string. Anything else is left for Pydantic's normal type
+    validation to reject with its standard error.
+    """
+    if value is None or isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        if value.strip() == "":
+            return None
+        try:
+            decoded = json.loads(value)
+        except json.JSONDecodeError:
+            return value  # let Pydantic raise its normal type error
+        return decoded
+    return value
+
 
 class UserOut(BaseModel):
     """Schema for outputting User data."""
@@ -49,6 +82,11 @@ class OrganizerCreate(BaseModel):
     social_media_links: Optional[list[str]] = None
     area_of_expertise: Optional[list[str]] = None
 
+    @field_validator("social_media_links", "area_of_expertise", mode="before")
+    @classmethod
+    def _decode_lists(cls, value):
+        return _decode_json_list(value)
+
     class Config:
         from_attributes = True
 
@@ -59,6 +97,11 @@ class OrganizerUpdate(UserUpdate):
     website_url: Optional[str] = None
     social_media_links: Optional[list[str]] = None
     area_of_expertise: Optional[list[str]] = None
+
+    @field_validator("social_media_links", "area_of_expertise", mode="before")
+    @classmethod
+    def _decode_lists(cls, value):
+        return _decode_json_list(value)
 
     class Config:
         from_attributes = True
@@ -72,12 +115,30 @@ class OrganizerInfo(BaseModel):
     social_media_links: Optional[list[str]] = None
     area_of_expertise: Optional[list[str]] = None
 
+    @field_validator("social_media_links", "area_of_expertise", mode="before")
+    @classmethod
+    def _decode_lists(cls, value):
+        return _decode_json_list(value)
+
     class Config:
         from_attributes = True
 
-class OrganizerOut(UserOut):
-    """Schema for outputting User data."""
-    organizer_info: Optional["OrganizerInfo"] = None
+class OrganizerOut(UserOut, OrganizerInfo):
+    """
+    Schema for outputting User data, with organizer fields flattened
+    directly onto the same object — bio, organization_name, website_url,
+    profile_picture_url, social_media_links, area_of_expertise all live at
+    the top level, exactly like UserPublic.
+
+    Previously this nested organizer fields under an `organizer_info`
+    sub-object, which required a model_validator to assemble that nested
+    object from the User row's flat columns. That validator had to account
+    for three different input shapes (dict, raw ORM row, another flattened
+    Pydantic model like UserPublic being re-validated at the FastAPI
+    response-serialization boundary) and was a recurring source of bugs.
+    Flattening removes the need for that validator entirely — from_attributes
+    extraction now works the same way it already does for UserPublic.
+    """
 
     class Config:
         from_attributes = True
