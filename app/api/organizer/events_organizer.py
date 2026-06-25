@@ -157,6 +157,15 @@ async def create_event(
     slug      = await generate_unique_slug(title)
     flyer_url = await save_flyer_and_get_url(flyer)
 
+    # commission_rate/commission_source have no defaults on EventCreateWithFlyer,
+    # so they must be supplied to construct it at all — omitting them raises
+    # a Pydantic ValidationError before create_event_service ever runs, which
+    # means its "overwrite from platform settings" step (a model_copy call)
+    # never gets the chance to fire. The values below are placeholders only:
+    # create_event_service ALWAYS overwrites them from live platform settings.
+    # They match Event.commission_rate's own DB-column default, so they also
+    # serve as the safe fallback for the rare case where that settings fetch
+    # fails inside the service (logged as a warning there, not raised).
     event_with_flyer = EventCreateWithFlyer(
         title=title,
         description=description,
@@ -170,8 +179,8 @@ async def create_event(
         original_filename=flyer.filename,
         flyer_url=flyer_url,
         organizer_id=organizer.id,
-        # commission_rate and commission_source will be overwritten
-        # by create_event_service from live platform settings
+        commission_rate=7.0,
+        commission_source="platform_default",
     )
     event = await event_services.create_event_service(event_with_flyer)
 

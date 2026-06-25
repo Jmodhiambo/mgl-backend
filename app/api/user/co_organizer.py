@@ -72,7 +72,7 @@ async def get_user_co_organizing_events(user=Depends(require_user)):
     The enriched CoOrganizerWithEvent lets the frontend show who invited this
     user and whether they can invite others, without extra round-trips.
     """
-    return await co_services.get_user_co_organizing_events_with_details_service(user.id)
+    return await co_services.get_user_co_organizing_events_service(user.id)
 
 
 @router.delete(

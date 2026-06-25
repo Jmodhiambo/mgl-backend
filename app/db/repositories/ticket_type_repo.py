@@ -93,13 +93,15 @@ async def list_ticket_types_by_event_id_repo(
     
 
 async def check_if_ticket_type_has_instances_repo(ticket_type_id: int) -> bool:
-    """Check if a TicketType has any associated ticket instances to avoid deletion and mark as inactive instead."""
+    """Check if a TicketType has any associated ticket instances."""
     async with get_async_session() as session:
         result = await session.execute(
-            select(TicketType).where(TicketType.ticket_instances.any(id=ticket_type_id) and TicketType.is_active == True)
+            select(TicketType).where(
+                TicketType.id == ticket_type_id,
+                TicketType.ticket_instances.any()   # any() with no args = has at least one
+            )
         )
-        ticket_instances = result.scalars().all()
-        return True if ticket_instances else False
+        return result.scalar_one_or_none() is not None
     
 
 async def update_ticket_type_status_repo(ticket_type_id: int, is_active: bool) -> Optional[TicketTypeOut]:

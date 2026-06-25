@@ -18,7 +18,11 @@ class TicketType(Base):
     __tablename__ = "ticket_types"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"), nullable=False)
+    # CASCADE: a ticket type only exists to be sold for its event. If the
+    # event is gone, the ticket type definition has nothing left to describe.
+    event_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, default=None)
     price: Mapped[int] = mapped_column(Integer, nullable=False)

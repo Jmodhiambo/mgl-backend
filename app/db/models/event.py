@@ -44,7 +44,7 @@ class Event(Base):
     flyer_url: Mapped[str] = mapped_column(String(500), nullable=False)
 
     # ── Status / approval ─────────────────────────────────────────────────────
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming")
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming") # "upcoming" | "ongoing" | "completed" | "cancelled" | "deleted"
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     rejected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
@@ -108,17 +108,48 @@ class Event(Base):
     organizer: Mapped["User"] = relationship(
         "User", back_populates="events", foreign_keys=[organizer_id]
     )
+
+    # RESTRICT (no cascade= here, matches the DB-level default FK on
+    # orders.event_id). An event with any orders must fail loudly on
+    # hard-delete — see the comment on Order.event_id for the full reasoning.
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="event")
+
+    # RESTRICT (no cascade= here, matches the DB-level default FK on
+    # bookings.event_id). This is the FK that actually protects financial
+    # data — see the comment on Booking.event_id.
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="event")
+
+    # CASCADE — mirrors ticket_types.event_id ondelete="CASCADE". A ticket
+    # type definition has no meaning once its event is gone. Without this,
+    # SQLAlchemy's default cascade ("save-update, merge") would try to
+    # disassociate (SET NULL) instead of delete on session.delete(event),
+    # which fails immediately since event_id is NOT NULL.
     ticket_types: Mapped[list["TicketType"]] = relationship(
-        "TicketType", back_populates="event"
+        "TicketType", back_populates="event",
+        cascade="all, delete-orphan", passive_deletes=True,
     )
+
+    # CASCADE — mirrors favorites.event_id ondelete="CASCADE". Same
+    # NOT-NULL-disassociation hazard as ticket_types above.
     favorites: Mapped[list["Favorite"]] = relationship(
-        "Favorite", back_populates="event"
+        "Favorite", back_populates="event",
+        cascade="all, delete-orphan", passive_deletes=True,
     )
+
+    # CASCADE — mirrors co_organizers.event_id ondelete="CASCADE". Same
+    # NOT-NULL-disassociation hazard as ticket_types/favorites above.
     co_organizers: Mapped[list["CoOrganizer"]] = relationship(
-        "CoOrganizer", back_populates="event"
+        "CoOrganizer", back_populates="event",
+        cascade="all, delete-orphan", passive_deletes=True,
     )
+
+    # SET NULL — mirrors organizer_emails.event_id ondelete="SET NULL".
+    # event_id is nullable by design here (a null event_id already means
+    # "general email, not tied to one event"), so no cascade= override is
+    # needed: SQLAlchemy's default behaviour on session.delete(event) is to
+    # disassociate (set FK to NULL) rather than delete, which is exactly
+    # what we want — the email log is communication history and should
+    # survive the event being deleted.
     organizer_emails: Mapped[list["OrganizerEmails"]] = relationship(
         "OrganizerEmails", back_populates="event"
     )

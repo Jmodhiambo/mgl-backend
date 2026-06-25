@@ -8,7 +8,9 @@ from app.schemas.event import EventOut
 
 
 class CoOrganizerOut(BaseModel):
-    """Co-Organizer schema for API responses."""
+    """Raw co-organizer record — relationship metadata only (no user/event fields).
+    Used internally and by the create/update endpoints where the caller already
+    knows the context."""
     id: int
     user_id: int
     organizer_id: int
@@ -40,10 +42,42 @@ class CoOrganizerUpdate(BaseModel):
         from_attributes = True
 
 
+class CoOrganizerWithUserAndEvent(BaseModel):
+    """
+    Enriched co-organizer response for list endpoints.
+
+    Bundles the co-organizer relationship metadata, the invited user's public
+    fields, and the event title into a single flat object — so the frontend
+    gets everything it needs for the co-organizers table in one call with no
+    extra round-trips.
+
+    `id` is the co_organizers row PK (used by DELETE endpoints).
+    `user_id` is the invited user's users.id (kept separate so the UI can
+    link to the user profile without confusion).
+    """
+    # ── Co-organizer relationship ─────────────────────────────────────────
+    id: int                       # co_organizers.id — pass to DELETE
+    event_id: int
+    event_title: str
+    invited_by: int
+    create_co_organizer: bool
+    created_at: datetime
+
+    # ── Invited user (flattened, not nested) ──────────────────────────────
+    user_id: int
+    name: str
+    email: str
+    phone_number: Optional[str] = None
+    role: str
+
+    class Config:
+        from_attributes = True
+
+
 class CoOrganizerWithEvent(BaseModel):
     """
     Enriched co-organizer response that bundles the full event alongside the
-    co-organizer relationship metadata.  Used by the MyEvents page so the
+    co-organizer relationship metadata. Used by the MyEvents page so the
     frontend gets everything it needs in a single call instead of N+1 requests.
 
     The `create_co_organizer` flag tells the frontend whether this co-organizer

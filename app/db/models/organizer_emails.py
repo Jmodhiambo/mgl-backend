@@ -25,7 +25,16 @@ class OrganizerEmails(Base):
     
     # Sender Information
     organizer_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    event_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("events.id"), nullable=True, index=True)  # NULL if sent to multiple events or general email
+    # SET NULL, not CASCADE: this column is already nullable by design — it's
+    # explicitly described as "NULL if sent to multiple events or general
+    # email", meaning a null event_id is a normal, expected state here, not
+    # an error. So when an event is deleted we want to keep the email log
+    # (it's communication history, possibly evidence of what was told to
+    # attendees) and just drop the now-dangling reference, rather than
+    # deleting the OrganizerEmails row outright.
+    event_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("events.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # Recipient Information
     recipient_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'single', 'bulk', or 'all'
@@ -52,7 +61,7 @@ class OrganizerEmails(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="organizer_emails")
-    event: Mapped["Event"] = relationship("Event", back_populates="organizer_emails")
+    event: Mapped[Optional["Event"]] = relationship("Event", back_populates="organizer_emails")
     recipients: Mapped[list["OrganizerEmailRecipients"]] = relationship("OrganizerEmailRecipients", back_populates="email")
 
     def __repr__(self):

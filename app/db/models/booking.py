@@ -28,7 +28,19 @@ class Booking(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    # RESTRICT (default — no ondelete set), deliberately. This is the FK that
+    # actually protects financial data: it's what makes "delete event" fail
+    # for any event with real sales, regardless of what cascade rules exist
+    # on ticket_types or orders above it. total_price here was actually
+    # charged. Never let an event delete silently take a Booking with it.
     event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"), nullable=False)
+    # Also RESTRICT. ticket_types now cascades when its event is deleted
+    # (see ticket_type.py), but Postgres evaluates FK constraints across the
+    # whole delete statement — so if any booking still references a ticket
+    # type under that event, the ticket_types cascade itself gets blocked
+    # here first. Net effect: an event with zero bookings deletes cleanly
+    # (ticket_types cascade away with it); an event with any bookings is
+    # blocked, full stop.
     ticket_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("ticket_types.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")  # mirrors Order.status

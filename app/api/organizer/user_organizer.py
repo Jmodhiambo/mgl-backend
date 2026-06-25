@@ -17,8 +17,10 @@ ROLE_ORGANIZER = "organizer"
 
 
 @router.get("/organizers/me", response_model=OrganizerOut, status_code=status.HTTP_200_OK)
-async def get_organizer_info(organizer: UserOut = Depends(require_organizer)):
-    """Get the info of the current organizer."""
+async def get_organizer_info(organizer: UserOut = Depends(require_user)):
+    """Get the info of the current organizer.
+    Using require_user as the route is being used in setting organizer profile.
+    """
     return await user_services.get_user_by_id_service(organizer.id)
 
 

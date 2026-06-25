@@ -101,7 +101,16 @@ async def update_event_service(event_id: int, event_data: EventUpdate):
 
 
 async def delete_event_service(event_id: int):
-    return await event_repo.delete_event_repo(event_id)
+    """
+    Hard-delete an event. Apparently done by admins only. The organizer only changes the status to deleted.
+    """
+    logger.info(f"Deleting event with ID: {event_id}")
+
+    deleted = await event_repo.delete_event_repo(event_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return deleted
 
 
 async def update_event_status_service(event_id: int, new_status: str):
@@ -115,11 +124,12 @@ async def update_event_status_service(event_id: int, new_status: str):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found."
         )
-    if event.status == "deleted":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Event has already been deleted.",
-        )
+    # An admin can restore a deleted event
+    # if event.status == "deleted":
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Event has already been deleted.",
+    #     )
     return await event_repo.update_event_status_repo(event_id, new_status)
 
 

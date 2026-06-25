@@ -83,12 +83,41 @@ class User(Base):
 
     # Relationships
     events: Mapped[list["Event"]] = relationship("Event", back_populates="organizer", foreign_keys="[Event.organizer_id]")
+    # RESTRICT (no cascade= here, matches the DB-level default FK on
+    # orders.user_id). Same financial-data protection rationale as
+    # Event.orders — a user with order history should fail loudly on
+    # hard-delete, not silently take their payment history with them.
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
+    # RESTRICT (no cascade= here, matches the DB-level default FK on
+    # bookings.user_id). Same rationale as Order above.
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="user")
+    # RESTRICT (no cascade= here, matches the DB-level default FK on
+    # ticket_instances.user_id). Issued tickets are proof of purchase;
+    # never let a user hard-delete silently destroy them.
     ticket_instances: Mapped[list["TicketInstance"]] = relationship("TicketInstance", back_populates="user")
     refresh_sessions: Mapped[list["RefreshSession"]] = relationship("RefreshSession", back_populates="user")
-    favorites: Mapped[list["Favorite"]] = relationship("Favorite", back_populates="user")
-    co_organizers: Mapped[list["CoOrganizer"]] = relationship("CoOrganizer", back_populates="user")
+
+    # CASCADE — mirrors favorites.user_id ondelete="CASCADE". A favorite
+    # with no user behind it is meaningless, same reasoning as the event
+    # side. Without cascade=, SQLAlchemy's default ("save-update, merge")
+    # would try to SET NULL on a NOT NULL column when the user is deleted —
+    # the exact bug this mirrors on the Event side.
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite", back_populates="user",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+
+    # CASCADE — mirrors co_organizers.user_id ondelete="CASCADE". Same
+    # NOT-NULL-disassociation hazard as favorites above.
+    co_organizers: Mapped[list["CoOrganizer"]] = relationship(
+        "CoOrganizer", back_populates="user",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+
+    # RESTRICT (no cascade= here, matches the DB-level default FK on
+    # organizer_emails.organizer_id). Sent-email history is a real
+    # communication record tied to whoever sent it — don't let it vanish
+    # silently if that organizer account is hard-deleted.
     contact_messages: Mapped[list["ContactMessage"]] = relationship("ContactMessage", back_populates="user")
     organizer_emails: Mapped[list["OrganizerEmails"]] = relationship("OrganizerEmails", back_populates="user")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="recipient")

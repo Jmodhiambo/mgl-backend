@@ -74,6 +74,16 @@ async def create_event(
     slug      = await generate_unique_slug(title)
     flyer_url = await save_flyer_and_get_url(flyer)
 
+    # commission_rate/commission_source have no defaults on EventCreateWithFlyer,
+    # so they must be supplied to construct it at all. The values here are
+    # placeholders only: create_event_service ALWAYS overwrites them via
+    # event_data.model_copy(update={...}) from live platform settings before
+    # calling the repo. 7.0 / "platform_default" are passed here only as the
+    # safe fallback for the rare case where that settings fetch fails (the
+    # service's own try/except logs a warning and falls through using
+    # whatever was on event_data) — they match Event.commission_rate's own
+    # DB-column default, so a settings-fetch failure never silently produces
+    # a 0% commission.
     event_with_flyer = EventCreateWithFlyer(
         title=title,
         description=description,
@@ -87,6 +97,8 @@ async def create_event(
         original_filename=flyer.filename,
         flyer_url=flyer_url,
         organizer_id=target_organizer_id,
+        commission_rate=7.0,
+        commission_source="platform_default",
     )
 
     event = await event_services.create_event_service(event_with_flyer)
@@ -286,17 +298,27 @@ async def update_event_status(
 async def delete_event(
     event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
-    """Delete an event by its ID."""
-    event = await event_services.delete_event_service(event_id)
+    """
+    Delete an event by its ID.
 
-    if event:
+    If the event has orders/bookings attached, event_services.delete_event_service
+    now raises HTTPException(400) instead of letting a raw IntegrityError bubble
+    up as a 500 — FastAPI propagates that exception automatically, no try/except
+    needed here. The frontend's parseApiError() helper (see EventDetails.tsx /
+    EventsList.tsx) already reads err.response.data.detail, so the 400 message
+    ("This event has existing orders or bookings...") will surface directly in
+    the UI without any frontend changes.
+    """
+    deleted = await event_services.delete_event_service(event_id)
+
+    if deleted:
         background_tasks.add_task(
             log_admin_action_service,
             admin_id=user.id,
             admin_name=user.name,
-            action=f"Deleted an event: {event.title}",
+            action="event_deleted",
             target_type="event",
             target_id=event_id,
             details={"deleted_event": event_id},
         )
-    return True if event else False
+    return True if deleted else False
