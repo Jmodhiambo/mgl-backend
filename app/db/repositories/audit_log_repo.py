@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """Repository layer for AuditLog.
-
-Place at:  app/db/repositories/audit_log_repo.py
 """
 
 from __future__ import annotations
@@ -108,6 +106,7 @@ async def count_audit_logs_repo(
         return result.scalar_one()
 
 
-async def list_audit_logs_for_admin_repo(admin_id: int) -> list[AuditLogOut]:
-    """All entries for one admin — used by the profile 'My Activity' tab."""
-    return await list_audit_logs_repo(admin_id=admin_id, limit=500)
+async def list_audit_logs_for_admin_repo(admin_id: int, limit: int = 15) -> list[AuditLogOut]:
+    """Most recent entries for one admin, newest-first — used by the profile
+    'My Activity' tab."""
+    return await list_audit_logs_repo(admin_id=admin_id, limit=limit)

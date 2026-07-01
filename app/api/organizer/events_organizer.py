@@ -224,7 +224,7 @@ async def update_event(
 
 @router.patch(
     "/organizers/me/events/{event_id}",
-    response_model=bool,
+    response_model=OrganizerEventOut,
     status_code=status.HTTP_200_OK,
 )
 async def update_event_status(
@@ -233,5 +233,4 @@ async def update_event_status(
     organizer: UserOut = Depends(require_organizer),
 ):
     """Update event status (cancel / delete)."""
-    event = await event_services.update_event_status_service(event_id, state)
-    return True if event.status == "cancelled" else False
+    return await event_services.update_event_status_service(event_id, state)

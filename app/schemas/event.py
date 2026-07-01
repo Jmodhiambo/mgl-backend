@@ -83,7 +83,8 @@ class OrganizerEventOut(BaseModel):
     # ── Aggregated stats ──────────────────────────────────────────────────────
     total_bookings: int = 0
     total_revenue: float = 0.0          # gross confirmed revenue
- 
+    unresolved_bookings_count: int = 0  # confirmed + pending bookings - key in refund queue
+
     # ── Commission ────────────────────────────────────────────────────────────
     commission_rate: float
     commission_source: str = "platform_default"

@@ -23,19 +23,6 @@ from app.utils.generate_slug import generate_unique_slug
 router = APIRouter()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# WHY Form() instead of Body() / Pydantic model here?
-#
-# The endpoint accepts a file upload (multipart/form-data).  FastAPI cannot
-# parse a JSON body *and* a multipart form in the same request — mixing
-# Body()/Pydantic with File() silently drops the Pydantic model, producing a
-# 422 "field required" error for every EventCreate field.
-#
-# Solution: declare every field individually with Form().  The frontend
-# already sends them this way (FormData.append per field), so no client
-# changes are needed.
-# ─────────────────────────────────────────────────────────────────────────────
-
 @router.post("/admin/events", response_model=AdminEventOut)
 async def create_event(
     background_tasks: BackgroundTasks,
@@ -74,16 +61,7 @@ async def create_event(
     slug      = await generate_unique_slug(title)
     flyer_url = await save_flyer_and_get_url(flyer)
 
-    # commission_rate/commission_source have no defaults on EventCreateWithFlyer,
-    # so they must be supplied to construct it at all. The values here are
-    # placeholders only: create_event_service ALWAYS overwrites them via
-    # event_data.model_copy(update={...}) from live platform settings before
-    # calling the repo. 7.0 / "platform_default" are passed here only as the
-    # safe fallback for the rare case where that settings fetch fails (the
-    # service's own try/except logs a warning and falls through using
-    # whatever was on event_data) — they match Event.commission_rate's own
-    # DB-column default, so a settings-fetch failure never silently produces
-    # a 0% commission.
+    # Create event
     event_with_flyer = EventCreateWithFlyer(
         title=title,
         description=description,
@@ -132,13 +110,13 @@ async def get_all_approved_events(user=Depends(require_admin)):
 @router.get("/admin/events/approved", response_model=list[AdminEventOut])
 async def get_approved_events(user=Depends(require_admin)):
     """Get all approved events."""
-    return await event_services.get_approved_events_service()
+    return await event_services.get_approved_events_admin_service()
 
 
 @router.get("/admin/events/unapproved", response_model=list[AdminEventOut])
 async def get_all_unapproved_events(user=Depends(require_admin)):
     """Get all unapproved events."""
-    return await event_services.get_unapproved_events_service()
+    return await event_services.get_unapproved_events_admin_service()
 
 
 @router.get("/admin/all-events", response_model=list[AdminEventOut])
@@ -184,46 +162,41 @@ async def count_events_by_organizer(organizer_id: int, user=Depends(require_admi
     """Get the total number of events for a specific organizer."""
     return await event_services.count_events_by_organizer_service(organizer_id)
 
+# These needs to be removed. The frontend already does this.
 
-@router.get("/admin/events/date-range/{start_date}/{end_date}", response_model=list[EventOut])
-async def get_events_in_date_range(
-    start_date: datetime, end_date: datetime, user=Depends(require_admin)
-):
-    """Get all events within a specific date range."""
-    return await event_services.get_events_in_date_range_service(start_date, end_date)
-
-
-@router.get("/admin/events/created-after/{date}", response_model=list[EventOut])
-async def get_events_created_after(date: datetime, user=Depends(require_admin)):
-    """Get events created after a specific date."""
-    return await event_services.get_events_created_after_service(date)
+# @router.get("/admin/events/date-range/{start_date}/{end_date}", response_model=list[EventOut])
+# async def get_events_in_date_range(
+#     start_date: datetime, end_date: datetime, user=Depends(require_admin)
+# ):
+#     """Get all events within a specific date range."""
+#     return await event_services.get_events_in_date_range_service(start_date, end_date)
 
 
-@router.get("/admin/events/created-before/{date}", response_model=list[EventOut])
-async def get_events_created_before(date: datetime, user=Depends(require_admin)):
-    """Get events created before a specific date."""
-    return await event_services.get_events_created_before_service(date)
+# @router.get("/admin/events/created-after/{date}", response_model=list[EventOut])
+# async def get_events_created_after(date: datetime, user=Depends(require_admin)):
+#     """Get events created after a specific date."""
+#     return await event_services.get_events_created_after_service(date)
 
 
-@router.get("/admin/events/updated-after/{date}", response_model=list[EventOut])
-async def get_events_updated_after(date: datetime, user=Depends(require_admin)):
-    """Get events updated after a specific date."""
-    return await event_services.get_events_updated_after_service(date)
+# @router.get("/admin/events/created-before/{date}", response_model=list[EventOut])
+# async def get_events_created_before(date: datetime, user=Depends(require_admin)):
+#     """Get events created before a specific date."""
+#     return await event_services.get_events_created_before_service(date)
 
 
-@router.get("/admin/events/updated-before/{date}", response_model=list[EventOut])
-async def get_events_updated_before(date: datetime, user=Depends(require_admin)):
-    """Get events updated before a specific date."""
-    return await event_services.get_events_updated_before_service(date)
+# @router.get("/admin/events/updated-after/{date}", response_model=list[EventOut])
+# async def get_events_updated_after(date: datetime, user=Depends(require_admin)):
+#     """Get events updated after a specific date."""
+#     return await event_services.get_events_updated_after_service(date)
+
+
+# @router.get("/admin/events/updated-before/{date}", response_model=list[EventOut])
+# async def get_events_updated_before(date: datetime, user=Depends(require_admin)):
+#     """Get events updated before a specific date."""
+#     return await event_services.get_events_updated_before_service(date)
 
 
 # ── Parameterised routes (/{event_id}) — AFTER all fixed paths ───────────────
-
-@router.get("/admin/events/{event_id}", response_model=AdminEventOut)
-async def get_event_by_id(event_id: int, user=Depends(require_admin)):
-    """Get an event by its ID."""
-    return await event_services.get_event_by_id_admin_service(event_id)
-
 
 @router.patch("/admin/events/{event_id}/approve", response_model=bool)
 async def approve_event(
@@ -292,6 +265,44 @@ async def update_event_status(
         details={"updated_event": event.title, "status": status},
     )
     return True if event else False
+
+
+@router.patch("/admin/events/{event_id}/confirm-deletion-ready", response_model=bool)
+async def confirm_event_deletion_ready(
+    event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
+):
+    """
+    Move an event from 'pending_deletion' to 'deleted'.
+ 
+    Admin-only, manual. Call this once refunds for the event's bookings
+    have actually been processed — the service re-checks bookings at
+    click-time and refuses if any booking row still exists, so this never
+    silently fast-forwards past unresolved refunds.
+ 
+    Plain DELETE /admin/events/{event_id} still performs the actual
+    hard-delete and still RESTRICTs at the DB level if bookings/orders
+    exist; this endpoint exists purely to move the status flag forward
+    once it's actually safe to do so, separating "mark as ready to purge"
+    from "purge it" into two deliberate admin actions.
+    """
+    event = await event_services.confirm_event_deletion_ready_service(event_id)
+ 
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=user.id,
+        admin_name=user.name,
+        action=f"Confirmed event ready for deletion: {event.title}",
+        target_type="event",
+        target_id=event.id,
+        details={"event_title": event.title, "status": "deleted"},
+    )
+    return True if event else False
+
+
+@router.get("/admin/events/{event_id}", response_model=AdminEventOut)
+async def get_event_by_id(event_id: int, user=Depends(require_admin)):
+    """Get an event by its ID."""
+    return await event_services.get_event_by_id_admin_service(event_id)
 
 
 @router.delete("/admin/events/{event_id}", response_model=bool)

@@ -56,10 +56,23 @@ async def update_booking_status_repo(booking_id: int, status: str) -> None:
 
 
 async def get_total_bookings_by_user_repo(user_id: int) -> int:
-    """Count total bookings for a user."""
+    """
+    Count confirmed bookings for a user.
+
+    Filtered to status == "confirmed" — cancelled and refunded bookings
+    are no longer active bookings from the user's point of view, so they
+    shouldn't inflate a "total bookings" figure. This matches the same
+    convention applied to count_bookings_by_event_repo and
+    count_bookings_by_organizer_repo below: "total_bookings" means
+    confirmed bookings everywhere in this codebase now, consistently.
+    Cancellation/refund counts, if ever needed as their own stat, should
+    be a separately-named function — not folded into this one.
+    """
     async with get_async_session() as session:
         result = await session.execute(
-            select(func.count()).select_from(Booking).where(Booking.user_id == user_id)
+            select(func.count())
+            .select_from(Booking)
+            .where(Booking.user_id == user_id, Booking.status == "confirmed")
         )
         return result.scalar_one()
 
@@ -171,9 +184,57 @@ async def list_bookings_in_date_range_repo(start_date: datetime, end_date: datet
 
 
 async def count_bookings_by_event_repo(event_id: int) -> int:
+    """
+    Count confirmed bookings for an event.
+
+    Filtered to status == "confirmed" — cancelled and refunded bookings
+    are no longer active bookings, so they shouldn't inflate this figure.
+    Backs EventStats.total_bookings, which now means the same thing as
+    OrganizerEventOut.total_bookings / AdminEventOut.total_bookings
+    (event_repo.py's joined queries, already confirmed-only via their
+    Booking outerjoin condition) — the two used to disagree before this
+    change; they're now consistent everywhere "total_bookings" appears.
+
+    If a cancellation/refund count is ever needed as its own organizer-
+    facing stat, that should be a new, separately-named function — not
+    folded back into this one.
+    """
     async with get_async_session() as session:
         result = await session.execute(
-            select(func.count()).select_from(Booking).where(Booking.event_id == event_id)
+            select(func.count())
+            .select_from(Booking)
+            .where(Booking.event_id == event_id, Booking.status == "confirmed")
+        )
+        return result.scalar_one()
+
+
+async def count_unresolved_bookings_by_event_repo(event_id: int) -> int:
+    """
+    Count this event's bookings that still represent live, unresolved
+    financial obligation — i.e. status NOT in ('cancelled', 'refunded').
+    This includes 'pending' bookings (payment in flight, no Daraja
+    callback yet), which is the key difference from
+    count_bookings_by_event_repo above: that function is confirmed-only,
+    so it would never catch a pending booking — but a pending booking
+    absolutely should still block an event from being hard-deleted, since
+    money may be about to change hands.
+
+    Backs the event-deletion guard (event_services.
+    update_event_status_service / confirm_event_deletion_ready_service),
+    where the question is "is there still money at stake right now" — a
+    cancelled booking never had money change hands, and a refunded
+    booking has already had it returned, so neither should block a
+    delete or keep an event stuck in pending_deletion.
+
+    Current Booking.status values: pending, confirmed, cancelled,
+    refunded (mirrors Order.status by design — see booking.py).
+    """
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(Booking)
+            .where(Booking.event_id == event_id)
+            .where(Booking.status.notin_(["cancelled", "refunded"]))
         )
         return result.scalar_one()
 
@@ -201,13 +262,23 @@ async def get_total_revenue_by_event_id_repo(event_id: int) -> float:
 
 
 async def count_bookings_by_organizer_repo(organizer_id: int) -> int:
+    """
+    Count confirmed bookings across all of an organizer's events.
+
+    Filtered to status == "confirmed" — matches count_bookings_by_event_repo
+    and get_total_bookings_by_user_repo above, and now also matches its own
+    sibling count_tickets_sold_by_organizer_repo immediately below, which
+    already had this filter. This function was the inconsistent one before
+    this change (unfiltered, while its neighbour was confirmed-only) —
+    now all three "total" counts in this module mean the same thing.
+    """
     from app.db.models.event import Event
     async with get_async_session() as session:
         result = await session.execute(
             select(func.count())
             .select_from(Booking)
             .join(Event, Booking.event_id == Event.id)
-            .where(Event.organizer_id == organizer_id)
+            .where(Event.organizer_id == organizer_id, Booking.status == "confirmed")
         )
         return result.scalar_one()
 

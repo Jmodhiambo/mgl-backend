@@ -104,13 +104,17 @@ async def list_audit_logs_service(
     return AuditLogListResponse(total=total, items=items)
 
 
-async def list_my_activity_service(admin_id: int) -> list[AuditLogOut]:
-    """All actions performed by one admin.
+async def list_my_activity_service(admin_id: int, limit: int = 15) -> AuditLogListResponse:
+    """Most recent actions performed by one admin, newest-first, plus the
+    admin's total lifetime action count (for display purposes — the list
+    itself stays capped at `limit`).
 
-    Used by GET /admin/audit-logs/ (the 'My Activity' profile tab).
+    Used by GET /admin/audit-logs/my (the 'My Activity' profile tab).
     """
-    logger.info(f"Fetching activity for admin_id={admin_id}")
-    return await repo.list_audit_logs_for_admin_repo(admin_id)
+    logger.info(f"Fetching activity for admin_id={admin_id} (limit={limit})")
+    items = await repo.list_audit_logs_for_admin_repo(admin_id, limit=limit)
+    total = await repo.count_audit_logs_repo(admin_id=admin_id)
+    return AuditLogListResponse(total=total, items=items)
 
 
 async def get_audit_log_service(log_id: int) -> AuditLogOut:

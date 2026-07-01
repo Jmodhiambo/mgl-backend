@@ -44,7 +44,8 @@ class Event(Base):
     flyer_url: Mapped[str] = mapped_column(String(500), nullable=False)
 
     # ── Status / approval ─────────────────────────────────────────────────────
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming") # "upcoming" | "ongoing" | "completed" | "cancelled" | "deleted"
+    # "upcoming" | "ongoing" | "completed" | "cancelled" | "pending_deletion" | "deleted"
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="upcoming") 
     is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     rejected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 import app.db.repositories.event_repo as event_repo
 import app.db.repositories.booking_repo as booking_repo
-import app.db.repositories.ticket_instance_repo as ti_repo
+import app.db.repositories.order_repo as order_repo
 import app.db.repositories.ticket_type_repo as tt_repo
 import app.db.repositories.settings_repo as settings_repo
 
@@ -114,8 +114,12 @@ async def delete_event_service(event_id: int):
 
 
 async def update_event_status_service(event_id: int, new_status: str):
-    """Update event status (upcoming, ongoing, completed, canceled & deleted)."""
-    statuses = ["upcoming", "ongoing", "completed", "cancelled", "deleted"]
+    """
+    Update event status (upcoming, ongoing, completed, canceled, deleted, pending_deletion).
+    Events with orders are not allowed to be deleted but can be set to pending_deletion until refunds are processed.
+    "Unresolved" means Booking.status not in ('cancelled', 'refunded')
+    """
+    statuses: list = ["upcoming", "ongoing", "completed", "cancelled", "deleted", "pending_deletion"]
     if new_status not in statuses:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status.")
     
@@ -124,13 +128,65 @@ async def update_event_status_service(event_id: int, new_status: str):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found."
         )
-    # An admin can restore a deleted event
-    # if event.status == "deleted":
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Event has already been deleted.",
-    #     )
+    
+    # Once an event has entered either deletion state, block further status
+    # changes through this generic endpoint. pending_deletion -> deleted is
+    # handled by its own dedicated admin transition, not by
+    # resubmitting through here.
+    if event.status in ("deleted", "pending_deletion"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Event is already deleted or pending deletion.",
+        )
+ 
+    if new_status == "deleted":
+        unresolved_bookings = await booking_repo.count_unresolved_bookings_by_event_repo(event_id)
+        if unresolved_bookings > 0:
+            logger.info(
+                f"Event {event_id} has {unresolved_bookings} booking(s) — "
+                f"redirecting delete request to 'pending_deletion' instead "
+                f"of 'deleted'."
+            )
+            return await event_repo.update_event_status_repo(event_id, "pending_deletion")
+
     return await event_repo.update_event_status_repo(event_id, new_status)
+
+
+async def confirm_event_deletion_ready_service(event_id: int):
+    """
+    Admin-only transition: pending_deletion -> deleted.
+ 
+    Call this once refunds for the event's orders have actually been
+    processed. Re-checks orderss at click-time (not at the time
+    pending_deletion was originally set) since refunds may have been
+    issued in the interim.
+    "Unresolved" means Booking.status not in ('cancelled', 'refunded')
+    """
+    event = await event_repo.get_event_by_id_repo(event_id)
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.")
+ 
+    if event.status != "pending_deletion":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Event is not pending deletion.",
+        )
+
+    unresolved_bookings = await booking_repo.count_unresolved_bookings_by_event_repo(event_id)
+    if unresolved_bookings > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Event still has {unresolved_bookings} booking(s). Process all "
+                f"refunds before marking this event ready for deletion."
+            ),
+        )
+ 
+    return await event_repo.update_event_status_repo(event_id, "deleted")
+
+async def get_approved_events_service():
+    """Approved upcoming/ongoing events — public facing. Excludes completed, cancelled, deleted."""
+    return await event_repo.get_approved_events_repo()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -149,11 +205,11 @@ async def reject_event_service(event_id: int):
 # ADMIN LIST QUERIES
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def get_approved_events_service():
+async def get_approved_events_admin_service():
     return await event_repo.get_approved_events_admin_repo()
 
 
-async def get_unapproved_events_service():
+async def get_unapproved_events_admin_service():
     return await event_repo.get_unapproved_events_admin_repo()
 
 

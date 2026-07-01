@@ -2,7 +2,7 @@
 """Async repository for Order model operations."""
 
 from typing import Optional
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.session import get_async_session
 from app.db.models.order import Order
 from app.db.models.booking import Booking
@@ -167,6 +167,14 @@ async def get_order_bookings_repo(order_id: int) -> list[BookingOut]:
             select(Booking).where(Booking.order_id == order_id)
         )
         return [BookingOut.model_validate(b) for b in result.scalars().all()]
+    
+
+async def count_orders_by_event_id_repo(event_id: int) -> int:
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(func.count(Order.id)).where(Order.event_id == event_id)
+        )
+        return result.scalar()
 
 
 async def list_orders_enriched_admin_app_repo() -> list[OrderEnrichedOut]:

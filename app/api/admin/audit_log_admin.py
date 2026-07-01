@@ -20,17 +20,23 @@ router = APIRouter()
 
 @router.get(
     "/admin/audit-logs/my",
-    response_model=list[AuditLogOut],
+    response_model=AuditLogListResponse,
     summary="My admin activity feed",
     description=(
-        "Returns all audit-log entries created by the currently authenticated "
-        "admin, ordered newest-first.  Used by the 'My Activity' tab on the "
-        "My Profile page."
+        "Returns the currently authenticated admin's most recent audit-log "
+        "entries, ordered newest-first, capped by `limit` (default 15), "
+        "along with the admin's total lifetime action count. "
+        "Used by the 'My Activity' tab on the My Profile page."
     ),
 )
-async def get_my_activity(current_user=Depends(require_admin)):
-    """Return all activity for the current admin."""
-    return await audit_log_services.list_my_activity_service(admin_id=current_user.id)
+async def get_my_activity(
+    limit: int = Query(default=15, ge=1, le=100, description="Max rows to return."),
+    current_user=Depends(require_admin),
+):
+    """Return the current admin's most recent activity, newest-first, with total count."""
+    return await audit_log_services.list_my_activity_service(
+        admin_id=current_user.id, limit=limit
+    )
 
 
 # ─── Main Audit Logs page ─────────────────────────────────────────────────────

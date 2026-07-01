@@ -28,18 +28,9 @@ class Order(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    # Deliberately NOT cascading, NOT nullable-on-delete. event_id stays a
-    # plain RESTRICT (Postgres default) FK. An Order represents real money —
-    # total_price was charged via a real M-Pesa STK push. If an event has any
-    # orders, deleting that event must fail loudly (NotNullViolation /
-    # ForeignKeyViolation) rather than silently destroying or orphaning
-    # payment history. The correct flow for an event with orders is:
-    # cancel it (update_event_status_service → "cancelled") and run refunds,
-    # never hard-delete it. This mirrors delete_order_repo's own refusal to
-    # delete an order that has issued ticket instances.
     event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id"), nullable=False)
     total_price: Mapped[int] = mapped_column(Integer, nullable=False)  # sum of all line totals (no processing fee)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")  # pending, confirmed, cancelled
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")  # pending, confirmed, cancelled, refunded
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

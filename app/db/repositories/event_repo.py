@@ -4,7 +4,7 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -36,9 +36,37 @@ def _commission_split(total_revenue: float, commission_rate: float) -> tuple[flo
     return platform_cut, organizer_net
 
 
+# IMPORTANT — why this is a correlated subquery, not a join column:
+# every query below already outerjoins Booking with
+# (Booking.event_id == Event.id) & (Booking.status == "confirmed") to
+# compute total_bookings/total_revenue. Adding a plain aggregate column
+# to that SAME join would silently be wrong: the join itself already
+# excludes every non-confirmed row, so a count expressed as "status not
+# in (cancelled, refunded)" evaluated against that pre-filtered join can
+# never see a 'pending' booking either — it would just collapse to being
+# identical to total_bookings, quietly missing pending bookings (payment
+# in flight, STK push sent, no Daraja callback yet) that absolutely
+# should still block deletion.
+#
+# A correlated subquery is independent of that join entirely — it runs
+# its own count against Booking with its own WHERE clause, uncoupled
+# from whatever the outer query's join condition happens to be. This
+# also avoids the func.distinct() correction a second outerjoin would
+# need (see the comment history on this function for why a prior version
+# of this same idea, joining Order instead, needed that).
+_UNRESOLVED_BOOKINGS_COUNT = (
+    select(func.count(Booking.id))
+    .where(Booking.event_id == Event.id)
+    .where(Booking.status.notin_(["cancelled", "refunded"]))
+    .correlate(Event)
+    .scalar_subquery()
+    .label("unresolved_bookings_count")
+)
+
+
 def _admin_row_to_schema(row) -> AdminEventOut:
     """Map a raw SQLAlchemy result row to AdminEventOut."""
-    event, organizer_name, total_bookings, total_revenue = row
+    event, organizer_name, total_bookings, total_revenue, unresolved_bookings_count = row
     total_revenue = float(total_revenue or 0)
     platform_cut, organizer_net = _commission_split(total_revenue, event.commission_rate)
     return AdminEventOut(
@@ -61,6 +89,7 @@ def _admin_row_to_schema(row) -> AdminEventOut:
         organizer_name=organizer_name or "Unknown",
         total_bookings=total_bookings or 0,
         total_revenue=total_revenue,
+        unresolved_bookings_count=unresolved_bookings_count or 0,
         commission_rate=float(event.commission_rate),
         commission_source=event.commission_source,
         commission_approved_by=event.commission_approved_by,
@@ -75,7 +104,7 @@ def _admin_row_to_schema(row) -> AdminEventOut:
 
 def _organizer_row_to_schema(row) -> OrganizerEventOut:
     """Map a raw SQLAlchemy result row to OrganizerEventOut."""
-    event, total_bookings, total_revenue = row
+    event, total_bookings, total_revenue, unresolved_bookings_count = row
     total_revenue = float(total_revenue or 0)
     platform_cut, organizer_net = _commission_split(total_revenue, event.commission_rate)
     return OrganizerEventOut(
@@ -96,6 +125,7 @@ def _organizer_row_to_schema(row) -> OrganizerEventOut:
         is_active=event.is_active,
         total_bookings=total_bookings or 0,
         total_revenue=total_revenue,
+        unresolved_bookings_count=unresolved_bookings_count or 0,
         commission_rate=float(event.commission_rate),
         commission_source=event.commission_source,
         commission_approved_by=event.commission_approved_by,
@@ -134,7 +164,7 @@ async def create_event_repo(event_data: EventCreateWithFlyer) -> EventOut:
 
 
 async def get_event_by_id_repo(event_id: int) -> Optional[EventOut]:
-    """Get a public EventOut by ID."""
+    """Get a public EventOut by ID. Excludes deleted and cancelled events."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
         event = await session.scalar(stmt)
@@ -142,7 +172,7 @@ async def get_event_by_id_repo(event_id: int) -> Optional[EventOut]:
 
 
 async def get_event_by_slug_repo(slug: str) -> Optional[EventOut]:
-    """Get a public EventOut by slug."""
+    """Get a public EventOut by slug. Excludes deleted and cancelled events."""
     async with get_async_session() as session:
         stmt = select(Event).where(Event.slug == slug)
         event = await session.scalar(stmt)
@@ -159,6 +189,8 @@ async def get_event_by_slug_organizer_repo(slug: str) -> Optional[OrganizerEvent
     resolve slug → numeric ID before fetching event details).
 
     Mirrors get_event_by_id_organizer_repo exactly, just keyed by slug.
+    No status filter here — the organizer portal needs to access any of
+    their own events including cancelled ones.
     """
     async with get_async_session() as session:
         stmt = (
@@ -166,6 +198,7 @@ async def get_event_by_slug_organizer_repo(slug: str) -> Optional[OrganizerEvent
                 Event,
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(
                 Booking,
@@ -197,23 +230,21 @@ async def update_event_repo(event_id: int, event_data: EventUpdate) -> Optional[
 
 async def delete_event_repo(event_id: int) -> bool:
     """
-    Hard-delete an event.
+    Hard-delete an event. Apparently done by admins only.
+    The organizer only soft deletes by changing the status to deleted
+    (or, if the event has bookings, to pending_deletion — see
+    update_event_status_service).
 
-    Raises ValueError (NOT a raw IntegrityError) if the event has any
-    orders or bookings attached — those FKs are intentionally left as
-    RESTRICT (see app/db/models/order.py and booking.py for the reasoning:
-    this is financial data and must never be silently destroyed or
-    orphaned by an event deletion).
+    Raises ValueError — NOT a raw IntegrityError — if the event still has
+    orders or bookings attached. Those FKs are RESTRICT at the DB level
+    (see app/db/models/order.py and booking.py: this is financial data and
+    must never be silently destroyed or orphaned by an event deletion).
 
-    Favorites, co-organizers, and ticket types are safe to lose — their
-    FKs cascade at the database level (ON DELETE CASCADE), and
-    organizer_emails.event_id is ON DELETE SET NULL — so none of those
-    will raise here. Only orders/bookings will.
-
-    This mirrors order_repo.delete_order_repo's existing pattern of
-    catching the "can't safely delete" case and raising ValueError for
-    the service layer to translate into a clean HTTP 400, instead of a
-    raw 500 IntegrityError leaking to the frontend.
+    This guard existed in an earlier version of this function and was
+    missing here — restoring it. Without it, attempting to hard-delete an
+    event with bookings raises a raw IntegrityError that propagates as an
+    unhandled 500, instead of the clean 400 that event_services.delete_event_service
+    is written to expect and translate for the frontend.
     """
     async with get_async_session() as session:
         stmt = select(Event).where(Event.id == event_id)
@@ -221,22 +252,16 @@ async def delete_event_repo(event_id: int) -> bool:
         if not event:
             return False
 
-        await session.delete(event)
-        await session.commit()
-        # try:
-        #     await session.delete(event)
-        #     await session.commit()
-        # except IntegrityError as exc:
-        #     await session.rollback()
-        #     # asyncpg surfaces this as a ForeignKeyViolationError wrapped in
-        #     # an IntegrityError. We don't need to parse which exact table —
-        #     # orders/bookings are the only RESTRICT FKs left on events.id,
-        #     # so any IntegrityError here means one of those.
-        #     raise ValueError(
-        #         "This event has existing orders or bookings and cannot be "
-        #         "deleted. Cancel the event instead to preserve payment and "
-        #         "booking history."
-        #     ) from exc
+        try:
+            await session.delete(event)
+            await session.commit()
+        except IntegrityError as exc:
+            await session.rollback()
+            raise ValueError(
+                "This event has existing orders or bookings and cannot be "
+                "deleted. Cancel the event instead to preserve payment and "
+                "booking history."
+            ) from exc
 
         return True
 
@@ -279,6 +304,7 @@ async def approve_event_repo(event_id: int) -> Optional[AdminEventOut]:
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -309,6 +335,10 @@ async def reject_event_repo(event_id: int) -> Optional[AdminEventOut]:
 
     Previously returned bool — this was a bug: the router tried to access
     event.title on the return value and would raise AttributeError.
+
+    Note: is_active is a @property on the Event model (not a column), so
+    it cannot be set directly. Setting is_approved=False is sufficient —
+    is_active derives from is_approved + status + time window at read time.
     """
     async with get_async_session() as session:
         stmt = (
@@ -317,6 +347,7 @@ async def reject_event_repo(event_id: int) -> Optional[AdminEventOut]:
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -332,7 +363,6 @@ async def reject_event_repo(event_id: int) -> Optional[AdminEventOut]:
 
         event = row[0]
         event.is_approved = False
-        event.is_active = False
         await session.commit()
         await session.refresh(event)
 
@@ -344,8 +374,9 @@ async def reject_event_repo(event_id: int) -> Optional[AdminEventOut]:
 
 async def get_all_events_admin_repo() -> list[AdminEventOut]:
     """
-    Return ALL events (approved and unapproved) with organizer name and
-    aggregated confirmed booking stats. Used by GET /admin/all-events.
+    Return ALL events (approved and unapproved, all statuses) with organizer
+    name and aggregated confirmed booking stats. Used by GET /admin/all-events.
+    Admins have unrestricted visibility.
     """
     async with get_async_session() as session:
         stmt = (
@@ -354,6 +385,7 @@ async def get_all_events_admin_repo() -> list[AdminEventOut]:
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -368,7 +400,8 @@ async def get_all_events_admin_repo() -> list[AdminEventOut]:
 
 
 async def get_approved_events_admin_repo() -> list[AdminEventOut]:
-    """Approved events only, with joins. Used by GET /admin/events."""
+    """Approved events only, with joins. Used by GET /admin/events.
+    Admins see all statuses within approved events."""
     async with get_async_session() as session:
         stmt = (
             select(
@@ -376,6 +409,7 @@ async def get_approved_events_admin_repo() -> list[AdminEventOut]:
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -399,6 +433,7 @@ async def get_unapproved_events_admin_repo() -> list[AdminEventOut]:
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -414,7 +449,7 @@ async def get_unapproved_events_admin_repo() -> list[AdminEventOut]:
 
 
 async def get_event_by_id_admin_repo(event_id: int) -> Optional[AdminEventOut]:
-    """Single event with joins, for admin detail view."""
+    """Single event with joins, for admin detail view. No status filter — admins see all."""
     async with get_async_session() as session:
         stmt = (
             select(
@@ -422,6 +457,7 @@ async def get_event_by_id_admin_repo(event_id: int) -> Optional[AdminEventOut]:
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -436,7 +472,7 @@ async def get_event_by_id_admin_repo(event_id: int) -> Optional[AdminEventOut]:
 
 
 async def get_events_by_organizer_admin_repo(organizer_id: int) -> list[AdminEventOut]:
-    """Events by a specific organizer, with joins."""
+    """Events by a specific organizer, with joins. No status filter — admins see all."""
     async with get_async_session() as session:
         stmt = (
             select(
@@ -444,6 +480,7 @@ async def get_events_by_organizer_admin_repo(organizer_id: int) -> list[AdminEve
                 User.name.label("organizer_name"),
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(User, Event.organizer_id == User.id)
             .outerjoin(
@@ -463,6 +500,16 @@ async def get_events_by_organizer_admin_repo(organizer_id: int) -> list[AdminEve
 async def get_events_by_organizer_with_stats_repo(organizer_id: int) -> list[OrganizerEventOut]:
     """
     Organizer's own events with booking/revenue stats.
+
+    Shows upcoming, ongoing, completed, cancelled, AND pending_deletion —
+    but NOT plain deleted. The single `!= "deleted"` filter already covers
+    this correctly: pending_deletion is a distinct status value from
+    deleted, so it isn't excluded by this clause. It's deliberately kept
+    visible here — pending_deletion means "this organizer asked to delete
+    an event that still has bookings," and they need to keep seeing it
+    while refunds are processed, rather than have it vanish the moment
+    they hit delete. Plain 'deleted' (no bookings, safe to purge,
+    admin-only) is the only status actually hidden from organizers.
     Used by GET /organizers/me/events.
     """
     async with get_async_session() as session:
@@ -471,6 +518,7 @@ async def get_events_by_organizer_with_stats_repo(organizer_id: int) -> list[Org
                 Event,
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(
                 Booking,
@@ -488,13 +536,18 @@ async def get_events_by_organizer_with_stats_repo(organizer_id: int) -> list[Org
 
 
 async def get_event_by_id_organizer_repo(event_id: int) -> Optional[OrganizerEventOut]:
-    """Single event with stats for organizer detail view."""
+    """
+    Single event with stats for organizer detail view.
+    No status filter — organizer needs to access any of their own events
+    including cancelled ones (e.g. viewing stats after cancellation).
+    """
     async with get_async_session() as session:
         stmt = (
             select(
                 Event,
                 func.count(Booking.id).label("total_bookings"),
                 func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
             )
             .outerjoin(
                 Booking,
@@ -510,22 +563,24 @@ async def get_event_by_id_organizer_repo(event_id: int) -> Optional[OrganizerEve
 # ─── Public queries (EventOut only) ──────────────────────────────────────────
 
 async def get_approved_events_repo() -> list[EventOut]:
-    """All approved events — public facing."""
+    """Approved upcoming/ongoing events — public facing. Excludes completed, cancelled, deleted."""
     async with get_async_session() as session:
-        stmt = select(Event).where(Event.is_approved.is_(True))
+        stmt = select(Event).where(
+            Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
+        )
         events = (await session.scalars(stmt)).all()
         return [EventOut.model_validate(e) for e in events]
 
 
 async def get_latest_events_repo(limit: int = 5) -> list[EventOut]:
-    """Latest approved events."""
+    """Latest approved upcoming/ongoing events — public facing."""
     async with get_async_session() as session:
         stmt = (
             select(Event)
             .where(
                 Event.is_approved.is_(True),
                 or_(Event.status == "upcoming", Event.status == "ongoing"),
-
             )
             .order_by(Event.created_at.desc())
             .limit(limit)
@@ -535,9 +590,11 @@ async def get_latest_events_repo(limit: int = 5) -> list[EventOut]:
 
 
 async def search_events_by_title_repo(keyword: str) -> list[EventOut]:
+    """Search approved upcoming/ongoing events by title — public facing."""
     async with get_async_session() as session:
         stmt = select(Event).where(
             Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
             Event.title.ilike(f"%{keyword}%"),
         )
         events = (await session.scalars(stmt)).all()
@@ -545,9 +602,11 @@ async def search_events_by_title_repo(keyword: str) -> list[EventOut]:
 
 
 async def search_events_by_venue_repo(venue: str) -> list[EventOut]:
+    """Search approved upcoming/ongoing events by venue — public facing."""
     async with get_async_session() as session:
         stmt = select(Event).where(
             Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
             Event.venue.ilike(f"%{venue}%"),
         )
         events = (await session.scalars(stmt)).all()
@@ -555,9 +614,11 @@ async def search_events_by_venue_repo(venue: str) -> list[EventOut]:
 
 
 async def get_events_by_country_repo(country: str) -> list[EventOut]:
+    """Get approved upcoming/ongoing events by country — public facing."""
     async with get_async_session() as session:
         stmt = select(Event).where(
             Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
             Event.country.ilike(f"%{country}%"),
         )
         events = (await session.scalars(stmt)).all()
@@ -565,9 +626,11 @@ async def get_events_by_country_repo(country: str) -> list[EventOut]:
 
 
 async def get_events_in_date_range_repo(start_date: datetime, end_date: datetime) -> list[EventOut]:
+    """Get approved upcoming/ongoing events within a date range — public facing."""
     async with get_async_session() as session:
         stmt = select(Event).where(
             Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
             Event.start_time >= start_date,
             Event.end_time <= end_date,
         )
@@ -576,34 +639,51 @@ async def get_events_in_date_range_repo(start_date: datetime, end_date: datetime
 
 
 async def get_events_sorted_by_start_time_repo(ascending: bool = True) -> list[EventOut]:
+    """Get approved upcoming/ongoing events sorted by start time — public facing."""
     async with get_async_session() as session:
         order = Event.start_time.asc() if ascending else Event.start_time.desc()
-        stmt = select(Event).where(Event.is_approved.is_(True)).order_by(order)
+        stmt = select(Event).where(
+            Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
+        ).order_by(order)
         events = (await session.scalars(stmt)).all()
         return [EventOut.model_validate(e) for e in events]
 
 
 async def get_events_sorted_by_end_time_repo(ascending: bool = True) -> list[EventOut]:
+    """Get approved upcoming/ongoing events sorted by end time — public facing."""
     async with get_async_session() as session:
         order = Event.end_time.asc() if ascending else Event.end_time.desc()
-        stmt = select(Event).where(Event.is_approved.is_(True)).order_by(order)
+        stmt = select(Event).where(
+            Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
+        ).order_by(order)
         events = (await session.scalars(stmt)).all()
         return [EventOut.model_validate(e) for e in events]
 
 
 async def count_events_repo() -> int:
+    """Count approved upcoming/ongoing events — public facing."""
     async with get_async_session() as session:
-        stmt = select(func.count()).select_from(Event).where(Event.is_approved.is_(True))
+        stmt = select(func.count()).select_from(Event).where(
+            Event.is_approved.is_(True),
+            or_(Event.status == "upcoming", Event.status == "ongoing"),
+        )
         return await session.scalar(stmt) or 0
 
 
 # ─── Organizer count helpers ──────────────────────────────────────────────────
+
 async def get_events_by_organizer_repo(organizer_id: int) -> list[EventOut]:
+    """Raw list of an organizer's events excluding deleted. Used internally."""
     async with get_async_session() as session:
-        stmt = select(Event).where(Event.organizer_id == organizer_id)
+        stmt = select(Event).where(
+            Event.organizer_id == organizer_id,
+            Event.status != "deleted",
+        )
         events = (await session.scalars(stmt)).all()
         return [EventOut.model_validate(e) for e in events]
-    
+
 
 async def count_events_by_organizer_repo(organizer_id: int) -> int:
     async with get_async_session() as session:
@@ -727,7 +807,9 @@ async def get_top_events_by_organizer_repo(organizer_id: int, limit: int = 5) ->
         return rows
 
 
-# ─── Misc admin filters (kept from original, now all filter to approved) ──────
+# ─── Misc admin filters ───────────────────────────────────────────────────────
+# These are admin-only endpoints so no status filter is applied —
+# admins can query events of any status.
 
 async def get_events_by_status_repo(status: str) -> list[EventOut]:
     async with get_async_session() as session:
