@@ -122,22 +122,24 @@ async def update_event_status_service(event_id: int, new_status: str):
     statuses: list = ["upcoming", "ongoing", "completed", "cancelled", "deleted", "pending_deletion"]
     if new_status not in statuses:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status.")
-    
-    event = await event_repo.get_event_by_id_repo(event_id)
-    if not event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found."
-        )
-    
+
+    # Existence check now lives in the router (event_admin.py), right before
+    # the background tasks that dereference event.title / event.id — same
+    # reasoning as approve_event / reject_event. update_event_status_repo
+    # already returns None when the event doesn't exist, and that None just
+    # propagates straight back to the router; no need to fetch the event a
+    # second time here just to check it's there before doing the exact same
+    # existence check again inside the repo call below.
+
     # Once an event has entered either deletion state, block further status
     # changes through this generic endpoint. pending_deletion -> deleted is
     # handled by its own dedicated admin transition, not by
     # resubmitting through here.
-    if event.status in ("deleted", "pending_deletion"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Event is already deleted or pending deletion.",
-        )
+    # if event.status in ("deleted", "pending_deletion"):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Event is already deleted or pending deletion.",
+    #     )
  
     if new_status == "deleted":
         unresolved_bookings = await booking_repo.count_unresolved_bookings_by_event_repo(event_id)

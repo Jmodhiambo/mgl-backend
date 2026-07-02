@@ -138,6 +138,44 @@ def _organizer_row_to_schema(row) -> OrganizerEventOut:
     )
 
 
+def _admin_events_stmt():
+    """
+    Base SELECT for every AdminEventOut-shaped query: Event joined with the
+    organizer's name and aggregated confirmed-booking stats.
+
+    get_all_events_admin_repo, get_approved_events_admin_repo,
+    get_unapproved_events_admin_repo, get_event_by_id_admin_repo, and
+    get_events_by_organizer_admin_repo all used to declare this exact same
+    select/outerjoin/outerjoin/group_by block independently, differing only
+    in their .where() clause (or lack of one) and .order_by(). Same story
+    for approve_event_repo/reject_event_repo, which each built it a second
+    time just to re-read the row they'd already fetched moments earlier.
+    Centralizing it here means the join shape only has to be right in one
+    place — add a field to AdminEventOut and there's exactly one query to
+    touch, not six.
+
+    Callers chain their own .where()/.order_by() onto the returned
+    statement; SQLAlchemy doesn't care that those get added after
+    .group_by() in the Python call chain, the generated SQL clause order
+    is unaffected.
+    """
+    return (
+        select(
+            Event,
+            User.name.label("organizer_name"),
+            func.count(Booking.id).label("total_bookings"),
+            func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+            _UNRESOLVED_BOOKINGS_COUNT,
+        )
+        .outerjoin(User, Event.organizer_id == User.id)
+        .outerjoin(
+            Booking,
+            (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
+        )
+        .group_by(Event.id, User.name)
+    )
+
+
 # ─── Base CRUD ────────────────────────────────────────────────────────────────
 
 async def create_event_repo(event_data: EventCreateWithFlyer) -> EventOut:
@@ -296,36 +334,22 @@ async def approve_event_repo(event_id: int) -> Optional[AdminEventOut]:
     """
     Approve an event. Returns AdminEventOut so the router can send
     notifications using organizer_name and pass back a fully-typed object.
+
+    Mutates the plain Event row (no join needed for that part), commits,
+    then delegates to get_event_by_id_admin_repo for the enriched read —
+    same pattern update_event_status_repo already uses below, instead of
+    declaring the full admin join twice in this function just to read back
+    what was written a moment earlier.
     """
     async with get_async_session() as session:
-        stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
-            .where(Event.id == event_id)
-            .group_by(Event.id, User.name)
-        )
-        row = (await session.execute(stmt)).one_or_none()
-        if not row:
+        stmt = select(Event).where(Event.id == event_id)
+        event = await session.scalar(stmt)
+        if not event:
             return None
-
-        event = row[0]
         event.is_approved = True
         await session.commit()
-        await session.refresh(event)
 
-        # Re-fetch the row after commit to get accurate data
-        row2 = (await session.execute(stmt)).one_or_none()
-        return _admin_row_to_schema(row2) if row2 else None
+    return await get_event_by_id_admin_repo(event_id)
 
 
 async def reject_event_repo(event_id: int) -> Optional[AdminEventOut]:
@@ -333,42 +357,24 @@ async def reject_event_repo(event_id: int) -> Optional[AdminEventOut]:
     Reject an event. Returns AdminEventOut (not bool) so the router can
     use event.title / event.slug for notifications.
 
-    Previously returned bool — this was a bug: the router tried to access
-    event.title on the return value and would raise AttributeError.
-
     Note: is_active is a @property on the Event model (not a column), so
     it cannot be set directly. Setting is_approved=False is sufficient —
     is_active derives from is_approved + status + time window at read time.
+
+    Same mutate-then-refetch pattern as approve_event_repo above.
     """
     async with get_async_session() as session:
-        stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
-            .where(Event.id == event_id)
-            .group_by(Event.id, User.name)
-        )
-        row = (await session.execute(stmt)).one_or_none()
-        if not row:
+        stmt = select(Event).where(Event.id == event_id)
+        event = await session.scalar(stmt)
+        if not event:
             return None
-
-        event = row[0]
         event.is_approved = False
         await session.commit()
-        await session.refresh(event)
 
-        row2 = (await session.execute(stmt)).one_or_none()
-        return _admin_row_to_schema(row2) if row2 else None
+    return await get_event_by_id_admin_repo(event_id)
 
+
+# ─── Admin queries (with joins + aggregates) ──────────────────────────────────
 
 # ─── Admin queries (with joins + aggregates) ──────────────────────────────────
 
@@ -379,22 +385,7 @@ async def get_all_events_admin_repo() -> list[AdminEventOut]:
     Admins have unrestricted visibility.
     """
     async with get_async_session() as session:
-        stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
-            .group_by(Event.id, User.name)
-            .order_by(Event.created_at.desc())
-        )
+        stmt = _admin_events_stmt().order_by(Event.created_at.desc())
         rows = (await session.execute(stmt)).all()
         return [_admin_row_to_schema(row) for row in rows]
 
@@ -404,20 +395,8 @@ async def get_approved_events_admin_repo() -> list[AdminEventOut]:
     Admins see all statuses within approved events."""
     async with get_async_session() as session:
         stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
+            _admin_events_stmt()
             .where(Event.is_approved.is_(True))
-            .group_by(Event.id, User.name)
             .order_by(Event.created_at.desc())
         )
         rows = (await session.execute(stmt)).all()
@@ -428,20 +407,8 @@ async def get_unapproved_events_admin_repo() -> list[AdminEventOut]:
     """Unapproved events only, with joins."""
     async with get_async_session() as session:
         stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
+            _admin_events_stmt()
             .where(Event.is_approved.is_(False))
-            .group_by(Event.id, User.name)
             .order_by(Event.created_at.desc())
         )
         rows = (await session.execute(stmt)).all()
@@ -451,22 +418,7 @@ async def get_unapproved_events_admin_repo() -> list[AdminEventOut]:
 async def get_event_by_id_admin_repo(event_id: int) -> Optional[AdminEventOut]:
     """Single event with joins, for admin detail view. No status filter — admins see all."""
     async with get_async_session() as session:
-        stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
-            .where(Event.id == event_id)
-            .group_by(Event.id, User.name)
-        )
+        stmt = _admin_events_stmt().where(Event.id == event_id)
         row = (await session.execute(stmt)).one_or_none()
         return _admin_row_to_schema(row) if row else None
 
@@ -475,20 +427,8 @@ async def get_events_by_organizer_admin_repo(organizer_id: int) -> list[AdminEve
     """Events by a specific organizer, with joins. No status filter — admins see all."""
     async with get_async_session() as session:
         stmt = (
-            select(
-                Event,
-                User.name.label("organizer_name"),
-                func.count(Booking.id).label("total_bookings"),
-                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
-                _UNRESOLVED_BOOKINGS_COUNT,
-            )
-            .outerjoin(User, Event.organizer_id == User.id)
-            .outerjoin(
-                Booking,
-                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
-            )
+            _admin_events_stmt()
             .where(Event.organizer_id == organizer_id)
-            .group_by(Event.id, User.name)
             .order_by(Event.created_at.desc())
         )
         rows = (await session.execute(stmt)).all()

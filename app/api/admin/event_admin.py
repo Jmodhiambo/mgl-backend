@@ -198,12 +198,15 @@ async def count_events_by_organizer(organizer_id: int, user=Depends(require_admi
 
 # ── Parameterised routes (/{event_id}) — AFTER all fixed paths ───────────────
 
-@router.patch("/admin/events/{event_id}/approve", response_model=bool)
+@router.patch("/admin/events/{event_id}/approve", response_model=AdminEventOut)
 async def approve_event(
     event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
     """Approve an event by its ID."""
     event = await event_services.approve_event_service(event_id)
+
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.")
 
     background_tasks.add_task(
         notify_event_approved, event.id, event.title, event.slug, user.name, event.organizer_id
@@ -217,15 +220,18 @@ async def approve_event(
         target_id=event.id,
         details={"approved_event": event.title},
     )
-    return True if event else False
+    return event
 
 
-@router.patch("/admin/events/{event_id}/reject", response_model=bool)
+@router.patch("/admin/events/{event_id}/reject", response_model=AdminEventOut)
 async def reject_event(
     event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
     """Reject an event by its ID."""
     event = await event_services.reject_event_service(event_id)
+
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.")
 
     background_tasks.add_task(
         notify_event_rejected,
@@ -241,15 +247,18 @@ async def reject_event(
         target_id=event.id,
         details={"rejected_event": event.title},
     )
-    return True if event else False
+    return event
 
 
-@router.patch("/admin/events/{event_id}/status/{status}", response_model=bool)
+@router.patch("/admin/events/{event_id}/status/{status}", response_model=AdminEventOut)
 async def update_event_status(
     event_id: int, status: str, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
     """Update the status of an event by its ID."""
     event = await event_services.update_event_status_service(event_id, status)
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
 
     if status.lower() == "cancelled":
         background_tasks.add_task(
@@ -264,7 +273,7 @@ async def update_event_status(
         target_id=event.id,
         details={"updated_event": event.title, "status": status},
     )
-    return True if event else False
+    return event
 
 
 @router.patch("/admin/events/{event_id}/confirm-deletion-ready", response_model=bool)
