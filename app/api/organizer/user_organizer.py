@@ -58,7 +58,7 @@ async def update_organizer_profile(
     social_media_links: Optional[str] = Form(None),   # JSON-encoded string, e.g. '["https://..."]'
     area_of_expertise: Optional[str] = Form(None),    # JSON-encoded string
     profile_picture: Optional[UploadFile] = File(None),
-    user: UserOut = Depends(require_organizer),
+    user: UserOut = Depends(require_user),
 ):
     """
     Update the profile of the current organizer.
@@ -128,16 +128,9 @@ async def update_organizer_profile(
             await delete_profile_picture(organizer.profile_picture_url)
         data_dict["profile_picture_url"] = await save_profile_picture_and_get_url(profile_picture)
 
-    # Update user info directly with a dict — update_user_info_service takes
-    # a plain dict and passes it straight through to user_repo.update_user_info_repo,
-    # which writes each key onto the User row as-is. We previously wrapped this
-    # in OrganizerInfo(**data_dict), but OrganizerInfo types these two fields as
-    # Optional[list[str]] for the READ path (organizer_info in OrganizerOut),
-    # while the actual User columns are plain VARCHAR — not JSON/ARRAY. Passing
-    # a real Python list through to asyncpg against a VARCHAR column fails with
-    # "invalid input ... expected str, got list". Since update_user_info_service
-    # never required a Pydantic model in the first place, the dict goes through
-    # unwrapped, carrying the validated JSON strings as strings end to end.
+    # Update the role to organizer if not already set (in case a regular user is promoting themselves)
+    if organizer.role != ROLE_ORGANIZER:
+        data_dict["role"] = ROLE_ORGANIZER
     return await user_services.update_user_info_service(user.id, data_dict)
 
 

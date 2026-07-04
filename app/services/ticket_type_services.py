@@ -21,25 +21,12 @@ from app.core.logging_config import logger
 
 
 async def create_ticket_type_service(
-    ticket_type_in: TicketTypeCreate,
-    event_id: Optional[int] = None,
+    ticket_type_in: TicketTypeCreate
 ) -> dict:
     """
-    Create a new TicketType.
-
-    If event_id is provided (organizer router passes it as a path param),
-    it overrides whatever event_id is already in ticket_type_in.
-    The admin router passes event_id inside the TicketTypeCreate body,
-    so event_id will be None there and the body value is used as-is.
-    """
-    if event_id is not None:
-        # Organizer path: event_id comes from the URL, inject it
-        data = ticket_type_in.model_copy(update={"event_id": event_id})
-    else:
-        data = ticket_type_in
-
-    logger.info(f"Creating TicketType with data: {data.model_dump()}")
-    ticket_type = await tt_repo.create_ticket_type_repo(data)
+    Create a new TicketType."""
+    logger.info(f"Creating TicketType with data: {ticket_type_in.model_dump()}")
+    ticket_type = await tt_repo.create_ticket_type_repo(ticket_type_in)
     logger.info(f"Created TicketType with ID: {ticket_type.id}")
     return ticket_type
 

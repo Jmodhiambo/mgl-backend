@@ -90,12 +90,12 @@ async def get_latest_payments_service(limit: int = 10) -> list[dict]:
     return await payment_repo.get_latest_payments_repo(limit)
 
 
-
 async def list_payments_enriched_service() -> list[dict]:
     """List all payments with user name via order join.
     Used by GET /admin/payments — returns AdminPayment-shaped rows."""
     logger.info("Listing all payment records (enriched).")
     return await payment_repo.list_payments_enriched_repo()
+
 
 # ── M-Pesa flow ───────────────────────────────────────────────────────────────
 
@@ -130,7 +130,6 @@ async def initiate_mpesa_payment_service(
     if order.total_price == 0:
         logger.info(f"Order {request.order_id} is free — bypassing STK push")
 
-        # Create a completed payment record for audit purposes
         payment = await payment_repo.create_payment_repo(
             PaymentCreate(
                 order_id=request.order_id,
@@ -142,22 +141,17 @@ async def initiate_mpesa_payment_service(
             )
         )
         await payment_repo.update_payment_status_repo(payment.id, "completed")
-
-        # Confirm order + all bookings immediately
         await order_repo.update_order_status_repo(request.order_id, "confirmed")
 
-        # Issue ticket instances for every booking line item
         bookings = await order_repo.get_order_bookings_repo(request.order_id)
         for booking in bookings:
-            ticket_type = await ticket_type_repo.get_ticket_type_by_id_repo(
-                booking.ticket_type_id
-            )
             await create_ticket_instances_for_booking(
                 booking_id=booking.id,
                 user_id=booking.user_id,
                 ticket_type_id=booking.ticket_type_id,
                 quantity=booking.quantity,
                 price_per_ticket=0,
+                event_id=booking.event_id,  # needed for qr_payload signing
             )
             await ticket_type_repo.increment_quantity_sold_repo(
                 booking.ticket_type_id, booking.quantity
@@ -170,18 +164,16 @@ async def initiate_mpesa_payment_service(
 
         return MpesaStkPushResponse(
             payment_id=payment.id,
-            checkout_request_id=None,   # signals to frontend: no PIN needed
+            checkout_request_id=None,
             message="Free tickets confirmed. Check your email for your tickets.",
         )
 
     # ── Paid order — normal STK push flow ─────────────────────────────────────
 
-    # 2. Normalise phone: strip leading 0 or + and ensure 2547XXXXXXXX format
     phone = request.phone_number.strip().lstrip("+")
     if phone.startswith("0"):
         phone = "254" + phone[1:]
 
-    # 3. Initiate STK push for the order's total (sum of all line items)
     logger.info(f"Initiating STK push for order {request.order_id} to {phone}")
     daraja_response = await initiate_stk_push(
         phone_number=phone,
@@ -196,7 +188,6 @@ async def initiate_mpesa_payment_service(
 
     checkout_request_id = daraja_response["CheckoutRequestID"]
 
-    # 4. Persist a pending payment row, linked to the order
     payment = await payment_repo.create_payment_repo(
         PaymentCreate(
             order_id=request.order_id,
@@ -225,40 +216,32 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
       3. Update payment status (completed | failed) + store mpesa_ref.
       4. On success:
          - confirm the Order and ALL of its Bookings (one per ticket type)
-         - for EACH booking, look up its ticket type's price and create
-           `quantity` TicketInstances, then increment quantity_sold
+         - for EACH booking, create `quantity` TicketInstances with correct
+           price and signed qr_payload, then increment quantity_sold
     """
     parsed = parse_mpesa_callback(raw_body)
     checkout_request_id = parsed["checkout_request_id"]
     logger.info(f"M-Pesa callback received: {parsed}")
 
-    # Find the payment row
     payment = await payment_repo.get_payment_by_checkout_request_id_repo(checkout_request_id)
     if not payment:
         logger.error(f"No payment found for CheckoutRequestID: {checkout_request_id}")
         return
 
-    # Store the full raw callback for auditing regardless of result
     await payment_repo.record_callback_payload_repo(payment.id, json.dumps(raw_body))
 
     if parsed["result_code"] == "0":
-        # Success — update payment, confirm order + all its bookings, issue tickets
         await payment_repo.update_payment_mpesa_success_repo(
             payment_id=payment.id,
             mpesa_ref=parsed["mpesa_ref"],
         )
 
-        # Confirm the order — cascades status="confirmed" to every booking under it
         await order_repo.update_order_status_repo(payment.order_id, "confirmed")
 
-        # Fetch all booking line items (one per ticket type) under this order
         bookings = await order_repo.get_order_bookings_repo(payment.order_id)
 
         total_instances = 0
         for booking in bookings:
-            # Look up this line item's ticket type to get the correct price —
-            # never trust a client-supplied price. One DB read per line item,
-            # in a background callback with no user waiting.
             ticket_type = await ticket_type_repo.get_ticket_type_by_id_repo(
                 booking.ticket_type_id
             )
@@ -270,6 +253,7 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
                 ticket_type_id=booking.ticket_type_id,
                 quantity=booking.quantity,
                 price_per_ticket=price_per_ticket,
+                event_id=booking.event_id,  # needed for qr_payload signing
             )
 
             await ticket_type_repo.increment_quantity_sold_repo(
@@ -284,7 +268,6 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
             f"{total_instances} ticket instance(s) issued in total."
         )
     else:
-        # Failure
         await payment_repo.update_payment_status_repo(payment.id, "failed")
         logger.warning(
             f"Payment {payment.id} failed: {parsed['result_desc']}"

@@ -10,13 +10,19 @@ from app.services.audit_log_services import log_admin_action_service
 
 router = APIRouter()
 
+
 @router.post("/admin/ticket-instances", response_model=TicketInstanceOut)
 async def create_ticket_instance_admin(
     ticket_instance_create: TicketInstanceCreate,
     background_tasks: BackgroundTasks,
     admin=Depends(require_admin),
 ):
-    """Create a new TicketInstance as an admin."""
+    """Create a new TicketInstance as an admin.
+
+    event_id must be included in the request body (part of TicketInstanceCreate)
+    so the signed QR payload can be computed server-side. Supply it alongside
+    the other fields: booking_id, ticket_type_id, user_id, price, code, etc.
+    """
     ticket_instance = await ti_services.create_ticket_instance(ticket_instance_create)
 
     background_tasks.add_task(
@@ -30,6 +36,7 @@ async def create_ticket_instance_admin(
     )
 
     return ticket_instance
+
 
 @router.put("/admin/ticket-instances/{ticket_instance_id}", response_model=TicketInstanceOut)
 async def update_ticket_instance_admin(
@@ -55,6 +62,7 @@ async def update_ticket_instance_admin(
 
     return ticket_instance
 
+
 @router.delete("/admin/ticket-instances/{ticket_instance_id}", response_model=dict)
 async def delete_ticket_instance_admin(
     ticket_instance_id: int,
@@ -78,11 +86,14 @@ async def delete_ticket_instance_admin(
 
     return {"detail": "TicketInstance deleted successfully"}
 
+
 # Specific GET routes BEFORE /{ticket_instance_id} to avoid route shadowing
+
 @router.get("/admin/ticket-instances", response_model=list[TicketInstanceOut])
 async def list_ticket_instances_admin(admin=Depends(require_admin)):
     """List all TicketInstances as an admin."""
     return await ti_services.list_ticket_instances()
+
 
 @router.get("/admin/ticket-instances/date-range/{start_date}-{end_date}", response_model=list[TicketInstanceOut])
 async def list_ticket_instances_in_date_range_admin(
@@ -91,15 +102,18 @@ async def list_ticket_instances_in_date_range_admin(
     """List TicketInstances created within a specific date range as an admin."""
     return await ti_services.list_ticket_instances_in_date_range(start_date, end_date)
 
+
 @router.get("/admin/ticket-instances/status/{status}", response_model=list[TicketInstanceOut])
 async def get_ticket_instances_by_status_admin(status: str, admin=Depends(require_admin)):
     """Get TicketInstances filtered by their status as an admin."""
     return await ti_services.get_ticket_instances_by_status(status)
 
+
 @router.get("/admin/ticket-instances/users/{user_id}", response_model=list[TicketInstanceOut])
 async def get_ticket_instances_by_user_admin(user_id: int, admin=Depends(require_admin)):
     """Get TicketInstances for a specific user as an admin."""
     return await ti_services.get_ticket_instances_by_user(user_id)
+
 
 @router.get("/admin/ticket-instances/{ticket_instance_id}", response_model=TicketInstanceOut)
 async def get_ticket_instance_admin(ticket_instance_id: int, admin=Depends(require_admin)):

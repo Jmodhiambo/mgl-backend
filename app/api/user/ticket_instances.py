@@ -2,7 +2,7 @@
 """User-facing ticket instance routes for MGLTickets."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.schemas.ticket_instance import TicketInstanceOut
+from app.schemas.ticket_instance import TicketInstanceEnrichedOut, TicketInstanceOut
 import app.services.ticket_instance_services as ti_services
 from app.core.security import require_user
 
@@ -10,7 +10,7 @@ router = APIRouter()
 
 @router.get(
     "/users/me/ticket-instances",
-    response_model=list[TicketInstanceOut],
+    response_model=list[TicketInstanceEnrichedOut],
     status_code=status.HTTP_200_OK,
 )
 async def get_ticket_instances_by_user(user=Depends(require_user)):

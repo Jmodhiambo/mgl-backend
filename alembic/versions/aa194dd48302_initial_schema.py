@@ -1,8 +1,8 @@
-"""baseline schema
+"""Initial schema
 
-Revision ID: 1cd0d22db9af
+Revision ID: aa194dd48302
 Revises: 
-Create Date: 2026-05-29 07:29:52.350828
+Create Date: 2026-07-03 06:42:49.456348
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1cd0d22db9af'
+revision: str = 'aa194dd48302'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -135,7 +135,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_audit_logs_target_type'), 'audit_logs', ['target_type'], unique=False)
     op.create_table('contact_messages',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('reference_id', sa.Integer(), nullable=False),
+    sa.Column('reference_id', sa.String(length=50), nullable=False),
+    sa.Column('source', sa.String(length=20), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.String(length=50), nullable=True),
     sa.Column('email', sa.String(length=100), nullable=True),
@@ -143,12 +144,13 @@ def upgrade() -> None:
     sa.Column('subject', sa.String(length=100), nullable=False),
     sa.Column('category', sa.String(length=50), nullable=False),
     sa.Column('message', sa.String(length=2000), nullable=False),
+    sa.Column('event_title', sa.String(length=200), nullable=True),
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.Column('priority', sa.String(length=50), nullable=False),
     sa.Column('assigned_to', sa.Integer(), nullable=True),
     sa.Column('client_ip', sa.String(length=50), nullable=True),
-    sa.Column('user_agent', sa.String(length=100), nullable=True),
-    sa.Column('recaptcha_score', sa.String(length=50), nullable=True),
+    sa.Column('user_agent', sa.String(length=200), nullable=True),
+    sa.Column('recaptcha_score', sa.Float(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('responded_at', sa.DateTime(timezone=True), nullable=True),
@@ -160,6 +162,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_contact_messages_created_at'), 'contact_messages', ['created_at'], unique=False)
     op.create_index(op.f('ix_contact_messages_email'), 'contact_messages', ['email'], unique=False)
     op.create_index(op.f('ix_contact_messages_reference_id'), 'contact_messages', ['reference_id'], unique=False)
+    op.create_index(op.f('ix_contact_messages_source'), 'contact_messages', ['source'], unique=False)
     op.create_index(op.f('ix_contact_messages_status'), 'contact_messages', ['status'], unique=False)
     op.create_table('events',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -167,7 +170,9 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('description', sa.String(length=1000), nullable=True),
     sa.Column('venue', sa.String(length=255), nullable=False),
+    sa.Column('city', sa.String(length=100), nullable=False),
     sa.Column('country', sa.String(length=100), nullable=False),
+    sa.Column('category', sa.String(length=100), nullable=False),
     sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('end_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('original_filename', sa.String(length=200), nullable=False),
@@ -175,9 +180,15 @@ def upgrade() -> None:
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.Column('is_approved', sa.Boolean(), nullable=False),
     sa.Column('rejected', sa.Boolean(), nullable=False),
+    sa.Column('commission_rate', sa.Numeric(precision=5, scale=2), nullable=False, comment='Platform fee % locked in at event creation time'),
+    sa.Column('commission_source', sa.String(length=20), nullable=False, comment='platform_default | negotiated'),
+    sa.Column('commission_approved_by', sa.Integer(), nullable=True, comment='Admin user ID who approved a negotiated rate'),
+    sa.Column('commission_approved_by_name', sa.String(length=100), nullable=True, comment='Denormalised admin display name — avoids a join on every read'),
+    sa.Column('commission_approved_at', sa.DateTime(timezone=True), nullable=True, comment='Timestamp when the negotiated rate was approved'),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('organizer_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['commission_approved_by'], ['users.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['organizer_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -263,8 +274,8 @@ def upgrade() -> None:
     sa.Column('create_co_organizer', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_co_organizers_id'), 'co_organizers', ['id'], unique=False)
@@ -274,11 +285,24 @@ def upgrade() -> None:
     sa.Column('event_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_favorites_id'), 'favorites', ['id'], unique=False)
+    op.create_table('orders',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('event_id', sa.Integer(), nullable=False),
+    sa.Column('total_price', sa.Integer(), nullable=False),
+    sa.Column('status', sa.String(length=50), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_favorites_id'), 'favorites', ['id'], unique=False)
+    op.create_index(op.f('ix_orders_id'), 'orders', ['id'], unique=False)
     op.create_table('organizer_emails',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('organizer_id', sa.Integer(), nullable=False),
@@ -296,7 +320,7 @@ def upgrade() -> None:
     sa.Column('success_count', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['organizer_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -317,12 +341,13 @@ def upgrade() -> None:
     sa.Column('quantity_sold', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_ticket_types_id'), 'ticket_types', ['id'], unique=False)
     op.create_table('bookings',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('order_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('event_id', sa.Integer(), nullable=False),
     sa.Column('ticket_type_id', sa.Integer(), nullable=False),
@@ -332,11 +357,29 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['event_id'], ['events.id'], ),
+    sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
     sa.ForeignKeyConstraint(['ticket_type_id'], ['ticket_types.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_bookings_id'), 'bookings', ['id'], unique=False)
+    op.create_table('payments',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('order_id', sa.Integer(), nullable=False),
+    sa.Column('amount', sa.Float(), nullable=False),
+    sa.Column('currency', sa.String(length=10), nullable=False),
+    sa.Column('method', sa.String(length=50), nullable=False),
+    sa.Column('status', sa.String(length=50), nullable=False),
+    sa.Column('mpesa_phone', sa.String(length=20), nullable=True),
+    sa.Column('mpesa_checkout_request_id', sa.String(length=200), nullable=True),
+    sa.Column('mpesa_ref', sa.String(length=100), nullable=True),
+    sa.Column('callback_payload', sa.String(length=2000), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_payments_id'), 'payments', ['id'], unique=False)
     op.create_table('organizer_email_recipients',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email_id', sa.Integer(), nullable=False),
@@ -359,24 +402,10 @@ def upgrade() -> None:
     op.create_index(op.f('ix_organizer_email_recipients_email_id'), 'organizer_email_recipients', ['email_id'], unique=False)
     op.create_index(op.f('ix_organizer_email_recipients_id'), 'organizer_email_recipients', ['id'], unique=False)
     op.create_index(op.f('ix_organizer_email_recipients_status'), 'organizer_email_recipients', ['status'], unique=False)
-    op.create_table('payments',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('booking_id', sa.Integer(), nullable=False),
-    sa.Column('amount', sa.Float(), nullable=False),
-    sa.Column('currency', sa.String(length=10), nullable=False),
-    sa.Column('method', sa.String(length=50), nullable=False),
-    sa.Column('status', sa.String(length=50), nullable=False),
-    sa.Column('mpesa_ref', sa.String(length=100), nullable=False),
-    sa.Column('callback_payload', sa.String(length=2000), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_payments_id'), 'payments', ['id'], unique=False)
     op.create_table('ticket_instances',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('event_id', sa.Integer(), nullable=False),
     sa.Column('ticket_type_id', sa.Integer(), nullable=False),
     sa.Column('booking_id', sa.Integer(), nullable=False),
     sa.Column('price', sa.Integer(), nullable=False),
@@ -388,6 +417,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('used_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ),
+    sa.ForeignKeyConstraint(['event_id'], ['events.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['ticket_type_id'], ['ticket_types.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -402,14 +432,14 @@ def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_index(op.f('ix_ticket_instances_id'), table_name='ticket_instances')
     op.drop_table('ticket_instances')
-    op.drop_index(op.f('ix_payments_id'), table_name='payments')
-    op.drop_table('payments')
     op.drop_index(op.f('ix_organizer_email_recipients_status'), table_name='organizer_email_recipients')
     op.drop_index(op.f('ix_organizer_email_recipients_id'), table_name='organizer_email_recipients')
     op.drop_index(op.f('ix_organizer_email_recipients_email_id'), table_name='organizer_email_recipients')
     op.drop_index(op.f('ix_organizer_email_recipients_created_at'), table_name='organizer_email_recipients')
     op.drop_index(op.f('ix_organizer_email_recipients_booking_id'), table_name='organizer_email_recipients')
     op.drop_table('organizer_email_recipients')
+    op.drop_index(op.f('ix_payments_id'), table_name='payments')
+    op.drop_table('payments')
     op.drop_index(op.f('ix_bookings_id'), table_name='bookings')
     op.drop_table('bookings')
     op.drop_index(op.f('ix_ticket_types_id'), table_name='ticket_types')
@@ -421,6 +451,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_organizer_emails_created_at'), table_name='organizer_emails')
     op.drop_index(op.f('ix_organizer_emails_booking_ids'), table_name='organizer_emails')
     op.drop_table('organizer_emails')
+    op.drop_index(op.f('ix_orders_id'), table_name='orders')
+    op.drop_table('orders')
     op.drop_index(op.f('ix_favorites_id'), table_name='favorites')
     op.drop_table('favorites')
     op.drop_index(op.f('ix_co_organizers_id'), table_name='co_organizers')
@@ -440,6 +472,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_events_id'), table_name='events')
     op.drop_table('events')
     op.drop_index(op.f('ix_contact_messages_status'), table_name='contact_messages')
+    op.drop_index(op.f('ix_contact_messages_source'), table_name='contact_messages')
     op.drop_index(op.f('ix_contact_messages_reference_id'), table_name='contact_messages')
     op.drop_index(op.f('ix_contact_messages_email'), table_name='contact_messages')
     op.drop_index(op.f('ix_contact_messages_created_at'), table_name='contact_messages')

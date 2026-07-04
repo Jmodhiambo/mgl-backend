@@ -25,7 +25,7 @@ from app.api.organizer.user_organizer import router as organizer_user_router
 from app.api.organizer.events_organizer import router as organizer_events_router
 from app.api.organizer.bookings_organizer import router as organizer_bookings_router
 # from app.api.organizer.payments_organizer import router as organizer_payments_router
-# from app.api.organizer.ticket_instances_organizer import router as organizer_ti_router
+from app.api.organizer.ticket_instances_organizer import router as organizer_ti_router
 from app.api.organizer.ticket_types_organizer import router as organizer_tt_router
 from app.api.organizer.co_organizer import router as co_organizer_organizer_router
 from app.api.organizer.contact_messages_organizer import router as organizer_contact_messages_router
@@ -74,7 +74,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(organizer_events_router, prefix="/api/v1", tags=["Events-Organizer"])
     app.include_router(organizer_bookings_router, prefix="/api/v1", tags=["Bookings-Organizer"])
     # app.include_router(organizer_payments_router, prefix="/api/v1", tags=["Payments-Organizer"])
-    # app.include_router(organizer_ti_router, prefix="/api/v1", tags=["Ticket Instances-Organizer"])
+    app.include_router(organizer_ti_router, prefix="/api/v1", tags=["Ticket Instances-Organizer"])
     app.include_router(organizer_tt_router, prefix="/api/v1", tags=["Ticket Types-Organizer"])
     app.include_router(co_organizer_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Organizer"])
     app.include_router(organizer_contact_messages_router, prefix="/api/v1", tags=["Contact Messages-Organizer"])

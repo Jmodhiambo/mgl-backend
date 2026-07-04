@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.db.models.order import Order
     from app.db.models.booking import Booking
     from app.db.models.ticket_type import TicketType
+    from app.db.models.ticket_instance import TicketInstance
     from app.db.models.favorites import Favorite
     from app.db.models.co_organizer import CoOrganizer
     from app.db.models.organizer_emails import OrganizerEmails
@@ -127,6 +128,13 @@ class Event(Base):
     # which fails immediately since event_id is NOT NULL.
     ticket_types: Mapped[list["TicketType"]] = relationship(
         "TicketType", back_populates="event",
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+
+    # CASCADE — mirrors ticket_instances.event_id ondelete="CASCADE". Same
+    # NOT-NULL-disassociation hazard as ticket_types above.
+    ticket_instances: Mapped[list["TicketInstance"]] = relationship(
+        "TicketInstance", back_populates="event",
         cascade="all, delete-orphan", passive_deletes=True,
     )
 

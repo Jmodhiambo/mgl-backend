@@ -78,7 +78,7 @@ class User(Base):
     tax_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     """Tax identification number for legal or payout purposes."""
 
-    area_of_expertise: Mapped[Optional[list[str]]] = mapped_column(String(200), nullable=True)
+    area_of_expertise: Mapped[Optional[list[str]]] = mapped_column(String(500), nullable=True)
     """The type of events the organizer specializes in (e.g., Music, Workshops)."""
 
     # Relationships

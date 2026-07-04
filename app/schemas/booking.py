@@ -71,27 +71,3 @@ class BookingEnrichedOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class TicketInstanceEnrichedOut(BaseModel):
-    """Enriched ticket instance schema with event context.
-    Returned by GET /users/me/ticket-instances."""
-    id: int
-    booking_id: int
-    ticket_type_id: int
-    user_id: int
-    code: str
-    status: str
-    price: int
-    issued_to: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    used_at: Optional[datetime] = None
-    # enriched
-    event_title: str
-    venue: str
-    event_date: Optional[str] = None
-    ticket_type_name: str
-
-    class Config:
-        from_attributes = True

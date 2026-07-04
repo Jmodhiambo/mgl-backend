@@ -119,10 +119,11 @@ async def update_ticket_type_status_repo(ticket_type_id: int, is_active: bool) -
     
 
 async def count_available_tickets_by_event_repo(event_id: int) -> int:
-    """Count available tickets for an event."""
+    """
+    Count available tickets for an event."""
     async with get_async_session() as session:
         result = await session.execute(
-            select(func.sum(TicketType.total_quantity))
+            select(func.coalesce(func.sum(TicketType.total_quantity), 0))
             .select_from(TicketType)
             .where(TicketType.event_id == event_id)
         )
@@ -130,10 +131,11 @@ async def count_available_tickets_by_event_repo(event_id: int) -> int:
     
 
 async def count_tickets_sold_by_event_id_repo(event_id: int) -> int:
-    """Count total tickets sold for an event."""
+    """
+    Count total tickets sold for an event."""
     async with get_async_session() as session:
         result = await session.execute(
-            select(func.sum(TicketType.quantity_sold))
+            select(func.coalesce(func.sum(TicketType.quantity_sold), 0))
             .select_from(TicketType)
             .where(TicketType.event_id == event_id)
         )

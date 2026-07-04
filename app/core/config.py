@@ -51,6 +51,9 @@ SQLALCHEMY_ECHO: bool = config("SQLALCHEMY_ECHO", cast=bool, default=False)
 ENVIRONMENT: str = config("ENVIRONMENT", default="development")
 COOKIE_DOMAIN: str = config("COOKIE_DOMAIN", default=".mgltickets.com")
 
+# Secret key for generating and verifying ticket QR codes
+TICKET_QR_SECRET: str = config("TICKET_QR_SECRET")
+
 # Other secrets
 SECRET_KEY: str = config("SECRET_KEY", cast=SecretStr)
 ALGORITHM: str = config("ALGORITHM", default="HS256")

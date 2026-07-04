@@ -25,7 +25,7 @@ class TicketTypeOut(BaseModel):
  
 class TicketTypeCreate(BaseModel):
     """Schema for creating a new TicketType."""
-    event_id: int
+    event_id: Optional[int] = None
     name: str
     description: Optional[str] = None
     price: int
@@ -38,6 +38,7 @@ class TicketTypeCreate(BaseModel):
  
 class TicketTypeUpdate(BaseModel):
     """Schema for updating an existing TicketType."""
+    event_id: Optional[int] = None
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[int] = None

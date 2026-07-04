@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.db.models.booking import Booking
     from app.db.models.ticket_type import TicketType
     from app.db.models.user import User
+    from app.db.models.event import Event
 
 class TicketInstance(Base):
     """TicketInstance model representing individual ticket instances issued for bookings."""
@@ -19,6 +20,7 @@ class TicketInstance(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    event_id: Mapped[int] = mapped_column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
     ticket_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("ticket_types.id"), nullable=False)
     booking_id: Mapped[int] = mapped_column(Integer, ForeignKey("bookings.id"), nullable=False)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -47,9 +49,10 @@ class TicketInstance(Base):
     booking: Mapped["Booking"] = relationship("Booking", back_populates="ticket_instances")
     ticket_type: Mapped["TicketType"] = relationship("TicketType", back_populates="ticket_instances")
     user: Mapped["User"] = relationship("User", back_populates="ticket_instances")
+    event: Mapped["Event"] = relationship("Event", back_populates="ticket_instances")
 
     def __repr__(self) -> str:
         return (
             f"<TicketInstance id={self.id} code={self.code!r} "
-            f"status={self.status!r} created_at={self.created_at} used_at={self.used_at}>"
+            f"status={self.status!r} event_id={self.event_id} used_at={self.used_at}>"
         )

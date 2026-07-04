@@ -14,8 +14,10 @@ async def create_ticket_type(
     event_id: int, ticket_type_in: TicketTypeCreate, organizer: UserOut = Depends(require_organizer)
 ):
     """Create a new TicketType."""
-    # Keyword args: service signature is (ticket_type_in, event_id=None)
-    return await tt_services.create_ticket_type_service(ticket_type_in=ticket_type_in, event_id=event_id)
+    # Add event_id to the ticket_type_in payload before passing to the service
+    # It is passed as a path parameter, so we need to ensure it is included in the payload
+    ticket_type_in_with_event = ticket_type_in.model_copy(update={"event_id": event_id})
+    return await tt_services.create_ticket_type_service(ticket_type_in_with_event)
 
 @router.put("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
 async def update_ticket_type(
