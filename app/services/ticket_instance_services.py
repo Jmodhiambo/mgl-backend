@@ -127,11 +127,16 @@ async def create_ticket_instances_for_booking(
 
 # ── Check-in ──────────────────────────────────────────────────────────────────
 
-async def check_in_ticket_service(raw_payload: str) -> CheckInResponse:
+async def check_in_ticket_service(
+    raw_payload: str,
+    scanned_by: str = "",
+    scan_method: str = "qr_scan",
+) -> CheckInResponse:
     """
     Verify a scanned QR payload's HMAC signature, then attempt the atomic
     check-in. Signature verification always happens server-side regardless
     of any pre-check the scanning device may have done.
+    scanned_by is the authenticated user's name, stored on the row for audit.
     """
     from app.core.ticket_signing import verify_ticket_qr_payload
 
@@ -143,6 +148,8 @@ async def check_in_ticket_service(raw_payload: str) -> CheckInResponse:
     result = await ti_repo.check_in_ticket_instance_repo(
         ticket_instance_id=parsed["t"],
         code=parsed["c"],
+        scanned_by=scanned_by,
+        scan_method=scan_method,
     )
 
     if result["outcome"] == "not_found":
@@ -156,10 +163,15 @@ async def check_in_ticket_service(raw_payload: str) -> CheckInResponse:
         event_title=result["event_title"],
         ticket_type_name=result["ticket_type_name"],
         holder_name=result["holder_name"],
+        scanned_by=result.get("scanned_by"),
+        scan_method=result.get("scan_method"),
     )
 
     if result["outcome"] == "accepted":
-        logger.info(f"Checked in ticket instance {result['ticket_instance_id']}")
+        logger.info(
+            f"Checked in ticket {result['ticket_instance_id']} "
+            f"(scanned_by={result.get('scanned_by')!r})"
+        )
         return CheckInResponse(accepted=True, ticket=ticket_info)
 
     logger.info(
@@ -170,4 +182,126 @@ async def check_in_ticket_service(raw_payload: str) -> CheckInResponse:
         reason=result["outcome"],
         ticket=ticket_info,
         first_used_at=result["first_used_at"],
+    )
+
+async def check_in_ticket_by_code_service(
+    code: str,
+    event_id: int,
+    scanned_by: str = "",
+    scan_method: str = "manual_code",
+) -> CheckInResponse:
+    """
+    Check in a ticket by its human-readable code (manual fallback).
+    Scoped to event_id. Logged as method=manual_code in logs.
+    scanned_by is stored on the ticket row for audit.
+    """
+    result = await ti_repo.check_in_ticket_by_code_repo(
+        code=code.strip().upper(),
+        event_id=event_id,
+        scanned_by=scanned_by,
+        scan_method=scan_method,
+    )
+
+    if result["outcome"] == "not_found":
+        logger.warning(f"Manual check-in: code {code!r} not found for event {event_id}")
+        return CheckInResponse(accepted=False, reason="not_found")
+
+    ticket_info = CheckInTicketInfo(
+        ticket_instance_id=result["ticket_instance_id"],
+        code=result["code"],
+        event_id=result["event_id"],
+        event_title=result["event_title"],
+        ticket_type_name=result["ticket_type_name"],
+        holder_name=result["holder_name"],
+        scanned_by=result.get("scanned_by"),
+        scan_method=result.get("scan_method"),
+    )
+
+    if result["outcome"] == "accepted":
+        logger.info(
+            f"Manual check-in: ticket {result['ticket_instance_id']} admitted "
+            f"(scanned_by={scanned_by!r})"
+        )
+        return CheckInResponse(accepted=True, ticket=ticket_info)
+
+    logger.info(
+        f"Manual check-in rejected: ticket {result['ticket_instance_id']} "
+        f"status={result['outcome']}"
+    )
+    return CheckInResponse(
+        accepted=False,
+        reason=result["outcome"],
+        ticket=ticket_info,
+        first_used_at=result["first_used_at"],
+    )
+
+
+async def check_in_ticket_admin_service(
+    raw_payload: str,
+    event_id: int,
+    scanned_by: str = "",
+    scan_method: str = "qr_scan",
+) -> CheckInResponse:
+    """
+    Admin QR check-in. Verifies HMAC then confirms the payload's event_id
+    matches the admin's selected event before the atomic update.
+    """
+    from app.core.ticket_signing import verify_ticket_qr_payload
+
+    parsed = verify_ticket_qr_payload(raw_payload)
+    if parsed is None:
+        logger.warning("Admin QR check-in rejected: invalid signature")
+        return CheckInResponse(accepted=False, reason="invalid_signature")
+
+    if parsed["e"] != event_id:
+        logger.warning(
+            f"Admin QR check-in rejected: payload event_id={parsed['e']} "
+            f"!= selected event_id={event_id}"
+        )
+        return CheckInResponse(accepted=False, reason="wrong_event")
+
+    result = await ti_repo.check_in_ticket_instance_repo(
+        ticket_instance_id=parsed["t"],
+        code=parsed["c"],
+        scanned_by=scanned_by,
+        scan_method=scan_method,
+    )
+
+    if result["outcome"] == "not_found":
+        return CheckInResponse(accepted=False, reason="not_found")
+
+    ticket_info = CheckInTicketInfo(
+        ticket_instance_id=result["ticket_instance_id"],
+        code=result["code"],
+        event_id=result["event_id"],
+        event_title=result["event_title"],
+        ticket_type_name=result["ticket_type_name"],
+        holder_name=result["holder_name"],
+        scanned_by=result.get("scanned_by"),
+        scan_method=result.get("scan_method"),
+    )
+
+    if result["outcome"] == "accepted":
+        logger.info(
+            f"Admin check-in: ticket {result['ticket_instance_id']} admitted "
+            f"(scanned_by={scanned_by!r})"
+        )
+        return CheckInResponse(accepted=True, ticket=ticket_info)
+
+    return CheckInResponse(
+        accepted=False,
+        reason=result["outcome"],
+        ticket=ticket_info,
+        first_used_at=result["first_used_at"],
+    )
+
+
+async def check_in_ticket_admin_by_code_service(
+    code: str,
+    event_id: int,
+    scanned_by: str = "",
+) -> CheckInResponse:
+    """Admin manual code fallback — delegates to the shared by-code service."""
+    return await check_in_ticket_by_code_service(
+        code, event_id, scanned_by, scan_method="manual_code"
     )

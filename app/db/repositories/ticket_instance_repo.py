@@ -34,6 +34,8 @@ def _build_out(ti: TicketInstance) -> TicketInstanceOut:
         status=ti.status,
         price=ti.price,
         issued_to=ti.issued_to,
+        scanned_by=ti.scanned_by,
+        scan_method=ti.scan_method,
         created_at=ti.created_at,
         updated_at=ti.updated_at,
         used_at=ti.used_at,
@@ -213,6 +215,8 @@ async def get_ticket_instances_by_user_enriched_repo(user_id: int) -> list:
                 'created_at': ti.created_at,
                 'updated_at': ti.updated_at,
                 'used_at': ti.used_at,
+                'scanned_by': ti.scanned_by,
+                'scan_method': ti.scan_method,
                 'event_title': event_title,
                 'venue': venue,
                 'event_date': start_time.isoformat() if start_time else None,
@@ -226,6 +230,8 @@ async def get_ticket_instances_by_user_enriched_repo(user_id: int) -> list:
 async def check_in_ticket_instance_repo(
     ticket_instance_id: int,
     code: str,
+    scanned_by: str = "",
+    scan_method: str = "qr_scan",
 ) -> dict:
     """
     Attempt to check in (mark 'used') a single ticket instance atomically.
@@ -253,7 +259,12 @@ async def check_in_ticket_instance_repo(
                 TicketInstance.code == code,
                 TicketInstance.status == "issued",
             )
-            .values(status="used", used_at=datetime.now(timezone.utc))
+            .values(
+                status="used",
+                used_at=datetime.now(timezone.utc),
+                scanned_by=scanned_by or None,
+                scan_method=scan_method,
+            )
             .returning(TicketInstance)
         )
         updated = result.scalar_one_or_none()
@@ -267,6 +278,8 @@ async def check_in_ticket_instance_repo(
                 "code": updated.code,
                 **ctx,
                 "holder_name": updated.issued_to,
+                "scanned_by": updated.scanned_by,
+                "scan_method": updated.scan_method,
                 "first_used_at": None,
             }
 
@@ -287,6 +300,8 @@ async def check_in_ticket_instance_repo(
                 "event_title": None,
                 "ticket_type_name": None,
                 "holder_name": None,
+                "scanned_by": None,
+                "scan_method": None,
                 "first_used_at": None,
             }
 
@@ -298,6 +313,7 @@ async def check_in_ticket_instance_repo(
             "code": existing.code,
             **ctx,
             "holder_name": existing.issued_to,
+            "scanned_by": existing.scanned_by,
             "first_used_at": existing.used_at,
         }
 
@@ -322,3 +338,83 @@ async def _fetch_checkin_context(session, ti: TicketInstance) -> dict:
         "event_title": event_title,
         "ticket_type_name": ticket_type_name,
     }
+
+async def check_in_ticket_by_code_repo(
+    code: str,
+    event_id: int,
+    scanned_by: str = "",
+    scan_method: str = "manual_code",
+) -> dict:
+    """
+    Check in a ticket by its human-readable code (manual fallback).
+    Scoped to event_id — prevents cross-event acceptance at multi-event venues.
+    Shares the same atomic UPDATE pattern as check_in_ticket_instance_repo.
+    scanned_by records who performed this manual override.
+    """
+    from app.db.models.event import Event
+    from app.db.models.ticket_type import TicketType
+
+    async with get_async_session() as session:
+        result = await session.execute(
+            update(TicketInstance)
+            .where(
+                TicketInstance.code == code,
+                TicketInstance.event_id == event_id,
+                TicketInstance.status == "issued",
+            )
+            .values(
+                status="used",
+                used_at=datetime.now(timezone.utc),
+                scanned_by=scanned_by or None,
+                scan_method=scan_method,
+            )
+            .returning(TicketInstance)
+        )
+        updated = result.scalar_one_or_none()
+        await session.commit()
+
+        if updated is not None:
+            ctx = await _fetch_checkin_context(session, updated)
+            return {
+                "outcome": "accepted",
+                "ticket_instance_id": updated.id,
+                "code": updated.code,
+                **ctx,
+                "holder_name": updated.issued_to,
+                "scanned_by": updated.scanned_by,
+                "scan_method": updated.scan_method,
+                "first_used_at": None,
+            }
+
+        # 0 rows — find out why
+        existing = await session.scalar(
+            select(TicketInstance).where(
+                TicketInstance.code == code,
+                TicketInstance.event_id == event_id,
+            )
+        )
+        if existing is None:
+            return {
+                "outcome": "not_found",
+                "ticket_instance_id": None,
+                "code": None,
+                "event_id": None,
+                "event_title": None,
+                "ticket_type_name": None,
+                "holder_name": None,
+                "scanned_by": None,
+                "scan_method": None,
+                "first_used_at": None,
+            }
+
+        ctx = await _fetch_checkin_context(session, existing)
+        outcome = "already_used" if existing.status == "used" else "cancelled"
+        return {
+            "outcome": outcome,
+            "ticket_instance_id": existing.id,
+            "code": existing.code,
+            **ctx,
+            "holder_name": existing.issued_to,
+            "scanned_by": existing.scanned_by,
+            "first_used_at": existing.used_at,
+        }

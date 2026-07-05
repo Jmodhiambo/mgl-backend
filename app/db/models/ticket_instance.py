@@ -28,6 +28,8 @@ class TicketInstance(Base):
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="issued")
     issued_to: Mapped[Optional[str]] = mapped_column(String(150), nullable=True, default=None)
     seat_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
+    scanned_by: Mapped[Optional[str]] = mapped_column(String(150), nullable=True, default=None)
+    scan_method: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default=None)  # qr_scan | manual_code
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -54,5 +56,6 @@ class TicketInstance(Base):
     def __repr__(self) -> str:
         return (
             f"<TicketInstance id={self.id} code={self.code!r} "
-            f"status={self.status!r} event_id={self.event_id} used_at={self.used_at}>"
+            f"status={self.status!r} event_id={self.event_id} "
+            f"scanned_by={self.scanned_by!r} scan_method={self.scan_method!r} used_at={self.used_at}>"
         )

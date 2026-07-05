@@ -104,7 +104,7 @@ async def create_event(
 @router.get("/admin/events", response_model=list[AdminEventOut])
 async def get_all_approved_events(user=Depends(require_admin)):
     """Get all approved events."""
-    return await event_services.get_approved_events_service()
+    return await event_services.get_approved_events_admin_service()
 
 
 @router.get("/admin/events/approved", response_model=list[AdminEventOut])
