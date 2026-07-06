@@ -45,17 +45,32 @@ async def get_ticket_type_by_id_service(ticket_type_id: int) -> Optional[dict]:
 async def update_ticket_type_service(
     ticket_type_id: int, ticket_type_in: TicketTypeUpdate
 ) -> Optional[dict]:
-    """Update an existing TicketType."""
-    # Ensure total quantity is not less than quantity sold
+    """
+    Update an existing TicketType.
+
+    Supports partial updates (e.g. the reactivate/deactivate toggle, which
+    only sends `is_active`). The "can't drop capacity below quantity_sold"
+    guard only applies when `total_quantity` is actually part of the
+    payload — otherwise `ticket_type_in.total_quantity` is None and
+    `None < ticket.quantity_sold` raises a TypeError, which is what was
+    breaking the is_active-only toggle.
+    """
     ticket = await get_ticket_type_by_id_service(ticket_type_id)
-    if ticket_type_in.total_quantity < ticket.quantity_sold:
+    if not ticket:
+        logger.warning(f"TicketType with ID {ticket_type_id} not found for update")
+        return None
+
+    if (
+        ticket_type_in.total_quantity is not None
+        and ticket_type_in.total_quantity < ticket.quantity_sold
+    ):
         logger.warning(
             f"Total quantity cannot be less than quantity sold for TicketType with ID {ticket_type_id}"
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Total quantity cannot be less than quantity sold",
-    )
+        )
 
     logger.info(
         f"Updating TicketType with ID: {ticket_type_id} "
@@ -68,6 +83,16 @@ async def update_ticket_type_service(
         logger.warning(f"TicketType with ID {ticket_type_id} not found for update")
     return ticket_type
 
+
+async def update_ticket_type_status_service(ticket_type_id: int, is_active: bool) -> Optional[dict]:
+    """Update the active status of a TicketType."""
+    logger.info(f"Updating status of TicketType with ID: {ticket_type_id} to is_active={is_active}")
+    ticket_type = await tt_repo.update_ticket_type_status_repo(ticket_type_id, is_active)
+    if ticket_type:
+        logger.info(f"Updated TicketType status: {ticket_type}")
+    else:
+        logger.warning(f"TicketType with ID {ticket_type_id} not found for status update")
+    return ticket_type
 
 async def delete_ticket_type_service(ticket_type_id: int) -> bool:
     """
@@ -100,9 +125,23 @@ async def delete_ticket_type_service(ticket_type_id: int) -> bool:
     return success
 
 
-async def list_ticket_types_by_event_id_service(event_id: int) -> list[dict]:
-    """List all TicketTypes for a given Event ID."""
-    logger.info(f"Listing TicketTypes for Event ID: {event_id}")
-    ticket_types = await tt_repo.list_ticket_types_by_event_id_repo(event_id)
-    logger.info(f"Found {len(ticket_types)} TicketTypes for Event ID: {event_id}")
+async def list_all_ticket_types_by_event_id_service(event_id: int) -> list[dict]:
+    """
+    List every TicketType for a given Event ID, active or not.
+    Used by the organizer and admin routers.
+    """
+    logger.info(f"Listing ALL TicketTypes for Event ID: {event_id}")
+    ticket_types = await tt_repo.list_all_ticket_types_by_event_id_repo(event_id)
+    logger.info(f"Found {len(ticket_types)} TicketTypes (all) for Event ID: {event_id}")
+    return ticket_types
+
+
+async def list_active_ticket_types_by_event_id_service(event_id: int) -> list[dict]:
+    """
+    List only is_active TicketTypes for a given Event ID.
+    Used by the public/buyer-facing router.
+    """
+    logger.info(f"Listing ACTIVE TicketTypes for Event ID: {event_id}")
+    ticket_types = await tt_repo.list_active_ticket_types_by_event_id_repo(event_id)
+    logger.info(f"Found {len(ticket_types)} active TicketTypes for Event ID: {event_id}")
     return ticket_types

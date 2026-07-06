@@ -80,16 +80,41 @@ async def delete_ticket_type_repo(ticket_type_id: int) -> bool:
         return True
 
 
-async def list_ticket_types_by_event_id_repo(
+async def _list_ticket_types_by_event_id(
     event_id: int,
+    active_only: bool,
 ) -> List[TicketTypeOut]:
-    """List all TicketTypes for a given Event ID."""
+    """
+    Internal query builder shared by the two public list functions below.
+    Not exported — callers should use list_all_ticket_types_by_event_id_repo
+    or list_active_ticket_types_by_event_id_repo so the intent at each call
+    site is unambiguous (no boolean flag to get backwards).
+    """
     async with get_async_session() as session:
-        result = await session.execute(
-            select(TicketType).where(TicketType.event_id == event_id)
-        )
+        stmt = select(TicketType).where(TicketType.event_id == event_id)
+        if active_only:
+            stmt = stmt.where(TicketType.is_active.is_(True))
+        result = await session.execute(stmt)
         ticket_types = result.scalars().all()
         return [TicketTypeOut.model_validate(tt) for tt in ticket_types]
+
+
+async def list_all_ticket_types_by_event_id_repo(event_id: int) -> List[TicketTypeOut]:
+    """
+    List every TicketType for a given Event ID, active or not.
+    Used by organizer and admin — they need full visibility to manage,
+    deactivate, and reactivate ticket types.
+    """
+    return await _list_ticket_types_by_event_id(event_id, active_only=False)
+
+
+async def list_active_ticket_types_by_event_id_repo(event_id: int) -> List[TicketTypeOut]:
+    """
+    List only is_active TicketTypes for a given Event ID.
+    Used by the public/buyer-facing endpoint so inactive or retired ticket
+    tiers never appear in the booking flow.
+    """
+    return await _list_ticket_types_by_event_id(event_id, active_only=True)
     
 
 async def check_if_ticket_type_has_instances_repo(ticket_type_id: int) -> bool:

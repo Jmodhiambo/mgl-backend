@@ -43,8 +43,8 @@ async def delete_ticket_type(
 async def get_ticket_types_by_event(
     event_id: int, organizer: UserOut = Depends(require_organizer)
 ):
-    """Get TicketTypes for a specific event."""
-    return await tt_services.list_ticket_types_by_event_id_service(event_id)
+    """Get all TicketTypes (active and inactive) for a specific event."""
+    return await tt_services.list_all_ticket_types_by_event_id_service(event_id)
 
 @router.get("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
 async def fetch_ticket_type(

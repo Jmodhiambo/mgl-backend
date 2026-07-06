@@ -33,8 +33,8 @@ async def tt_admin_create_ticket_type(
 # Specific GET routes BEFORE /{ticket_type_id} to avoid route shadowing
 @router.get("/admin/events/{event_id}/ticket-types", response_model=list[TicketTypeOut])
 async def tt_admin_get_ticket_types_by_event(event_id: int, admin=Depends(require_admin)):
-    """Get TicketTypes for a specific event."""
-    return await tt_services.list_ticket_types_by_event_id_service(event_id)
+    """Get all TicketTypes (active and inactive) for a specific event."""
+    return await tt_services.list_all_ticket_types_by_event_id_service(event_id)
 
 @router.get("/admin/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
 async def tt_admin_get_ticket_type(ticket_type_id: int, admin=Depends(require_admin)):

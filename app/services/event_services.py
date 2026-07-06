@@ -369,7 +369,7 @@ async def _build_event_details(event) -> EventDetails:
     try:
         event_stats, ticket_types, recent_bookings = await asyncio.gather(
             get_event_stats_service(event.id),
-            tt_repo.list_ticket_types_by_event_id_repo(event.id),
+            tt_repo.list_all_ticket_types_by_event_id_repo(event.id),
             get_event_recent_bookings_service(event.id),
         )
         return EventDetails(

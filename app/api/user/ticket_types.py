@@ -10,9 +10,10 @@ router = APIRouter()
 
 @router.get("/events/{event_id}/ticket-types", response_model=list[TicketTypeOut])
 async def get_ticket_types_by_event(event_id: int, user=Depends(get_current_user_optional)):
-    """Get TicketTypes for a specific event.
-    This endpoint is public, to avoid locking out unauthenticated users who need to view ticket types when browsing events."""
-    return await tt_services.list_ticket_types_by_event_id_service(event_id)
+    """Get active TicketTypes for a specific event.
+    This endpoint is public, to avoid locking out unauthenticated users who need to view ticket types when browsing events.
+    Only is_active types are returned — deactivated tiers must never be bookable from here."""
+    return await tt_services.list_active_ticket_types_by_event_id_service(event_id)
 
 @router.get("/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
 async def get_ticket_type(ticket_type_id: int, user=Depends(require_user)):
