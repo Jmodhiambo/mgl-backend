@@ -92,13 +92,10 @@ class CheckInRequest(BaseModel):
 
     payload   : raw scanned QR string (signed JSON from build_ticket_qr_payload).
                 Never a bare ticket code.
-    event_id  : the event currently being scanned for. Required by admin
-                endpoint to validate the QR payload's embedded event_id;
-                optional for organizer (scoping TODO once ownership helper
-                exists).
+    event_id  : the event currently being scanned for. 
     """
     payload: str
-    event_id: Optional[int] = None
+    event_id: int
 
 
 class CheckInByCodeRequest(BaseModel):

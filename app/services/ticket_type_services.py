@@ -60,6 +60,20 @@ async def update_ticket_type_service(
         logger.warning(f"TicketType with ID {ticket_type_id} not found for update")
         return None
 
+    # Admin suspension freezes the ticket type entirely — not just is_active.
+    # Letting an organizer (or anyone using this shared update path) still
+    # change price/quantity/name while under suspension would undermine
+    # whatever the suspension was for (fraud review, dispute, policy
+    # violation). To change anything, the suspension must be lifted first.
+    if ticket.suspended_by_admin_id is not None:
+        logger.warning(
+            f"Blocked update attempt on admin-suspended TicketType {ticket_type_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This ticket type has been suspended by an administrator and cannot be edited. Contact support.",
+        )
+
     if (
         ticket_type_in.total_quantity is not None
         and ticket_type_in.total_quantity < ticket.quantity_sold
@@ -94,12 +108,68 @@ async def update_ticket_type_status_service(ticket_type_id: int, is_active: bool
         logger.warning(f"TicketType with ID {ticket_type_id} not found for status update")
     return ticket_type
 
+
+async def suspend_ticket_type_service(
+    ticket_type_id: int,
+    admin_id: int,
+    admin_name: str,
+    reason: str,
+) -> Optional[dict]:
+    """
+    Admin-only: suspend a TicketType. Forces is_active False and stamps
+    who suspended it, when, and why.
+    """
+    logger.info(
+        f"[ADMIN] Suspending TicketType {ticket_type_id} "
+        f"(by admin_id={admin_id}, reason={reason!r})"
+    )
+    ticket_type = await tt_repo.suspend_ticket_type_repo(
+        ticket_type_id, admin_id=admin_id, admin_name=admin_name, reason=reason
+    )
+    if not ticket_type:
+        logger.warning(f"TicketType with ID {ticket_type_id} not found for suspension")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TicketType not found")
+    logger.info(f"Suspended TicketType: {ticket_type}")
+    return ticket_type
+
+
+async def unsuspend_ticket_type_service(ticket_type_id: int) -> Optional[dict]:
+    """
+    Admin-only: lift a suspension. Deliberately leaves is_active untouched —
+    the organizer must explicitly reactivate the ticket type afterward.
+    """
+    logger.info(f"[ADMIN] Lifting suspension on TicketType with ID: {ticket_type_id}")
+    ticket_type = await tt_repo.unsuspend_ticket_type_repo(ticket_type_id)
+    if not ticket_type:
+        logger.warning(f"TicketType with ID {ticket_type_id} not found for unsuspend")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TicketType not found")
+    logger.info(f"Unsuspended TicketType: {ticket_type}")
+    return ticket_type
+
 async def delete_ticket_type_service(ticket_type_id: int) -> bool:
     """
     Delete a TicketType by ID.
     If the type has existing ticket instances it is deactivated instead
     of deleted, and a 400 is raised to inform the caller.
     """
+    ticket = await get_ticket_type_by_id_service(ticket_type_id)
+    if not ticket:
+        logger.warning(f"TicketType with ID {ticket_type_id} not found for deletion")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TicketType not found")
+
+    # Same reasoning as update_ticket_type_service: nothing should change
+    # about a suspended ticket type — including deleting it — until an
+    # admin lifts the suspension. Otherwise an organizer could just delete
+    # their way around a suspension instead of resolving whatever caused it.
+    if ticket.suspended_by_admin_id is not None:
+        logger.warning(
+            f"Blocked delete attempt on admin-suspended TicketType {ticket_type_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This ticket type has been suspended by an administrator and cannot be deleted. Contact support.",
+        )
+
     has_instances = await tt_repo.check_if_ticket_type_has_instances_repo(ticket_type_id)
     if has_instances:
         logger.warning(

@@ -386,12 +386,11 @@ async def check_in_ticket_by_code_repo(
                 "first_used_at": None,
             }
 
-        # 0 rows — find out why
+        # 0 rows — find out why.
+        # Search by code alone (no event_id filter) so we can distinguish
+        # "code doesn't exist at all" from "code exists but wrong event".
         existing = await session.scalar(
-            select(TicketInstance).where(
-                TicketInstance.code == code,
-                TicketInstance.event_id == event_id,
-            )
+            select(TicketInstance).where(TicketInstance.code == code)
         )
         if existing is None:
             return {
@@ -407,6 +406,20 @@ async def check_in_ticket_by_code_repo(
                 "first_used_at": None,
             }
 
+        # Code exists — check if it belongs to a different event
+        if existing.event_id != event_id:
+            ctx = await _fetch_checkin_context(session, existing)
+            return {
+                "outcome": "wrong_event",
+                "ticket_instance_id": existing.id,
+                "code": existing.code,
+                **ctx,
+                "holder_name": existing.issued_to,
+                "scanned_by": existing.scanned_by,
+                "scan_method": existing.scan_method,
+                "first_used_at": None,
+            }
+
         ctx = await _fetch_checkin_context(session, existing)
         outcome = "already_used" if existing.status == "used" else "cancelled"
         return {
@@ -416,5 +429,6 @@ async def check_in_ticket_by_code_repo(
             **ctx,
             "holder_name": existing.issued_to,
             "scanned_by": existing.scanned_by,
+            "scan_method": existing.scan_method,
             "first_used_at": existing.used_at,
         }

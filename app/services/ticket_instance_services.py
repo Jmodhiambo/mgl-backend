@@ -129,13 +129,15 @@ async def create_ticket_instances_for_booking(
 
 async def check_in_ticket_service(
     raw_payload: str,
+    event_id: int,
     scanned_by: str = "",
     scan_method: str = "qr_scan",
 ) -> CheckInResponse:
     """
-    Verify a scanned QR payload's HMAC signature, then attempt the atomic
-    check-in. Signature verification always happens server-side regardless
-    of any pre-check the scanning device may have done.
+    Verify a scanned QR payload's HMAC signature, then validate the
+    payload's embedded event_id matches the organizer's selected event
+    before the atomic check-in. Prevents a ticket for Event A being
+    accepted at Event B's gate even though the signature is valid.
     scanned_by is the authenticated user's name, stored on the row for audit.
     """
     from app.core.ticket_signing import verify_ticket_qr_payload
@@ -144,6 +146,13 @@ async def check_in_ticket_service(
     if parsed is None:
         logger.warning("Check-in rejected: invalid or unparseable QR signature")
         return CheckInResponse(accepted=False, reason="invalid_signature")
+
+    if parsed["e"] != event_id:
+        logger.warning(
+            f"Organizer check-in rejected: payload event_id={parsed['e']} "
+            f"!= selected event_id={event_id}"
+        )
+        return CheckInResponse(accepted=False, reason="wrong_event")
 
     result = await ti_repo.check_in_ticket_instance_repo(
         ticket_instance_id=parsed["t"],
@@ -224,10 +233,16 @@ async def check_in_ticket_by_code_service(
         )
         return CheckInResponse(accepted=True, ticket=ticket_info)
 
-    logger.info(
-        f"Manual check-in rejected: ticket {result['ticket_instance_id']} "
-        f"status={result['outcome']}"
-    )
+    if result["outcome"] == "wrong_event":
+        logger.warning(
+            f"Manual check-in: code {code!r} belongs to event "
+            f"{result['event_id']} not selected event {event_id}"
+        )
+    else:
+        logger.info(
+            f"Manual check-in rejected: ticket {result['ticket_instance_id']} "
+            f"status={result['outcome']}"
+        )
     return CheckInResponse(
         accepted=False,
         reason=result["outcome"],

@@ -3,13 +3,13 @@
 
 from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.user import UserOut
-from app.schemas.ticket_type import TicketTypeOut, TicketTypeCreate, TicketTypeUpdate
+from app.schemas.ticket_type import TicketTypeOrganizerOut, TicketTypeCreate, TicketTypeUpdate
 import app.services.ticket_type_services as tt_services
 from app.core.security import require_organizer
 
 router = APIRouter()
 
-@router.post("/organizers/me/events/{event_id}/ticket-types", response_model=TicketTypeOut)
+@router.post("/organizers/me/events/{event_id}/ticket-types", response_model=TicketTypeOrganizerOut)
 async def create_ticket_type(
     event_id: int, ticket_type_in: TicketTypeCreate, organizer: UserOut = Depends(require_organizer)
 ):
@@ -19,7 +19,7 @@ async def create_ticket_type(
     ticket_type_in_with_event = ticket_type_in.model_copy(update={"event_id": event_id})
     return await tt_services.create_ticket_type_service(ticket_type_in_with_event)
 
-@router.put("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
+@router.put("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOrganizerOut)
 async def update_ticket_type(
     ticket_type_id: int, ticket_type_in: TicketTypeUpdate, organizer: UserOut = Depends(require_organizer)
 ):
@@ -39,14 +39,14 @@ async def delete_ticket_type(
         raise HTTPException(status_code=404, detail="TicketType not found")
     return {"detail": "TicketType deleted successfully"}
 
-@router.get("/organizers/me/events/{event_id}/ticket-types", response_model=list[TicketTypeOut])
+@router.get("/organizers/me/events/{event_id}/ticket-types", response_model=list[TicketTypeOrganizerOut])
 async def get_ticket_types_by_event(
     event_id: int, organizer: UserOut = Depends(require_organizer)
 ):
     """Get all TicketTypes (active and inactive) for a specific event."""
     return await tt_services.list_all_ticket_types_by_event_id_service(event_id)
 
-@router.get("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOut)
+@router.get("/organizers/me/ticket-types/{ticket_type_id}", response_model=TicketTypeOrganizerOut)
 async def fetch_ticket_type(
     ticket_type_id: int, organizer: UserOut = Depends(require_organizer)
 ):

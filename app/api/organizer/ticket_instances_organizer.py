@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ticket Instance Organizer routes."""
+"""Ticket check-in routes for organizer gate scanning."""
 
 from fastapi import APIRouter, Depends, status
 from app.schemas.ticket_instance import CheckInRequest, CheckInByCodeRequest, CheckInResponse
@@ -19,12 +19,14 @@ async def check_in_ticket(
     organizer=Depends(require_organizer),
 ):
     """
-    QR gate scan for organizers. Verifies HMAC signature then atomically
-    marks the ticket used. Returns 200 always — rejection via accepted:false.
-    The organizer's name is stored on the ticket row as scanned_by.
+    QR gate scan for organizers. Verifies HMAC signature, validates that
+    the payload's embedded event_id matches the selected event, then
+    atomically marks the ticket used. Returns 200 always — rejection via
+    accepted:false. The organizer's name is stored as scanned_by.
     """
     return await ti_services.check_in_ticket_service(
         raw_payload=body.payload,
+        event_id=body.event_id,
         scanned_by=organizer.name,
     )
 

@@ -2,6 +2,7 @@
 """Async repository for TicketType model operations."""
 
 from typing import Optional, List
+from datetime import datetime, timezone
 from sqlalchemy import select, func
 from app.db.session import get_async_session
 from app.db.models.ticket_type import TicketType
@@ -137,6 +138,53 @@ async def update_ticket_type_status_repo(ticket_type_id: int, is_active: bool) -
             return None
 
         ticket_type.is_active = is_active
+        session.add(ticket_type)
+        await session.commit()
+        await session.refresh(ticket_type)
+        return TicketTypeOut.model_validate(ticket_type)
+
+
+async def suspend_ticket_type_repo(
+    ticket_type_id: int,
+    admin_id: int,
+    admin_name: str,
+    reason: str,
+) -> Optional[TicketTypeOut]:
+    """
+    Admin-only suspension. Forces the ticket type inactive and stamps who
+    suspended it, when, and why — a clear accountability trail.
+    """
+    async with get_async_session() as session:
+        ticket_type = await session.get(TicketType, ticket_type_id)
+        if not ticket_type:
+            return None
+
+        ticket_type.suspended_by_admin_id = admin_id
+        ticket_type.suspended_by_admin_name = admin_name
+        ticket_type.suspension_reason = reason
+        ticket_type.suspended_at = datetime.now(timezone.utc)
+        ticket_type.is_active = False
+        session.add(ticket_type)
+        await session.commit()
+        await session.refresh(ticket_type)
+        return TicketTypeOut.model_validate(ticket_type)
+
+
+async def unsuspend_ticket_type_repo(ticket_type_id: int) -> Optional[TicketTypeOut]:
+    """
+    Admin-only. Clears the suspension identity/reason fields — deliberately
+    does NOT restore is_active, so the organizer has to consciously
+    reactivate sales rather than have them silently resume.
+    """
+    async with get_async_session() as session:
+        ticket_type = await session.get(TicketType, ticket_type_id)
+        if not ticket_type:
+            return None
+
+        ticket_type.suspended_by_admin_id = None
+        ticket_type.suspended_by_admin_name = None
+        ticket_type.suspension_reason = None
+        ticket_type.suspended_at = None
         session.add(ticket_type)
         await session.commit()
         await session.refresh(ticket_type)

@@ -2,7 +2,7 @@
 """Admin TicketType API routes."""
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
-from app.schemas.ticket_type import TicketTypeOut, TicketTypeCreate, TicketTypeUpdate
+from app.schemas.ticket_type import TicketTypeOut, TicketTypeCreate, TicketTypeUpdate, TicketTypeSuspendRequest
 import app.services.ticket_type_services as tt_services
 from app.core.security import require_admin
 from app.services.audit_log_services import log_admin_action_service
@@ -63,6 +63,57 @@ async def tt_admin_update_ticket_type(
         action="update_ticket_type",
         target_type="ticket_type",
         target_id=ticket_type.id,
+        details={"admin": admin.name},
+    )
+    return ticket_type
+
+@router.patch("/admin/ticket-types/{ticket_type_id}/suspend", response_model=TicketTypeOut)
+async def tt_admin_suspend_ticket_type(
+    ticket_type_id: int,
+    payload: TicketTypeSuspendRequest,
+    background_tasks: BackgroundTasks,
+    admin=Depends(require_admin),
+):
+    """
+    Suspend a TicketType. Forces it inactive and records who suspended it,
+    when, and why. The organizer cannot reactivate it through their own
+    update endpoint while suspended — only /unsuspend lifts this.
+    """
+    ticket_type = await tt_services.suspend_ticket_type_service(
+        ticket_type_id, admin_id=admin.id, admin_name=admin.name, reason=payload.reason
+    )
+
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=admin.id,
+        admin_name=admin.name,
+        action="suspend_ticket_type",
+        target_type="ticket_type",
+        target_id=ticket_type_id,
+        details={"admin": admin.name, "reason": payload.reason},
+    )
+    return ticket_type
+
+@router.patch("/admin/ticket-types/{ticket_type_id}/unsuspend", response_model=TicketTypeOut)
+async def tt_admin_unsuspend_ticket_type(
+    ticket_type_id: int,
+    background_tasks: BackgroundTasks,
+    admin=Depends(require_admin),
+):
+    """
+    Lift a suspension. Deliberately does not restore is_active — the
+    organizer (or admin) must explicitly reactivate the ticket type
+    afterward via the normal update endpoint.
+    """
+    ticket_type = await tt_services.unsuspend_ticket_type_service(ticket_type_id)
+
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=admin.id,
+        admin_name=admin.name,
+        action="unsuspend_ticket_type",
+        target_type="ticket_type",
+        target_id=ticket_type_id,
         details={"admin": admin.name},
     )
     return ticket_type

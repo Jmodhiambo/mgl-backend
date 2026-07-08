@@ -234,3 +234,12 @@ async def update_event_status(
 ):
     """Update event status (cancel / delete)."""
     return await event_services.update_event_status_service(event_id, state)
+
+@router.get(
+    "/organizers/me/events/{event_id}",
+    response_model=OrganizerEventOut,
+    status_code=status.HTTP_200_OK,
+)
+async def get_event_by_id(event_id: int, organizer: UserOut = Depends(require_organizer)):
+    """Get event details by ID."""
+    return await event_services.get_event_by_id_organizer_service(event_id)

@@ -5,6 +5,9 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
+from app.schemas.ticket_type import TicketTypeOut
+from app.schemas.booking import BookingOut
+
 
 # ─── Commission breakdown (computed, not stored) ───────────────────────────────
  
@@ -172,40 +175,6 @@ class EventStats(BaseModel):
     commission_rate: float = 0.0
     platform_cut: float = 0.0
     organizer_net: float = 0.0
-
-    class Config:
-        from_attributes = True
-
-
-class TicketTypeOut(BaseModel):
-    """TicketType data returned to the frontend."""
-    id: int
-    event_id: int
-    name: str
-    description: Optional[str] = None
-    price: int
-    is_active: bool = True
-    quantity_available: int
-    quantity_sold: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class BookingOut(BaseModel):
-    """Booking data used inside EventDetails."""
-    id: int
-    user_id: int
-    order_id: int
-    event_id: int
-    ticket_type_id: int
-    quantity: int
-    status: str
-    total_price: int
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True

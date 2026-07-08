@@ -75,24 +75,6 @@ async def get_event_by_slug_service(slug: str):
     return await event_repo.get_event_by_slug_repo(slug)
 
 
-async def get_event_by_id_admin_service(event_id: int):
-    event = await event_repo.get_event_by_id_admin_repo(event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
-
-
-async def get_event_by_slug_admin_service(slug: str):
-    event = await event_repo.get_event_by_slug_repo(slug)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return await event_repo.get_event_by_id_admin_repo(event.id)
-
-
-async def get_events_by_organizer_admin_service(organizer_id: int):
-    return await event_repo.get_events_by_organizer_admin_repo(organizer_id)
-
-
 async def update_event_service(event_id: int, event_data: EventUpdate):
     updated = await event_repo.update_event_repo(event_id, event_data)
     if not updated:
@@ -207,6 +189,23 @@ async def reject_event_service(event_id: int):
 # ADMIN LIST QUERIES
 # ─────────────────────────────────────────────────────────────────────────────
 
+async def get_event_by_id_admin_service(event_id: int):
+    event = await event_repo.get_event_by_id_admin_repo(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
+
+async def get_event_by_slug_admin_service(slug: str):
+    event = await event_repo.get_event_by_slug_repo(slug)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return await event_repo.get_event_by_id_admin_repo(event.id)
+
+
+async def get_events_by_organizer_admin_service(organizer_id: int):
+    return await event_repo.get_events_by_organizer_admin_repo(organizer_id)
+
 async def get_approved_events_admin_service():
     return await event_repo.get_approved_events_admin_repo()
 
@@ -222,6 +221,12 @@ async def get_all_events_service():
 # ─────────────────────────────────────────────────────────────────────────────
 # ORGANIZER LIST QUERIES
 # ─────────────────────────────────────────────────────────────────────────────
+
+async def get_event_by_id_organizer_service(event_id: int):
+    event = await event_repo.get_event_by_id_organizer_repo(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
 
 async def get_events_by_organizer_service(organizer_id: int):
     return await event_repo.get_events_by_organizer_with_stats_repo(organizer_id)
