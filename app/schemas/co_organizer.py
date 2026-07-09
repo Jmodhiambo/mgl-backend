@@ -4,7 +4,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
-from app.schemas.event import EventOut
+from app.schemas.event import OrganizerEventOut
 
 
 class CoOrganizerOut(BaseModel):
@@ -82,6 +82,12 @@ class CoOrganizerWithEvent(BaseModel):
 
     The `create_co_organizer` flag tells the frontend whether this co-organizer
     may in turn invite other co-organizers (delegated invite privilege).
+
+    `event` is OrganizerEventOut, not the bare public EventOut — co-organizers
+    see the same aggregated booking/revenue stats and commission breakdown an
+    organizer sees for their own events. Previously this was EventOut, which
+    doesn't carry total_bookings/total_revenue at all, so My Events silently
+    had nothing to show on co-organizing cards.
     """
     # ── Co-organizer relationship ──────────────────────────────────────────
     co_organizer_id:      int
@@ -89,8 +95,8 @@ class CoOrganizerWithEvent(BaseModel):
     create_co_organizer:  bool
     created_at:            datetime   # maps to CoOrganizer.created_at
 
-    # ── Full event ─────────────────────────────────────────────────────────
-    event: EventOut
+    # ── Full event, with stats ──────────────────────────────────────────────
+    event: OrganizerEventOut
 
     class Config:
         from_attributes = True

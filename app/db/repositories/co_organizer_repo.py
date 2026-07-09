@@ -2,13 +2,25 @@
 """Repository for CoOrganizer model operations."""
 
 from typing import Optional
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, func
 from sqlalchemy.orm import joinedload
 from app.db.session import get_async_session
 from app.db.models.co_organizer import CoOrganizer
+from app.db.models.event import Event
+from app.db.models.booking import Booking
 from app.schemas.co_organizer import CoOrganizerOut, CoOrganizerWithUserAndEvent, CoOrganizerWithEvent
-from app.schemas.event import EventOut
+from app.schemas.event import OrganizerEventOut
+from app.db.repositories.event_repo import _organizer_row_to_schema
 
+
+_UNRESOLVED_BOOKINGS_COUNT = (
+    select(func.count(Booking.id))
+    .where(Booking.event_id == Event.id)
+    .where(Booking.status.notin_(["cancelled", "refunded"]))
+    .correlate(Event)
+    .scalar_subquery()
+    .label("unresolved_bookings_count")
+)
 
 # ── Simple CRUD ───────────────────────────────────────────────────────────────
 
@@ -128,29 +140,66 @@ async def get_user_co_organizing_events_with_details_repo(
 ) -> list[CoOrganizerWithEvent]:
     """
     Return all events a user is co-organizing, each bundled with the
-    co-organizer relationship metadata, via a single JOIN.
+    co-organizer relationship metadata AND the same aggregated booking/
+    revenue stats organizers see for their own events (total_bookings,
+    total_revenue, commission breakdown, etc.).
 
-    This is the reverse of get_co_organizers_with_details_repo: instead of
-    "who are my co-organizers?" it answers "what events am I co-organising?"
-    The full EventOut is needed here (date, venue, image, etc.) so the
-    My Events page can render event cards — which is why CoOrganizerWithEvent
-    carries a nested EventOut rather than just event_title.
+    Previously this joinedload'd CoOrganizer.event and validated it as a
+    bare EventOut, which doesn't carry any stats fields at all — that's
+    why My Events had nothing to show on co-organizing cards. The stats
+    aggregation below is intentionally identical to
+    get_events_by_organizer_with_stats_repo in event_repo.py (same join
+    shape, same _organizer_row_to_schema mapper reused directly) so a
+    co-organizer's numbers can never drift from what the actual organizer
+    sees for the same event — one source of truth for the stats math
+    instead of two similar-but-separate queries.
+
+    Two queries rather than one: the CoOrganizer rows give the
+    relationship metadata (invited_by, create_co_organizer, created_at),
+    and a separate aggregated query keyed by event_id gives the stats.
+    Folding CoOrganizer into that GROUP BY would work but blurs "co-organizer
+    relationship query" with "event stats query" into one fragile
+    statement — keeping them apart means the stats query stays a
+    byte-for-byte match with the organizer's own.
 
     Orphaned records (event deleted but co-organizer row still exists) are
-    silently skipped — the joinedload returns None for row.event in that case.
+    silently skipped.
     """
     async with get_async_session() as session:
-        stmt = (
-            select(CoOrganizer)
-            .options(joinedload(CoOrganizer.event))
-            .where(CoOrganizer.user_id == user_id)
+        co_rows = (
+            await session.execute(
+                select(CoOrganizer).where(CoOrganizer.user_id == user_id)
+            )
+        ).scalars().all()
+
+        if not co_rows:
+            return []
+
+        event_ids = [row.event_id for row in co_rows]
+
+        stats_stmt = (
+            select(
+                Event,
+                func.count(Booking.id).label("total_bookings"),
+                func.coalesce(func.sum(Booking.total_price), 0).label("total_revenue"),
+                _UNRESOLVED_BOOKINGS_COUNT,
+            )
+            .outerjoin(
+                Booking,
+                (Booking.event_id == Event.id) & (Booking.status == "confirmed"),
+            )
+            .where(Event.id.in_(event_ids))
+            .group_by(Event.id)
         )
-        result = await session.execute(stmt)
-        rows = result.scalars().unique().all()
+        stats_rows = (await session.execute(stats_stmt)).all()
+        events_by_id: dict[int, OrganizerEventOut] = {
+            row[0].id: _organizer_row_to_schema(row) for row in stats_rows
+        }
 
         output: list[CoOrganizerWithEvent] = []
-        for row in rows:
-            if row.event is None:
+        for row in co_rows:
+            event = events_by_id.get(row.event_id)
+            if event is None:
                 continue  # event deleted, skip orphan
             output.append(
                 CoOrganizerWithEvent(
@@ -158,7 +207,7 @@ async def get_user_co_organizing_events_with_details_repo(
                     invited_by=row.invited_by,
                     create_co_organizer=row.create_co_organizer,
                     created_at=row.created_at,
-                    event=EventOut.model_validate(row.event),
+                    event=event,
                 )
             )
         return output
