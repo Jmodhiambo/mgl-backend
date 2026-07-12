@@ -1,0 +1,27 @@
+{% extends "base_email.html" %}
+
+{% block title %}Account Reactivated – MGLTickets{% endblock %}
+{% block header_class %}green{% endblock %}
+{% block header_subtitle %}Welcome Back!{% endblock %}
+
+{% block content %}
+<h2>Welcome Back! 🎉</h2>
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>Great news! Your MGLTickets account has been successfully reactivated. You can now log in and start booking tickets again!</p>
+
+<div class="info-box green">
+    <p><strong>✓ Your account is now active</strong><br>All your previous bookings and preferences have been restored.</p>
+</div>
+
+<div class="btn-center">
+    <a href="{{ login_url }}" class="btn green">Log In Now</a>
+</div>
+
+<p>We're glad to have you back! Start exploring amazing events and booking your tickets today.</p>
+
+<hr class="divider">
+
+<p class="muted">If you didn't request to reactivate your account, please contact our support team immediately.</p>
+{% endblock %}

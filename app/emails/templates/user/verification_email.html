@@ -1,0 +1,27 @@
+{% extends "base_email.html" %}
+
+{% block title %}Verify Your Email – MGLTickets{% endblock %}
+{% block header_subtitle %}Your Gateway to Amazing Events{% endblock %}
+
+{% block content %}
+<h2>Welcome to MGLTickets! 🎉</h2>
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>Thank you for signing up! To get started, please verify your email address by clicking the button below:</p>
+
+<div class="btn-center">
+    <a href="{{ verification_url }}" class="btn">Verify Email Address</a>
+</div>
+
+<p class="fallback-link">
+    Or copy and paste this link into your browser:<br>
+    <a href="{{ verification_url }}">{{ verification_url }}</a>
+</p>
+
+<hr class="divider">
+
+<p class="muted"><strong>This link will expire in 24 hours.</strong></p>
+
+<p class="muted">If you didn't create an account with MGLTickets, you can safely ignore this email.</p>
+{% endblock %}

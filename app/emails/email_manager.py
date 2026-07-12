@@ -3,7 +3,7 @@
 
 from typing import Dict, Optional
 from app.emails.base import EmailService
-from app.emails.sendgrid_service import SendGridEmailService
+from app.emails.email_service import SendGridEmailService
 from app.emails.templates.template_registry import TemplateRegistry
 from app.core.logging_config import logger
 

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MGLTickets{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #1f2937;
+        }
+        .wrapper {
+            width: 100%;
+            padding: 40px 0;
+        }
+        .container {
+            width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+        }
+        .header.green {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .header.blue {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+        .header.purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+        .header.amber {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .header.red {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+        .header.pink {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+        }
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 10px 0 0;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        .body {
+            padding: 40px;
+        }
+        .body h2 {
+            margin: 0 0 20px;
+            color: #1f2937;
+            font-size: 24px;
+        }
+        .body p {
+            margin: 0 0 20px;
+            color: #4b5563;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(234, 88, 12, 0.3);
+        }
+        .btn.green {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+        .btn-center {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .fallback-link {
+            margin: 30px 0 0;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .fallback-link a {
+            color: #ea580c;
+            word-break: break-all;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 30px 0;
+        }
+        .info-box {
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .info-box.blue {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+        }
+        .info-box.yellow {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
+        .info-box.green {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+        .info-box.red {
+            background-color: #fee2e2;
+            border-left: 4px solid #dc2626;
+        }
+        .info-box h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+        }
+        .info-box p,
+        .info-box li {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .detail-table td {
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        .detail-table td:first-child {
+            color: #6b7280;
+            width: 40%;
+        }
+        .detail-table td:last-child {
+            color: #1f2937;
+            font-weight: 600;
+        }
+        .footer {
+            padding: 30px 40px;
+            background-color: #f9fafb;
+            text-align: center;
+        }
+        .footer p {
+            margin: 0 0 8px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .footer p:last-child {
+            margin: 0;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #ea580c;
+            text-decoration: none;
+        }
+        .muted {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header {% block header_class %}{% endblock %}">
+            <h1>MGLTickets</h1>
+            <p>{% block header_subtitle %}Your Gateway to Amazing Events{% endblock %}</p>
+        </div>
+
+        <!-- Body -->
+        <div class="body">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Need help? Contact us at <a href="mailto:support@mgltickets.com">support@mgltickets.com</a></p>
+            <p>&copy; {{ year }} MGLTickets. All rights reserved.</p>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

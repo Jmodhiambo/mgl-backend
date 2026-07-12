@@ -1,0 +1,14 @@
+{% extends "base_email.html" %}
+
+{% block title %}Message from {{ organizer_name }} – MGLTickets{% endblock %}
+{% block header_class %}blue{% endblock %}
+{% block header_subtitle %}Message from {{ organizer_name }}{% endblock %}
+
+{% block content %}
+<div style="color: #4b5563; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">{{ body }}</div>
+
+<p class="muted" style="margin-top: 30px;">
+    Best regards,<br>
+    <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

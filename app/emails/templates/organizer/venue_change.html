@@ -1,0 +1,48 @@
+{% extends "base_email.html" %}
+
+{% block title %}Venue Change – MGLTickets{% endblock %}
+{% block header_class %}purple{% endblock %}
+{% block header_subtitle %}Important Update{% endblock %}
+
+{% block content %}
+<h2>📍 Venue Change</h2>
+
+<p>Dear <strong>{{ customer_name }}</strong>,</p>
+
+<p>Important notice: The venue for <strong>{{ event_title }}</strong> has been changed.</p>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">New Venue Information</h3>
+    <table class="detail-table">
+        <tr>
+            <td style="color: #78350f;">Previous Venue:</td>
+            <td style="color: #78350f; text-decoration: line-through; font-weight: normal;">{{ old_venue }}</td>
+        </tr>
+        <tr>
+            <td style="color: #92400e; font-weight: 600;">New Venue:</td>
+            <td style="color: #92400e;">{{ new_venue }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Your Order Information</h3>
+    <table class="detail-table">
+        <tr><td>📅 Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>🗓️ Date &amp; Time:</td><td>{{ event_date }} (UNCHANGED)</td></tr>
+        <tr><td>🎫 Ticket Type:</td><td>{{ ticket_type }}</td></tr>
+        <tr><td>🔢 Quantity:</td><td>{{ quantity }} ticket(s)</td></tr>
+        <tr><td>🧾 Order:</td><td>#{{ order_id }}</td></tr>
+    </table>
+</div>
+
+<p>All other event details remain the same. Your tickets are still valid for the new venue.</p>
+
+<div class="info-box blue">
+    <p><strong>💡 Note:</strong> If this venue change is inconvenient and you'd like to request a refund, please contact us within 48 hours.</p>
+</div>
+
+<p>We apologise for any inconvenience and look forward to seeing you!</p>
+
+<p class="muted">Best regards,<br><strong>{{ organizer_name }}</strong></p>
+{% endblock %}

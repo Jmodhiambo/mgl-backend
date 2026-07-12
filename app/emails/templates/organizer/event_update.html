@@ -1,0 +1,31 @@
+{% extends "base_email.html" %}
+
+{% block title %}Important Update – MGLTickets{% endblock %}
+{% block header_class %}amber{% endblock %}
+{% block header_subtitle %}Important Event Update{% endblock %}
+
+{% block content %}
+<h2>📢 Important Update</h2>
+
+<p>Dear <strong>{{ customer_name }}</strong>,</p>
+
+<p>We have an important update regarding <strong>{{ event_title }}</strong>.</p>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">Update Details</h3>
+    <p style="color: #78350f;">{{ update_message }}</p>
+</div>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Your Order Information</h3>
+    <table class="detail-table">
+        <tr><td>🎫 Ticket Type:</td><td>{{ ticket_type }}</td></tr>
+        <tr><td>🔢 Quantity:</td><td>{{ quantity }} ticket(s)</td></tr>
+        <tr><td>🧾 Order:</td><td>#{{ order_id }}</td></tr>
+    </table>
+</div>
+
+<p>If you have any questions or concerns, please contact us immediately.</p>
+
+<p class="muted">Best regards,<br><strong>{{ organizer_name }}</strong></p>
+{% endblock %}

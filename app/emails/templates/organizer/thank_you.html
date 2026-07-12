@@ -1,0 +1,27 @@
+{% extends "base_email.html" %}
+
+{% block title %}Thank You – MGLTickets{% endblock %}
+{% block header_class %}green{% endblock %}
+{% block header_subtitle %}We hope you had a great time!{% endblock %}
+
+{% block content %}
+<h2>Thank You! 🎉</h2>
+
+<p>Dear <strong>{{ customer_name }}</strong>,</p>
+
+<p>Thank you so much for attending <strong>{{ event_title }}</strong>! We hope you had a wonderful experience.</p>
+
+<div class="info-box green">
+    <h3 style="color: #065f46;">We'd Love Your Feedback!</h3>
+    <p style="color: #047857;">Your opinion matters to us. Please take a moment to share your experience:</p>
+    <ul style="margin: 10px 0 0; padding-left: 20px; color: #047857; font-size: 14px; line-height: 1.8;">
+        <li>What did you enjoy most about the event?</li>
+        <li>Is there anything we could improve?</li>
+        <li>Would you attend similar events in the future?</li>
+    </ul>
+</div>
+
+<p>We look forward to seeing you at our future events!</p>
+
+<p class="muted">Warm regards,<br><strong>{{ organizer_name }}</strong></p>
+{% endblock %}

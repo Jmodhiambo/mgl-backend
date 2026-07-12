@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from passlib.hash import argon2
 from app.core.logging_config import logger
+from app.core.config import FRONTEND_URL
 from app.utils.token_verification import (
     generate_verification_token, create_verification_token_expiry, is_token_expired
 )
@@ -19,30 +20,27 @@ import app.db.repositories.user_repo as user_repo
 import app.db.repositories.event_repo as event_repo
 import app.db.repositories.booking_repo as booking_repo
 from app.services.ref_session_services import cleanup_user_sessions_service
-# from app.emails.templates.verification_email import send_verification_email
-# from app.emails.templates.password_reset_email import send_password_reset_email, send_password_changed_notification_email
-# from app.emails.templates.account_reactivation_email import send_account_reactivated_email
-# from app.emails.templates.account_deactivation_email import send_account_deactivated_email
+# from app.emails.email_manager import email_manager
+
 
 async def register_user_service(name: str, email: str, password: str, phone_number: str) -> dict:
     """Create a new user and return the user"""
     logger.info("Registering user...")
 
-    if len(name) < 3:  # Ensure name is at least 3 chars long
+    if len(name) < 3:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name must be at least 3 characters long.")
     
     if '@' not in email or '.' not in email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format.")
     
-    if len(password) < 8:  # Ensure password is at least 8 chars long
+    if len(password) < 8:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters long.")
     
-    if await user_repo.get_user_by_email_repo(email):  # Check if the email exists
+    if await user_repo.get_user_by_email_repo(email):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists.")
     
     password_hash = argon2.hash(password)
 
-    # Generate and set token for email verification
     token = generate_verification_token()
     expires_at = create_verification_token_expiry(hours=24)
 
@@ -50,13 +48,18 @@ async def register_user_service(name: str, email: str, password: str, phone_numb
 
     logger.info(f"User {user.name} with ID {user.id} registered successfully.")
 
-    # I will work on email sending later. Here and on user update. I want to get the core functionality working first before adding in emails.
-
     # Send verification email
-    # send_verification_email(user, token)
-
+    # await email_manager.send_from_template(
+    #     template_id="user.verification",
+    #     to_email=user.email,
+    #     variables={
+    #         "name": user.name,
+    #         "verification_url": f"{FRONTEND_URL}/verify?token={token}",
+    #     },
+    # )
 
     return user
+
 
 async def authenticate_user_service(user_id: int, email: str, password: str) -> dict:
     """Authenticate a user and return the user"""
@@ -72,7 +75,8 @@ async def authenticate_user_service(user_id: int, email: str, password: str) -> 
     if not argon2.verify(password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
     
-    return user.__dict__.pop("password_hash")  # Remove password from response
+    return user.__dict__.pop("password_hash")
+
 
 async def get_user_by_email_service(email: str) -> Optional[dict]:
     """Retrieve a user by email."""
@@ -84,15 +88,18 @@ async def get_user_by_email_service(email: str) -> Optional[dict]:
 
     return user
 
+
 async def get_user_by_id_service(user_id: int) -> Optional[UserPublic]:
     """Retrieve a user by ID."""
     logger.info(f"Getting user by ID for user with ID: {user_id}")
     return await user_repo.get_user_by_id_repo(user_id)
 
+
 async def search_users_by_name_service(name_query: str) -> list[dict]:
     """Search users by name."""
     logger.info(f"Searching users by name: {name_query}")
     return await user_repo.search_users_by_name_repo(name_query)
+
 
 async def update_user_role_service(user_id: int, new_role: str) -> dict:
     """Promote a user to admin role."""
@@ -119,7 +126,6 @@ async def update_user_info_service(user_id: int, info: dict) -> dict:
                 detail="Invalid email format."
             )
         
-        # Check if email already exists
         user = await user_repo.get_user_by_email_repo(info["email"])
 
         if user and user.id != user_id:
@@ -128,25 +134,33 @@ async def update_user_info_service(user_id: int, info: dict) -> dict:
                 detail=f"The email {info['email']} already exists! Please use a different email."
             )
         
-        # Reject change if the user is an admin as they have custom domain emails that must be preserved
         if user and user.role == "admin":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Admin email addresses cannot be changed. Please contact support if you need to update your email."
             )
-        # If the email is being changed, we need to unverify the email and send a new verification email
         info["email_verified"] = False
 
     user = await user_repo.update_user_info_repo(user_id, info)
 
-    # If email is being changed, send verification email to new email address
-    
+    # If email changed, send verification email to new address
+    # await email_manager.send_from_template(
+    #     template_id="user.verification",
+    #     to_email=info["email"],
+    #     variables={
+    #         "name": user.name,
+    #         "verification_url": f"{FRONTEND_URL}/verify?token={user.email_verification_token}",
+    #     },
+    # )
+
     return user
+
 
 async def delete_user_service(user_id: int) -> bool:
     """Delete a user by ID."""
     logger.info(f"Deleting user with ID: {user_id}")
     return await user_repo.delete_user_repo(user_id)
+
 
 async def update_user_password_service(user_id: int, new_password: str) -> None:
     """Update a user's password."""
@@ -173,6 +187,7 @@ async def update_user_password_service(user_id: int, new_password: str) -> None:
     new_password_hash = argon2.hash(new_password)
     await user_repo.update_user_password_repo(user_id, new_password_hash)
 
+
 async def change_user_password_service(user_id: int, old_password: str, new_password: str) -> None:
     """Change a user's password."""
     user = await user_repo.get_user_with_password_by_id_repo(user_id)
@@ -191,8 +206,15 @@ async def change_user_password_service(user_id: int, old_password: str, new_pass
     await update_user_password_service(user_id, new_password)
     logger.info(f"Password changed successfully for user with ID: {user_id}")
 
-    # Send email notification about password change
-    # send_password_change_email_success(user_id)
+    # Send password change notification
+    # await email_manager.send_from_template(
+    #     template_id="user.password_reset",
+    #     to_email=user.email,
+    #     variables={
+    #         "name": user.name,
+    #         "reset_url": f"{FRONTEND_URL}/login",
+    #     },
+    # )
 
 
 async def count_users_by_role_service(role: str) -> int:
@@ -200,21 +222,23 @@ async def count_users_by_role_service(role: str) -> int:
     logger.info(f"Counting users by role: {role.upper()}")
     return await user_repo.count_users_by_role_repo(role)
 
+
 async def list_all_users_service() -> list[dict]:
     """List users with pagination."""
     logger.info("Listing all users...")
     return await user_repo.list_all_users_repo()
 
+
 async def list_active_users_service() -> list[dict]:
-    """List active users with pagination."""
+    """List active users."""
     logger.info("Listing active users...")
     return await user_repo.list_active_users_repo()
+
 
 async def verify_user_email_service(token: str) -> dict:
     """Verify a user's email with token."""
     logger.info(f"Email verification attempt with token: {token[:10]}...")
     
-    # Get user by token
     user = await user_repo.get_user_by_verification_token_repo(token)
 
     if not user:
@@ -224,19 +248,14 @@ async def verify_user_email_service(token: str) -> dict:
             detail="Invalid verification token."
         )
 
-    # Check if user is already verified
     if user.email_verified:
         logger.info(f"Email already verified for user: {user.email}")
         return {
             "success": True,
             "message": "Email already verified. You can log in now.",
-            "user": {
-                "email": user.email,
-                "name": user.name
-            }
+            "user": {"email": user.email, "name": user.name}
         }
     
-    # Check if token is expired
     if is_token_expired(user.email_verification_token_expires):
         logger.warning(f"Verification token expired for user: {user.email}")
         raise HTTPException(
@@ -244,36 +263,29 @@ async def verify_user_email_service(token: str) -> dict:
             detail="Verification token expired. Please request a new one."
         )
 
-    # Verify user email
     verified_user = await user_repo.verify_user_email_repo(user.id)
-    
     logger.info(f"Email verified successfully for user: {verified_user.email}")
     
     return {
         "success": True,
         "message": "Email verified successfully! You can now log in.",
-        "user": {
-            "email": verified_user.email,
-            "name": verified_user.name
-        }
+        "user": {"email": verified_user.email, "name": verified_user.name}
     }
+
 
 async def resend_verification_email_service(email: str) -> dict:
     """Resend a verification email to a user."""
     logger.info(f"Resending verification email to user with email: {email}")
     
-    # Get user by email
     user = await user_repo.get_user_by_email_repo(email)
 
     if not user:
-        # Does not reveal if the user if found or not for security purposes
         logger.warning(f"Resend verification email failed for user with email: {email}.")
         return {
             "success": True,
             "message": "If an account exists with this email, a verification link has been sent."
         }
 
-    # Check if user is already verified
     if user.email_verified:
         logger.warning(f"User with email {email} is already verified.")
         raise HTTPException(
@@ -281,29 +293,21 @@ async def resend_verification_email_service(email: str) -> dict:
             detail="User is already verified."
         )
 
-    # Generate new token
     new_token = generate_verification_token()
     expires_at = create_verification_token_expiry(hours=24)
-
-    # Update user with an new token
     await user_repo.update_verification_token_repo(user.id, new_token, expires_at)
 
     # Send verification email
-    # email_sent = await send_verification_email(
-    #         to_email=user.email,
-    #         name=user.name,
-    #         verification_token=new_token
-    #     )
-        
-    # if not email_sent:
-    #     logger.error(f"Failed to send verification email to: {email}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail="Failed to send verification email. Please try again later."
-    #     )
-    
+    # await email_manager.send_from_template(
+    #     template_id="user.verification",
+    #     to_email=user.email,
+    #     variables={
+    #         "name": user.name,
+    #         "verification_url": f"{FRONTEND_URL}/verify?token={new_token}",
+    #     },
+    # )
+
     logger.info(f"Verification email resent successfully to: {email}")
-    
     return {
         "success": True,
         "message": "Verification email sent! Please check your inbox."
@@ -315,22 +319,20 @@ async def unverify_user_email_service(user_id: int) -> dict:
     logger.info(f"Unverifying email of user with ID: {user_id}")
     return await user_repo.unverify_user_email_repo(user_id)
 
+
 async def request_password_reset_service(email: str) -> dict:
     """Request a password reset for a user."""
     logger.info(f"Password reset requested for email: {email}")
     
-    # Get user by email
     user = await user_repo.get_user_by_email_repo(email)
     
     if not user:
-        # Don't reveal if user exists for security purposes
         logger.warning(f"Password reset requested for non-existent email: {email}")
         return {
             "success": True,
             "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
         }
     
-    # Check if user is active
     if not user.is_active:
         logger.warning(f"Password reset requested for inactive user: {email}")
         return {
@@ -338,29 +340,21 @@ async def request_password_reset_service(email: str) -> dict:
             "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
         }
     
-    # Generate reset token
     reset_token = generate_verification_token()
-    expires_at = create_verification_token_expiry(hours=1)  # Token expires in 1 hour
-    
-    # Update user with reset token
+    expires_at = create_verification_token_expiry(hours=1)
     await user_repo.update_password_reset_token_repo(user.id, reset_token, expires_at)
-    
+
     # Send password reset email
-    # email_sent = await send_password_reset_email(
+    # await email_manager.send_from_template(
+    #     template_id="user.password_reset",
     #     to_email=user.email,
-    #     name=user.name,
-    #     reset_token=reset_token
+    #     variables={
+    #         "name": user.name,
+    #         "reset_url": f"{FRONTEND_URL}/reset-password?token={reset_token}",
+    #     },
     # )
-    
-    # if not email_sent:
-    #     logger.error(f"Failed to send password reset email to: {email}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail="Failed to send password reset email. Please try again later."
-    #     )
-    
+
     logger.info(f"Password reset email sent successfully to: {email}")
-    
     return {
         "success": True,
         "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
@@ -371,7 +365,6 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
     """Reset password using a valid reset token."""
     logger.info(f"Password reset attempt with token: {token[:10]}...")
     
-    # Validate password length
     if len(new_password) < 8:
         logger.warning("Password reset failed: password too short")
         raise HTTPException(
@@ -379,7 +372,6 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
             detail="Password must be at least 8 characters long."
         )
     
-    # Get user by reset token
     user = await user_repo.get_user_by_password_reset_token_repo(token)
     
     if not user:
@@ -389,7 +381,6 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
             detail="Invalid or expired password reset token."
         )
     
-    # Check if user is active
     if not user.is_active:
         logger.warning(f"Password reset attempted for inactive user: {user.email}")
         raise HTTPException(
@@ -397,7 +388,6 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
             detail="Account is inactive. Please contact support."
         )
     
-    # Check if token is expired
     if is_token_expired(user.password_reset_token_expires):
         logger.warning(f"Password reset token expired for user: {user.email}")
         raise HTTPException(
@@ -405,7 +395,6 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
             detail="Password reset token has expired. Please request a new one."
         )
     
-    # Get user with password to check if new password is same as old
     user_with_pwd = await user_repo.get_user_with_password_by_id_repo(user.id)
     
     if argon2.verify(new_password, user_with_pwd.password_hash):
@@ -415,20 +404,22 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
             detail="New password cannot be the same as your current password."
         )
     
-    # Hash new password
     new_password_hash = argon2.hash(new_password)
-    
-    # Update password
     await user_repo.update_user_password_repo(user.id, new_password_hash)
-    
-    # Clear reset token
     await user_repo.clear_password_reset_token_repo(user.id)
     
     logger.info(f"Password reset successfully for user: {user.email}")
-    
-    # Send password change notification email
-    # await send_password_changed_notification_email(user.email, user.name)
-    
+
+    # Send password changed notification
+    # await email_manager.send_from_template(
+    #     template_id="user.password_reset",
+    #     to_email=user.email,
+    #     variables={
+    #         "name": user.name,
+    #         "reset_url": f"{FRONTEND_URL}/login",
+    #     },
+    # )
+
     return {
         "success": True,
         "message": "Password has been reset successfully. You can now log in with your new password."
@@ -445,18 +436,17 @@ async def deactivate_user_service(user_id: int) -> None:
     
     logger.info(f"User account with ID: {user_id} has been deactivated.")
 
+
 async def reactivate_account_service(email: str) -> dict:
     """Reactivate a deactivated user account."""
     logger.info(f"Account reactivation requested for email: {email}")
     
-    # Validate email format
     if '@' not in email or '.' not in email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid email format."
         )
     
-    # Get user by email
     user = await user_repo.get_user_by_email_repo(email)
     
     if not user:
@@ -466,7 +456,6 @@ async def reactivate_account_service(email: str) -> dict:
             detail="User not found."
         )
     
-    # Check if user is already active
     if user.is_active:
         logger.warning(f"Reactivation attempted for already active user: {email}")
         raise HTTPException(
@@ -474,59 +463,75 @@ async def reactivate_account_service(email: str) -> dict:
             detail="Account is already active. Please log in."
         )
     
-    # Reactivate user
     await user_repo.reactivate_user_repo(user.id)
-    
     logger.info(f"Account reactivated successfully for user: {email}")
-    
+
     # Send account reactivation email
-    # await send_account_reactivated_email(user.email, user.name)
-    
+    # await email_manager.send_from_template(
+    #     template_id="user.account_reactivation",
+    #     to_email=user.email,
+    #     variables={
+    #         "name": user.name,
+    #         "login_url": f"{FRONTEND_URL}/login",
+    #     },
+    # )
+
     return {
         "success": True,
         "message": "Your account has been reactivated successfully. You can now log in."
     }
+
 
 async def list_verified_users_service() -> list[dict]:
     """List verified users."""
     logger.info("Listing verified users...")
     return await user_repo.list_verified_users_repo()
 
+
 async def list_unverified_users_service() -> list[dict]:
     """List unverified users."""
     return await user_repo.list_unverified_users_repo()
+
 
 async def count_active_users_service() -> int:
     """Count active users."""
     return await user_repo.count_active_users_repo()
 
+
 async def count_verified_users_service() -> int:
     """Count verified users."""
     return await user_repo.count_verified_users_repo()
+
 
 async def count_unverified_users_service() -> int:
     """Count unverified users."""
     return await user_repo.count_unverified_users_repo()
 
+
 async def list_users_created_after_service(date: datetime) -> list[dict]:
     """List users created after a specific date."""
     return await user_repo.list_users_created_after_repo(date)
+
 
 async def list_users_created_before_service(date: datetime) -> list[dict]:
     """List users created before a specific date."""
     return await user_repo.list_users_created_before_repo(date)
 
+
 async def list_users_updated_after_service(date: datetime) -> list[dict]:
     """List users updated after a specific date."""
     return await user_repo.list_users_updated_after_repo(date)
+
 
 async def list_users_updated_before_service(date: datetime) -> list[dict]:
     """List users updated before a specific date."""
     return await user_repo.list_users_updated_before_repo(date)
 
+
 async def count_users_created_between_service(start_date: datetime, end_date: datetime) -> int:
     """Count users created between two dates."""
     return await user_repo.count_users_created_between_repo(start_date, end_date)
+
 
 async def count_users_updated_between_service(start_date: datetime, end_date: datetime) -> int:
     """Count users updated between two dates."""
