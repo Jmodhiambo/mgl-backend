@@ -1,0 +1,35 @@
+<!-- app/emails/templates/organizer/ticket_type_unsuspended.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Ticket Type Suspension Lifted – MGLTickets{% endblock %}
+{% block header_class %}green{% endblock %}
+{% block header_subtitle %}Suspension Lifted{% endblock %}
+
+{% block content %}
+<h2>✅ Ticket Type Suspension Lifted</h2>
+
+<p>Hi <strong>{{ organizer_name }}</strong>,</p>
+
+<p>The suspension on your ticket type has been lifted. You can now reactivate it to resume sales.</p>
+
+<div class="info-box green">
+    <h3 style="color: #065f46;">Details</h3>
+    <table class="detail-table">
+        <tr><td>📅 Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>🎫 Ticket Type:</td><td>{{ ticket_type_name }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">Important</h3>
+    <p style="color: #78350f;">The suspension has been lifted but the ticket type remains <strong>inactive</strong>. You must manually reactivate it from your dashboard to resume sales.</p>
+</div>
+
+<div class="btn-center">
+    <a href="{{ dashboard_url }}" class="btn green">Go to Dashboard</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Questions? Contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a>.</p>
+{% endblock %}

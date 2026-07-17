@@ -1,3 +1,4 @@
+<!-- app/emails/templates/organizer/time_change.html -->
 {% extends "base_email.html" %}
 
 {% block title %}Date/Time Change – MGLTickets{% endblock %}
@@ -5,7 +6,7 @@
 {% block header_subtitle %}Important Schedule Update{% endblock %}
 
 {% block content %}
-<h2>🗓️ Date/Time Change</h2>
+<h2>Date/Time Change</h2>
 
 <p>Dear <strong>{{ customer_name }}</strong>,</p>
 
@@ -28,11 +29,11 @@
 <div class="info-box blue">
     <h3 style="color: #1e40af;">Your Order Information</h3>
     <table class="detail-table">
-        <tr><td>📅 Event:</td><td>{{ event_title }}</td></tr>
-        <tr><td>📍 Venue:</td><td>{{ venue }} (UNCHANGED)</td></tr>
-        <tr><td>🎫 Ticket Type:</td><td>{{ ticket_type }}</td></tr>
-        <tr><td>🔢 Quantity:</td><td>{{ quantity }} ticket(s)</td></tr>
-        <tr><td>🧾 Order:</td><td>#{{ order_id }}</td></tr>
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Venue:</td><td>{{ venue }} (UNCHANGED)</td></tr>
+        <tr><td>Ticket Type:</td><td>{{ ticket_type }}</td></tr>
+        <tr><td>Quantity:</td><td>{{ quantity }} ticket(s)</td></tr>
+        <tr><td>Order:</td><td>#{{ order_id }}</td></tr>
     </table>
 </div>
 

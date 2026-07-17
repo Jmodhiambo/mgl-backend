@@ -1,0 +1,42 @@
+<!-- app/emails/templates/organizer/event_approved.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Event Approved – MGLTickets{% endblock %}
+{% block header_class %}green{% endblock %}
+{% block header_subtitle %}Great news!{% endblock %}
+
+{% block content %}
+<h2>Your Event Has Been Approved!</h2>
+
+<p>Hi <strong>{{ organizer_name }}</strong>,</p>
+
+<p>We're pleased to let you know that your event has been reviewed and approved by the MGLTickets team. It is now live and visible to the public.</p>
+
+<div class="info-box green">
+    <h3 style="color: #065f46;">Event Details</h3>
+    <table class="detail-table">
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Venue:</td><td>{{ venue }}</td></tr>
+        <tr><td>Date:</td><td>{{ event_date }}</td></tr>
+        <tr><td>Approved by:</td><td>{{ admin_name }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">What's next?</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+        <li>Your event is now publicly visible and accepting orders</li>
+        <li>Share your event link to start selling tickets</li>
+        <li>Monitor sales and attendees from your organizer dashboard</li>
+        <li>Use the email tools to communicate with attendees</li>
+    </ul>
+</div>
+
+<div class="btn-center">
+    <a href="{{ event_url }}" class="btn green">View Your Event</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Congratulations and best of luck with your event! If you need anything, contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a>.</p>
+{% endblock %}

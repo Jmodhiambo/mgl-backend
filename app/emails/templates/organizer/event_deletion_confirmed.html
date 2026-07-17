@@ -1,0 +1,35 @@
+<!-- app/emails/templates/organizer/event_deletion_confirmed.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Event Deleted – MGLTickets{% endblock %}
+{% block header_class %}red{% endblock %}
+{% block header_subtitle %}Event Removed{% endblock %}
+
+{% block content %}
+<h2>Event Permanently Deleted</h2>
+
+<p>Hi <strong>{{ organizer_name }}</strong>,</p>
+
+<p>All refunds for <strong>{{ event_title }}</strong> have been processed and the event has been permanently removed from MGLTickets.</p>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Summary</h3>
+    <table class="detail-table">
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Deleted on:</td><td>{{ deleted_at }}</td></tr>
+        <tr><td>Refunds processed:</td><td>{{ refund_count }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box green">
+    <p><strong>✓ All attendees have been refunded.</strong> No further action is required on your part.</p>
+</div>
+
+<div class="btn-center">
+    <a href="{{ dashboard_url }}" class="btn">Back to Dashboard</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">If you have any outstanding concerns, contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a>.</p>
+{% endblock %}

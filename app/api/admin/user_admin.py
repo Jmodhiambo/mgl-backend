@@ -203,8 +203,6 @@ async def resend_verification_email(user_id: int, background_tasks: BackgroundTa
     """
     res = await user_services.resend_verification_email_service(user_id)
 
-    # TODO: Add background task to send email asynchronously
-
     if res:
         # Log the user resend verification email action
         background_tasks.add_task(

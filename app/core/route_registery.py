@@ -3,6 +3,9 @@
 
 from fastapi import FastAPI
 
+# Health check route
+from app.api.health.health import router as health_router
+
 # Authentication route
 from app.api.auth.auth import router as auth_router
 
@@ -52,6 +55,10 @@ from app.api.admin.order_admin import router as admin_order_router
 
 def register_routes(app: FastAPI) -> None:
     """Registers routes for MGLTickets."""
+    
+    # Health check route. No prefix — this is a special case for monitoring servers.
+    app.include_router(health_router, tags=["Health"])
+
     # Authentication routes
     app.include_router(auth_router, prefix="/api/v1", tags=["Auth"])
 

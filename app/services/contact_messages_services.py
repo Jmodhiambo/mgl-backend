@@ -1,44 +1,61 @@
 #!/usr/bin/env python3
+# app/services/contact_messages_services.py
 """Service layer for ContactMessage operations."""
-
+ 
+import asyncio
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import List, Optional
+ 
 from fastapi import HTTPException
+ 
+from app.core.config import FRONTEND_URL
 from app.core.logging_config import logger
-from app.schemas.contact_message import ContactMessageCreate, ContactMessageUpdate, OrganizerContactMessageCreate
-import app.db.repositories.contact_messages_repo as contact_repo
-from app.utils.generate_reference_id import generate_reference_id
 from app.core.recaptcha import verify_recaptcha
-# from app.core.email import send_contact_confirmation, send_support_notification
-
+from app.emails.email_manager import email_manager
+from app.schemas.contact_message import (
+    ContactMessageCreate,
+    ContactMessageUpdate,
+    OrganizerContactMessageCreate,
+)
+from app.utils.generate_reference_id import generate_reference_id
+import app.db.repositories.contact_messages_repo as contact_repo
+ 
+ 
+# ── Email background helper ───────────────────────────────────────────────────
+ 
+def _bg_email(coro) -> None:
+    """
+    Schedule an email coroutine as a background task.
+    Falls back to direct await if no running event loop exists (tests, CLI).
+    """
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(coro)
+    except RuntimeError:
+        asyncio.run(coro)
+ 
+ 
 VALID_STATUSES = {"new", "pending", "responded", "closed", "spam"}
-
-
+_HIGH_PRIORITY_CATEGORIES = {"payment", "booking"}
+_ADMIN_MESSAGES_URL = f"{FRONTEND_URL}/admin/messages"
+ 
+ 
+# ── Create ────────────────────────────────────────────────────────────────────
+ 
 async def create_contact_message_service(
     contact_data: ContactMessageCreate | OrganizerContactMessageCreate,
     client_ip: str,
     user_agent: str,
     user_id: Optional[int],
-    source: str,  # "user" | "organizer" — injected by the route, never trusted from the request body
+    source: str,
 ) -> dict:
     """
-    Create a new contact message.
-
-    - Verifies reCAPTCHA (user submissions only — organizer submissions skip it)
-    - Checks rate limits (per email and per IP)
-    - Stores in database
-    - Sends confirmation email to user        (commented out — pending email integration)
-    - Sends notification email to support     (commented out — pending email integration)
-    - Returns the created message with its unique reference ID
+    Create a contact message then dispatch two emails in background:
+    - Sender confirmation (user.contact_confirmation)
+    - Internal support alert (admin.contact_notification)
     """
     logger.info(f"Processing contact form from {contact_data.email} (source={source})")
-
-    # Verify reCAPTCHA — user submissions only.
-    # Organizer submissions are already authenticated via require_organizer,
-    # so bot detection is unnecessary for them.
-    # verify_recaptcha raises HTTPException directly on all failure cases
-    # (expired token, invalid token, score too low, action mismatch) so
-    # there is no need to check the return value — just capture it for storage.
+ 
     recaptcha_score: Optional[float] = None
     if source == "user":
         recaptcha_score = await verify_recaptcha(
@@ -47,37 +64,19 @@ async def create_contact_message_service(
             email=contact_data.email,
             client_ip=client_ip,
         )
-
-    # Rate limit — per email
-    email_count = await contact_repo.count_recent_messages_by_email_repo(
-        email=contact_data.email,
-        hours=1,
-    )
+ 
+    email_count = await contact_repo.count_recent_messages_by_email_repo(email=contact_data.email, hours=1)
     if email_count >= 3:
-        logger.warning(f"Rate limit exceeded for email: {contact_data.email}")
-        raise HTTPException(
-            status_code=429,
-            detail="Too many messages from this email. Please try again in 1 hour.",
-        )
-
-    # Rate limit — per IP
-    ip_count = await contact_repo.count_recent_messages_by_ip_repo(
-        ip_address=client_ip,
-        hours=1,
-    )
+        raise HTTPException(status_code=429, detail="Too many messages from this email. Please try again in 1 hour.")
+ 
+    ip_count = await contact_repo.count_recent_messages_by_ip_repo(ip_address=client_ip, hours=1)
     if ip_count >= 5:
-        logger.warning(f"Rate limit exceeded for IP: {client_ip}")
-        raise HTTPException(
-            status_code=429,
-            detail="Too many messages from your network. Please try again in 1 hour.",
-        )
-
-    # Generate a unique reference ID and ensure no collision
+        raise HTTPException(status_code=429, detail="Too many messages from your network. Please try again in 1 hour.")
+ 
     reference_id = generate_reference_id(contact_data.category)
     while await contact_repo.get_contact_message_by_reference_id_repo(reference_id):
         reference_id = generate_reference_id(contact_data.category)
-
-    # Persist
+ 
     contact_message = await contact_repo.create_contact_message_repo(
         contact_data=contact_data,
         client_ip=client_ip,
@@ -87,31 +86,45 @@ async def create_contact_message_service(
         user_id=user_id,
         source=source,
     )
-
-    logger.info(f"Contact message created: {contact_message.reference_id} (source={source})")
-
-    # Send confirmation email to user
-    # try:
-    #     await send_contact_confirmation(
-    #         to_email=contact_message.email,
-    #         name=contact_message.name,
-    #         category=contact_message.category,
-    #         subject=contact_message.subject,
-    #         reference_id=contact_message.reference_id,
-    #     )
-    #     logger.info(f"Confirmation email sent to {contact_message.email}")
-    # except Exception as e:
-    #     logger.error(f"Failed to send confirmation email: {str(e)}")
-
-    # Send notification to support team
-    # try:
-    #     await send_support_notification(contact_message=contact_message)
-    #     logger.info(f"Support notification sent for {contact_message.reference_id}")
-    # except Exception as e:
-    #     logger.error(f"Failed to send support notification: {str(e)}")
-
+ 
+    logger.info(f"Contact message created: {contact_message.reference_id}")
+ 
+    # ── Sender confirmation ────────────────────────────────────────────────────
+    _bg_email(email_manager.send_from_template(
+        template_id="user.contact_confirmation",
+        to_email=contact_message.email,
+        variables={
+            "name": contact_message.name,
+            "email": contact_message.email,
+            "reference_id": contact_message.reference_id,
+            "category": contact_message.category.replace("_", " ").title(),
+            "subject": contact_message.subject,
+        },
+    ))
+ 
+    # ── Internal support notification ──────────────────────────────────────────
+    priority = "high" if contact_message.category in _HIGH_PRIORITY_CATEGORIES else "normal"
+    _bg_email(email_manager.send_from_template(
+        template_id="admin.contact_notification",
+        to_email="support@mgltickets.com",
+        variables={
+            "reference_id": contact_message.reference_id,
+            "sender_name": contact_message.name,
+            "sender_email": contact_message.email,
+            "category": contact_message.category.replace("_", " ").title(),
+            "subject": contact_message.subject,
+            "message": contact_message.message,
+            "source": source.title(),
+            "priority": priority,
+            "admin_url": _ADMIN_MESSAGES_URL,
+        },
+        from_email="support",
+    ))
+ 
     return contact_message
 
+
+# ── Read ──────────────────────────────────────────────────────────────────────
 
 async def get_contact_message_by_id_service(message_id: int) -> Optional[dict]:
     """Get a contact message by ID."""
@@ -150,6 +163,8 @@ async def list_contact_messages_service(
         source=source,
     )
 
+
+# ── Update ────────────────────────────────────────────────────────────────────
 
 async def update_contact_message_service(
     admin_id: int,
@@ -216,11 +231,15 @@ async def update_contact_message_status_service(
     return contact_message
 
 
+# ── Delete ────────────────────────────────────────────────────────────────────
+
 async def delete_contact_message_service(admin_id: int, message_id: int) -> bool:
     """Hard-delete a contact message."""
     logger.info(f"Deleting message {message_id} by admin {admin_id}")
     return await contact_repo.delete_contact_message_repo(message_id=message_id)
 
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
 
 async def get_contact_stats_service() -> dict:
     """Get contact message statistics."""

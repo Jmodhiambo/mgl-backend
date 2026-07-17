@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# app/db/repositories/booking_repo.py
 """Async repository for Booking model operations."""
 
 from datetime import datetime
@@ -29,6 +30,61 @@ async def get_bookings_by_ids_repo(ids: list[int]) -> list[BookingOut]:
         result = await session.execute(select(Booking).where(Booking.id.in_(ids)))
         bookings = result.scalars().all()
         return [BookingOut.model_validate(booking) for booking in bookings]
+
+
+async def get_enriched_bookings_by_ids_repo(ids: list[int]) -> list:
+    """
+    Fetch enriched booking rows for a list of booking IDs.
+    Joins User, Event, TicketType, and Order to resolve display fields.
+    Includes order_id so the email service can reference the parent order.
+    Used by organizer_emails_services.send_bulk_email_service.
+    """
+    from app.db.models.event import Event
+    from app.db.models.user import User
+    from app.db.models.order import Order
+
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(
+                Booking,
+                User.name.label("customer_name"),
+                User.email.label("customer_email"),
+                Event.title.label("event_title"),
+                TicketType.name.label("ticket_type_name"),
+                Event.venue,
+                Event.start_time,
+                Order.id.label("order_id"),
+            )
+            .join(User, Booking.user_id == User.id)
+            .join(Event, Booking.event_id == Event.id)
+            .join(TicketType, Booking.ticket_type_id == TicketType.id)
+            .join(Order, Booking.order_id == Order.id)
+            .where(Booking.id.in_(ids))
+            .order_by(Booking.id)
+        )
+
+        rows = result.all()
+        bookings = []
+        for row in rows:
+            booking = row[0]
+            bookings.append(type('EnrichedBooking', (), {
+                'id':               booking.id,
+                'order_id':         row.order_id,
+                'user_id':          booking.user_id,
+                'event_id':         booking.event_id,
+                'ticket_type_id':   booking.ticket_type_id,
+                'customer_name':    row.customer_name,
+                'customer_email':   row.customer_email,
+                'event_title':      row.event_title,
+                'ticket_type_name': row.ticket_type_name,
+                'venue':            row.venue,
+                'event_date':       row.start_time.strftime('%d %b %Y at %H:%M') if row.start_time else None,
+                'quantity':         booking.quantity,
+                'total_price':      booking.total_price,
+                'status':           booking.status,
+                'organizer_name':   None,  # not on Booking — caller passes organizer name separately
+            })())
+        return bookings
 
 
 async def update_booking_repo(booking_id: int, booking_data: BookingUpdate) -> Optional[BookingOut]:
@@ -312,7 +368,6 @@ async def calculate_revenue_by_organizer_repo(organizer_id: int) -> int:
 async def get_recent_bookings_by_organizer_repo(organizer_id: int, limit: int = 10) -> list:
     from app.db.models.event import Event
     from app.db.models.user import User
-    from app.db.models.ticket_type import TicketType
 
     async with get_async_session() as session:
         result = await session.execute(
@@ -330,6 +385,7 @@ async def get_recent_bookings_by_organizer_repo(organizer_id: int, limit: int = 
             bookings.append({
                 "id": booking.id,
                 "user_id": booking.user_id,
+                "order_id": booking.order_id,
                 "event_id": booking.event_id,
                 "ticket_type_id": booking.ticket_type_id,
                 "customer_name": user_name,
@@ -345,15 +401,11 @@ async def get_recent_bookings_by_organizer_repo(organizer_id: int, limit: int = 
         return bookings
 
 
-# The two functions below provide the enriched joined data
-# that admin/organizer pages need (customer_name, event_title, ticket_type_name)
-
 async def list_bookings_enriched_repo() -> list:
     """List all bookings with joined user, event, and ticket type data.
     Used by GET /admin/bookings to return AdminBooking-shaped rows."""
     from app.db.models.event import Event
     from app.db.models.user import User
-    from app.db.models.ticket_type import TicketType
 
     async with get_async_session() as session:
         result = await session.execute(
@@ -368,6 +420,7 @@ async def list_bookings_enriched_repo() -> list:
         for booking, user_name, user_email, event_title, ticket_name, venue, start_time in result:
             bookings.append({
                 'id': booking.id,
+                'order_id': booking.order_id,
                 'user_id': booking.user_id,
                 'event_id': booking.event_id,
                 'ticket_type_id': booking.ticket_type_id,
@@ -391,7 +444,6 @@ async def list_event_bookings_enriched_repo(event_id: int) -> list:
     Used by organizer event booking endpoints."""
     from app.db.models.event import Event
     from app.db.models.user import User
-    from app.db.models.ticket_type import TicketType
 
     async with get_async_session() as session:
         result = await session.execute(
@@ -407,6 +459,7 @@ async def list_event_bookings_enriched_repo(event_id: int) -> list:
         for booking, user_name, user_email, event_title, ticket_name, venue, start_time in result:
             bookings.append({
                 'id': booking.id,
+                'order_id': booking.order_id,
                 'user_id': booking.user_id,
                 'event_id': booking.event_id,
                 'ticket_type_id': booking.ticket_type_id,

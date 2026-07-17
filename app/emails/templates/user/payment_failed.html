@@ -1,0 +1,44 @@
+<!-- app/emails/templates/user/payment_failed.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Payment Failed – MGLTickets{% endblock %}
+{% block header_class %}red{% endblock %}
+{% block header_subtitle %}Payment Notice{% endblock %}
+
+{% block content %}
+<h2>❌ Payment Failed</h2>
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>Unfortunately your M-Pesa payment for <strong>{{ event_title }}</strong> could not be processed.</p>
+
+<div class="info-box red">
+    <h3 style="color: #991b1b;">Payment Details</h3>
+    <table class="detail-table">
+        <tr><td>Order:</td><td>#{{ order_id }}</td></tr>
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Amount:</td><td>KES {{ amount }}</td></tr>
+        <tr><td>Reason:</td><td>{{ failure_reason }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">Common Reasons</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+        <li>Insufficient M-Pesa balance</li>
+        <li>Wrong PIN entered</li>
+        <li>STK push timed out without a response</li>
+        <li>M-Pesa service temporarily unavailable</li>
+    </ul>
+</div>
+
+<p>Your order is still reserved. You can try paying again from your orders page.</p>
+
+<div class="btn-center">
+    <a href="{{ retry_url }}" class="btn">Try Again</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">If the problem persists, contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a> quoting Order #{{ order_id }}.</p>
+{% endblock %}

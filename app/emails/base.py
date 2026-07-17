@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# app/emails/base.py
 """Base email service ABC for MGLTickets."""
 
 from abc import ABC, abstractmethod

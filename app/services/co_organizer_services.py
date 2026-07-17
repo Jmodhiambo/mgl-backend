@@ -1,41 +1,112 @@
 #!/usr/bin/env python3
+# app/services/co_organizer_services.py
 """Service layer for the CoOrganizer model in MGLTickets."""
-
-from fastapi import HTTPException, status
+ 
+import asyncio
 from typing import Optional
-
-import app.db.repositories.co_organizer_repo as co_repo
-from app.schemas.co_organizer import CoOrganizerOut, CoOrganizerWithUserAndEvent, CoOrganizerWithEvent
-from app.db.repositories.user_repo import get_user_by_email_repo
+ 
+from fastapi import HTTPException, status
+ 
+from app.core.config import FRONTEND_URL
 from app.core.logging_config import logger
+from app.emails.email_manager import email_manager
+from app.schemas.co_organizer import CoOrganizerOut, CoOrganizerWithEvent, CoOrganizerWithUserAndEvent
+import app.db.repositories.co_organizer_repo as co_repo
+import app.db.repositories.event_repo as event_repo
+import app.db.repositories.user_repo as user_repo
+from app.db.repositories.user_repo import get_user_by_email_repo
 
 
+# ── Email background helper ───────────────────────────────────────────────────
+ 
+def _bg_email(coro) -> None:
+    """
+    Schedule an email coroutine as a background task.
+    Falls back to direct await if no running event loop exists (tests, CLI).
+    """
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(coro)
+    except RuntimeError:
+        asyncio.run(coro)
+ 
+ 
+def _accept_url(event_id: int) -> str:
+    return f"{FRONTEND_URL}/organizer/co-organizer/accept?event_id={event_id}"
+ 
+ 
+def _signup_url(email: str, event_id: int) -> str:
+    return f"{FRONTEND_URL}/register?email={email}&co_organizer_event={event_id}"
+ 
+ 
 # ── Write operations ──────────────────────────────────────────────────────────
-
+ 
 async def create_co_organizer_service(
     email: str, organizer_id: int, event_id: int, invited_by: int
 ) -> CoOrganizerOut:
-    """Validate and create a new co-organizer record."""
+    """
+    Validate and create a co-organizer record.
+ 
+    Two email paths (both dispatched in background):
+    - Existing user → co_organizer_invitation (log in and accept)
+    - New user      → co_organizer_invitation_new_user (sign up first, then 404 raised)
+    """
+    event = await event_repo.get_event_by_id_repo(event_id)
+    inviter = await user_repo.get_user_by_id_repo(invited_by)
+ 
+    event_title = event.title if event else "an event"
+    venue = event.venue if event else "TBA"
+    event_date = event.start_date.strftime("%d %b %Y") if event and event.start_date else "TBA"
+    inviter_name = inviter.name if inviter else "An organizer"
+ 
     user = await get_user_by_email_repo(email=email)
+ 
     if not user:
-        logger.info(f"Co-organizer invite: user {email} not found")
-        # TODO: send_co_organizer_invitation_email_to_non_existing_user(email)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
-
+        logger.info(f"Co-organizer invite: {email} not found — sending sign-up invitation")
+        _bg_email(email_manager.send_from_template(
+            template_id="organizer.co_organizer_invitation_new_user",
+            to_email=email,
+            variables={
+                "recipient_name": email.split("@")[0].capitalize(),
+                "inviter_name": inviter_name,
+                "event_title": event_title,
+                "venue": venue,
+                "event_date": event_date,
+                "signup_url": _signup_url(email, event_id),
+            },
+        ))
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found. An invitation to sign up has been sent to their email.",
+        )
+ 
     if await co_repo.check_if_co_organizer_repo(user_id=user.id, event_id=event_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already a co-organizer for this event.",
         )
-
-    logger.info(f"Creating co-organizer: email={email}, organizer_id={organizer_id}, event_id={event_id}")
+ 
+    logger.info(f"Creating co-organizer: email={email}, event_id={event_id}")
     result = await co_repo.create_co_organizer_repo(
         user_id=user.id,
         organizer_id=organizer_id,
         event_id=event_id,
         invited_by=invited_by,
     )
-    # TODO: send_co_organizer_invitation_email_to_existing_user(email, invited_by)
+ 
+    _bg_email(email_manager.send_from_template(
+        template_id="organizer.co_organizer_invitation",
+        to_email=user.email,
+        variables={
+            "recipient_name": user.name,
+            "inviter_name": inviter_name,
+            "event_title": event_title,
+            "venue": venue,
+            "event_date": event_date,
+            "accept_url": _accept_url(event_id),
+        },
+    ))
+ 
     return result
 
 

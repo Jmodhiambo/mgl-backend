@@ -63,13 +63,3 @@ app.mount("/uploads/profiles", StaticFiles(directory=UPLOADS_PROFILES_DIR), name
 
 # Register routes from app.core.route_registery
 register_routes(app)
-
-# Health check
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for monitoring"""
-    return {
-        "status": "healthy",
-        "app": "MGLTickets API",
-        "version": "1.0.0"
-    }

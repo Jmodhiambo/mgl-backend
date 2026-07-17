@@ -54,6 +54,7 @@ class BookingEnrichedOut(BaseModel):
     """Enriched booking schema with denormalized display fields.
     Returned by admin list and organizer event booking endpoints."""
     id: int
+    order_id: int
     user_id: int
     event_id: int
     ticket_type_id: int

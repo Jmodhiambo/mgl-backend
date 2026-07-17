@@ -1,0 +1,51 @@
+<!-- app/emails/templates/admin/contact_notification.html -->
+{% extends "base_email.html" %}
+
+{% block title %}New Contact Message – MGLTickets Support{% endblock %}
+{% block header_class %}amber{% endblock %}
+{% block header_subtitle %}Internal Support Notification{% endblock %}
+
+{% block content %}
+<h2>New Contact Message</h2>
+
+<p>A new message has been submitted via the MGLTickets contact form.</p>
+
+{% if priority == 'high' %}
+<div class="info-box red">
+    <h3 style="color: #991b1b;">⚠️ High Priority — {{ category }}</h3>
+    <table class="detail-table">
+        <tr><td>Reference:</td><td>{{ reference_id }}</td></tr>
+        <tr><td>From:</td><td>{{ sender_name }}</td></tr>
+        <tr><td>Email:</td><td>{{ sender_email }}</td></tr>
+        <tr><td>Category:</td><td>{{ category }}</td></tr>
+        <tr><td>Subject:</td><td>{{ subject }}</td></tr>
+        <tr><td>Source:</td><td>{{ source }}</td></tr>
+    </table>
+</div>
+{% else %}
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Message Details</h3>
+    <table class="detail-table">
+        <tr><td>Reference:</td><td>{{ reference_id }}</td></tr>
+        <tr><td>From:</td><td>{{ sender_name }}</td></tr>
+        <tr><td>Email:</td><td>{{ sender_email }}</td></tr>
+        <tr><td>Category:</td><td>{{ category }}</td></tr>
+        <tr><td>Subject:</td><td>{{ subject }}</td></tr>
+        <tr><td>Source:</td><td>{{ source }}</td></tr>
+    </table>
+</div>
+{% endif %}
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">Message</h3>
+    <p style="color: #78350f; white-space: pre-wrap;">{{ message }}</p>
+</div>
+
+<div class="btn-center">
+    <a href="{{ admin_url }}" class="btn">View in Admin Panel</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Reply directly to <strong>{{ sender_email }}</strong> or use the admin panel to update the status and respond.</p>
+{% endblock %}

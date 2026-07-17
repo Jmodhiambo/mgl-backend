@@ -1,0 +1,46 @@
+<!-- app/emails/templates/organizer/ticket_type_suspended.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Ticket Type Suspended – MGLTickets{% endblock %}
+{% block header_class %}red{% endblock %}
+{% block header_subtitle %}Administrative Action{% endblock %}
+
+{% block content %}
+<h2>⛔ Ticket Type Suspended</h2>
+
+<p>Hi <strong>{{ organizer_name }}</strong>,</p>
+
+<p>One of your ticket types has been suspended by a MGLTickets administrator and is no longer available for purchase.</p>
+
+<div class="info-box red">
+    <h3 style="color: #991b1b;">Suspension Details</h3>
+    <table class="detail-table">
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Ticket Type:</td><td>{{ ticket_type_name }}</td></tr>
+        <!-- <tr><td>Suspended by:</td><td>{{ admin_name }}</td></tr> -->
+        <tr><td>Reason:</td><td>{{ suspension_reason }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">What this means</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+        <li>This ticket type is hidden from buyers immediately</li>
+        <li>No new purchases can be made for this ticket type</li>
+        <li>Existing confirmed tickets remain valid</li>
+        <li>You cannot edit or delete this ticket type while it is suspended</li>
+    </ul>
+</div>
+
+<div class="info-box blue">
+    <p><strong>To resolve this:</strong> Please contact our support team to address the reason for suspension. Once resolved, the suspension will be lifted and you can reactivate the ticket type.</p>
+</div>
+
+<div class="btn-center">
+    <a href="mailto:support@mgltickets.com" class="btn">Contact Support</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Reference: Event <strong>{{ event_title }}</strong> / Ticket type <strong>{{ ticket_type_name }}</strong>.</p>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- app/emails/templates/organizer/event_created.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Event Submitted for Review – MGLTickets{% endblock %}
+{% block header_class %}blue{% endblock %}
+{% block header_subtitle %}Submission received{% endblock %}
+
+{% block content %}
+<h2>Event Submitted for Review 📋</h2>
+
+<p>Hi <strong>{{ organizer_name }}</strong>,</p>
+
+<p>Your event has been successfully submitted and is currently under review by our team. You will be notified once it has been approved or if any changes are required.</p>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Submission Details</h3>
+    <table class="detail-table">
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Venue:</td><td>{{ venue }}</td></tr>
+        <tr><td>Date:</td><td>{{ event_date }}</td></tr>
+        <tr><td>Status:</td><td>Pending Review</td></tr>
+    </table>
+</div>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">What happens next?</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+        <li>Our team reviews all submissions within 24–48 hours</li>
+        <li>You'll receive an email once a decision is made</li>
+        <li>You can still edit your event details while it's under review</li>
+    </ul>
+</div>
+
+<div class="btn-center">
+    <a href="{{ dashboard_url }}" class="btn">View in Dashboard</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Questions? Contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a>.</p>
+{% endblock %}

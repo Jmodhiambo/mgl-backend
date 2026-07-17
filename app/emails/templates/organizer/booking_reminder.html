@@ -1,3 +1,4 @@
+<!-- app/emails/templates/organizer/booking_reminder.html -->
 {% extends "base_email.html" %}
 
 {% block title %}Event Reminder – MGLTickets{% endblock %}
@@ -5,7 +6,7 @@
 {% block header_subtitle %}Your event is coming up soon!{% endblock %}
 
 {% block content %}
-<h2>Event Reminder 🎟️</h2>
+<h2>Event Reminder</h2>
 
 <p>Dear <strong>{{ customer_name }}</strong>,</p>
 
@@ -14,12 +15,12 @@
 <div class="info-box blue">
     <h3 style="color: #1e40af;">Event Details</h3>
     <table class="detail-table">
-        <tr><td>📅 Event:</td><td>{{ event_title }}</td></tr>
-        <tr><td>📍 Venue:</td><td>{{ venue }}</td></tr>
-        <tr><td>🗓️ Date &amp; Time:</td><td>{{ event_date }}</td></tr>
-        <tr><td>🎫 Ticket Type:</td><td>{{ ticket_type }}</td></tr>
-        <tr><td>🔢 Quantity:</td><td>{{ quantity }} ticket(s)</td></tr>
-        <tr><td>🧾 Order:</td><td>#{{ order_id }}</td></tr>
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Venue:</td><td>{{ venue }}</td></tr>
+        <tr><td>Date & Time:</td><td>{{ event_date }}</td></tr>
+        <tr><td>Ticket Type:</td><td>{{ ticket_type }}</td></tr>
+        <tr><td>Quantity:</td><td>{{ quantity }} ticket(s)</td></tr>
+        <tr><td>Order:</td><td>#{{ order_id }}</td></tr>
     </table>
 </div>
 

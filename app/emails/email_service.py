@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# app/emails/email_service.py
 """Concrete email service implementation for MGLTickets (currently Resend)."""
 
 import resend
@@ -48,7 +49,7 @@ class EmailService(BaseEmailService):
     def __init__(self) -> None:
         # SecretStr must be unwrapped here — passing the object directly
         # would send its string representation, not the actual key value.
-        resend.api_key = EMAIL_API_KEY.get_secret_value()
+        resend.api_key = EMAIL_API_KEY
         logger.info("Email service initialised (Resend)")
 
     async def send_email(

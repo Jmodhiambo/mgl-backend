@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# app/emails/templates/template_registry.py
 """Template registry — single source of truth for all email templates."""
 
 from typing import Dict, List, Optional
@@ -19,11 +20,20 @@ class TemplateRegistry:
 
     def _register_all(self) -> None:
         """Import and register every template class."""
+
+        # ── User templates ─────────────────────────────────────────────────
         from app.emails.templates.user.templates import (
             VerificationEmailTemplate,
             PasswordResetEmailTemplate,
             AccountReactivationEmailTemplate,
+            AccountDeactivatedEmailTemplate,
+            PasswordChangedEmailTemplate,
+            OrderConfirmedEmailTemplate,
+            PaymentFailedEmailTemplate,
+            ContactConfirmationEmailTemplate,
         )
+
+        # ── Organizer templates ────────────────────────────────────────────
         from app.emails.templates.organizer.templates import (
             BookingReminderTemplate,
             EventUpdateTemplate,
@@ -32,12 +42,32 @@ class TemplateRegistry:
             VenueChangeTemplate,
             TimeChangeTemplate,
             CoOrganizerInvitationTemplate,
+            CoOrganizerInvitationNewUserTemplate,
+            EventCreatedTemplate,
+            EventApprovedTemplate,
+            EventRejectedTemplate,
+            EventPendingDeletionTemplate,
+            EventDeletionConfirmedTemplate,
+            TicketTypeSuspendedTemplate,
+            TicketTypeUnsuspendedTemplate,
+        )
+
+        # ── Admin templates ────────────────────────────────────────────────
+        from app.emails.templates.admin.templates import (
+            ContactNotificationTemplate,
         )
 
         for template in [
+            # User
             VerificationEmailTemplate(),
             PasswordResetEmailTemplate(),
             AccountReactivationEmailTemplate(),
+            AccountDeactivatedEmailTemplate(),
+            PasswordChangedEmailTemplate(),
+            OrderConfirmedEmailTemplate(),
+            PaymentFailedEmailTemplate(),
+            ContactConfirmationEmailTemplate(),
+            # Organizer
             BookingReminderTemplate(),
             EventUpdateTemplate(),
             ThankYouTemplate(),
@@ -45,6 +75,16 @@ class TemplateRegistry:
             VenueChangeTemplate(),
             TimeChangeTemplate(),
             CoOrganizerInvitationTemplate(),
+            CoOrganizerInvitationNewUserTemplate(),
+            EventCreatedTemplate(),
+            EventApprovedTemplate(),
+            EventRejectedTemplate(),
+            EventPendingDeletionTemplate(),
+            EventDeletionConfirmedTemplate(),
+            TicketTypeSuspendedTemplate(),
+            TicketTypeUnsuspendedTemplate(),
+            # Admin
+            ContactNotificationTemplate(),
         ]:
             self._register(template)
 

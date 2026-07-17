@@ -1,0 +1,50 @@
+<!-- app/emails/templates/organizer/co_organizer_invitation_existing.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Co-Organizer Invitation – MGLTickets{% endblock %}
+{% block header_subtitle %}Organizer Portal{% endblock %}
+
+{% block content %}
+<h2>🎉 You've Been Invited!</h2>
+
+<p>Hi <strong>{{ recipient_name }}</strong>,</p>
+
+<p><strong>{{ inviter_name }}</strong> has invited you to co-organise the following event on MGLTickets:</p>
+
+<div class="info-box yellow">
+    <h3 style="color: #ea580c; font-size: 20px;">{{ event_title }}</h3>
+    <table class="detail-table" style="margin-top: 10px;">
+        <tr><td style="color: #9a3412;">📍 Venue:</td><td style="color: #9a3412;">{{ venue }}</td></tr>
+        <tr><td style="color: #9a3412;">🗓️ Date:</td><td style="color: #9a3412;">{{ event_date }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">As a co-organiser you can:</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+        <li>View and manage event bookings</li>
+        <li>Send emails to attendees</li>
+        <li>Access event analytics and reports</li>
+        <li>Coordinate with the main organiser</li>
+    </ul>
+</div>
+
+<p>Log in to your MGLTickets account to accept this invitation:</p>
+
+<div class="btn-center">
+    <a href="{{ accept_url }}" class="btn">Accept Invitation</a>
+</div>
+
+<p class="fallback-link">
+    Or copy and paste this link into your browser:<br>
+    <a href="{{ accept_url }}">{{ accept_url }}</a>
+</p>
+
+<hr class="divider">
+
+<div class="info-box yellow">
+    <p><strong>⏰ This invitation expires in 7 days.</strong></p>
+</div>
+
+<p class="muted">If you don't want to accept, simply ignore this email. Invitation sent by <strong>{{ inviter_name }}</strong>.</p>
+{% endblock %}

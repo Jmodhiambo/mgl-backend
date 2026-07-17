@@ -1,0 +1,47 @@
+<!-- app/emails/templates/organizer/event_rejected.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Event Not Approved – MGLTickets{% endblock %}
+{% block header_class %}red{% endblock %}
+{% block header_subtitle %}Action Required{% endblock %}
+
+{% block content %}
+<h2>Event Submission Not Approved</h2>
+
+<p>Hi <strong>{{ organizer_name }}</strong>,</p>
+
+<p>After reviewing your event submission, our team was unable to approve it at this time.</p>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Event Details</h3>
+    <table class="detail-table">
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <!-- <tr><td>Reviewed by:</td><td>{{ admin_name }}</td></tr> -->
+    </table>
+</div>
+
+{% if rejection_reason %}
+<div class="info-box red">
+    <h3 style="color: #991b1b;">Reason</h3>
+    <p style="color: #7f1d1d;">{{ rejection_reason }}</p>
+</div>
+{% endif %}
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">What you can do</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+        <li>Review the reason above and update your event details</li>
+        <li>Ensure all required information is accurate and complete</li>
+        <li>Resubmit the event once the issues are resolved</li>
+        <li>Contact support if you need clarification</li>
+    </ul>
+</div>
+
+<div class="btn-center">
+    <a href="{{ dashboard_url }}" class="btn">Go to Dashboard</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Questions? Contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a> and quote your event name.</p>
+{% endblock %}

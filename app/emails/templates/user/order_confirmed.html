@@ -1,0 +1,57 @@
+<!-- app/emails/templates/user/order_confirmed.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Order Confirmed – MGLTickets{% endblock %}
+{% block header_class %}green{% endblock %}
+{% block header_subtitle %}Your tickets are confirmed!{% endblock %}
+
+{% block content %}
+<h2>You're Going!</h2>
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>Your order for <strong>{{ event_title }}</strong> is confirmed{% if payment_method == 'free' %} — enjoy your free tickets!{% else %} and payment received.{% endif %}</p>
+
+<div class="info-box green">
+    <h3 style="color: #065f46;">Order Summary</h3>
+    <table class="detail-table">
+        <tr><td>Order:</td><td>#{{ order_id }}</td></tr>
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Venue:</td><td>{{ venue }}</td></tr>
+        <tr><td>Date & Time:</td><td>{{ event_date }}</td></tr>
+        {% if payment_method != 'free' %}
+        <tr><td>Amount Paid:</td><td>KES {{ total_price }}</td></tr>
+        <tr><td>Payment:</td><td>{{ payment_method | upper }}{% if mpesa_ref %} — {{ mpesa_ref }}{% endif %}</td></tr>
+        {% endif %}
+    </table>
+</div>
+
+{% if ticket_lines %}
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Your Tickets</h3>
+    <table class="detail-table">
+        {% for line in ticket_lines %}
+        <tr><td>🎫 {{ line.ticket_type }}</td><td>× {{ line.quantity }}</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">Getting In</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+        <li>Your ticket QR codes are available in the MGLTickets app under <strong>My Tickets</strong></li>
+        <li>Arrive at least 30 minutes before the event starts</li>
+        <li>Bring a valid ID for verification at the gate</li>
+        <li>Keep your Order # <strong>#{{ order_id }}</strong> handy for support queries</li>
+    </ul>
+</div>
+
+<div class="btn-center">
+    <a href="{{ tickets_url }}" class="btn green">View My Tickets</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Questions about your order? Contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a> and quote Order #{{ order_id }}.</p>
+{% endblock %}

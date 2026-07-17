@@ -5,9 +5,14 @@ Create a profile for organizers where people with events or attendees could look
 It will also be a marketing opportunity for the organizers.
 Need to include profile pictures static directory
 
+As part of that also create MGLStay for hotel and bnb's
+
 
 https://chatgpt.com/c/69263e04-76e0-8327-a88b-f0b564a05c21
 
+Set up automated backups, monitoring, and log rotation.
+
+Implement Celerey or such like tech for email sending and remove asyncio since it's not effective in sending emails.
 
 Implement get ticket instance by seat number functionality in ticket instance service and repository layers.
 

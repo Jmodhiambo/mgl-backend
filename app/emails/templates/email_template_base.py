@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# app/emails/templates/email_template_base.py
 """Base email template class for MGLTickets."""
 
 from abc import ABC, abstractmethod

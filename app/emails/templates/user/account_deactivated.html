@@ -1,0 +1,35 @@
+<!-- app/emails/templates/user/account_deactivated.html -->
+{% extends "base_email.html" %}
+
+{% block title %}Account Deactivated – MGLTickets{% endblock %}
+{% block header_class %}red{% endblock %}
+{% block header_subtitle %}Account Notice{% endblock %}
+
+{% block content %}
+<h2>Your Account Has Been Deactivated</h2>
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>Your MGLTickets account has been deactivated. You will no longer be able to log in or make new bookings.</p>
+
+<div class="info-box yellow">
+    <h3 style="color: #92400e;">What this means</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
+        <li>Your account is no longer accessible</li>
+        <li>Existing tickets for confirmed orders remain valid</li>
+        <li>No new orders or bookings can be placed</li>
+    </ul>
+</div>
+
+<div class="info-box blue">
+    <p><strong>Think this was a mistake?</strong> If you believe your account was deactivated in error, please contact our support team and we will look into it.</p>
+</div>
+
+<div class="btn-center">
+    <a href="mailto:support@mgltickets.com" class="btn">Contact Support</a>
+</div>
+
+<hr class="divider">
+
+<p class="muted">If you requested this deactivation yourself, no further action is needed.</p>
+{% endblock %}
