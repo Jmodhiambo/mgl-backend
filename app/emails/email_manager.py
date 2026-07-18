@@ -90,7 +90,12 @@ class EmailManager:
         # premailer converts <style> blocks to inline style attributes so
         # email clients that strip <head> styles (Outlook, Gmail web) still
         # render the design correctly.
-        html = transform(raw_html)
+        # disable_validation=True: cssutils (which premailer uses to parse
+        # CSS) only validates against CSS 2.1, so it flags — and can drop —
+        # modern-but-valid declarations like linear-gradient() backgrounds,
+        # vendor prefixes, and word-break/overflow-wrap. Disabling
+        # validation stops it from rejecting those as "invalid".
+        html = transform(raw_html, disable_validation=True)
 
         # ── 6. Send (or log in dev mode) ─────────────────────────────────
         if EMAIL_DEV_MODE:
@@ -142,7 +147,7 @@ class EmailManager:
             organizer_name=organizer_name,
             body=body,
         )
-        html = transform(raw_html)
+        html = transform(raw_html, disable_validation=True)
 
         if EMAIL_DEV_MODE:
             logger.info(

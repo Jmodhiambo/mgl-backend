@@ -203,7 +203,7 @@ async def approve_event(
     event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
     """Approve an event by its ID."""
-    event = await event_services.approve_event_service(event_id)
+    event = await event_services.approve_event_service(event_id, user.name)
 
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.")
@@ -228,7 +228,7 @@ async def reject_event(
     event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
     """Reject an event by its ID."""
-    event = await event_services.reject_event_service(event_id)
+    event = await event_services.reject_event_service(event_id, user.name, reason="Your event did not meet our guidelines. Please review and resubmit.")
 
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.")

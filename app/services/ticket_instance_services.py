@@ -19,6 +19,19 @@ from app.schemas.ticket_instance import (
 
 
 # ── Email background helper ───────────────────────────────────────────────────
+# Matches the pattern used across event_services.py, user_services.py, etc.
+
+async def _safe_email(coro) -> None:
+    """Await an email coroutine and log — rather than silently swallow —
+    any failure. Without this, an exception raised inside a fire-and-forget
+    asyncio.Task (e.g. a template validation error, or the send itself
+    failing) never surfaces anywhere except an easy-to-miss 'exception was
+    never retrieved' warning from asyncio's default handler."""
+    try:
+        await coro
+    except Exception as exc:
+        logger.error(f"Background email task failed: {exc}")
+
 
 def _bg_email(coro) -> None:
     """
@@ -27,9 +40,9 @@ def _bg_email(coro) -> None:
     """
     try:
         loop = asyncio.get_running_loop()
-        loop.create_task(coro)
+        loop.create_task(_safe_email(coro))
     except RuntimeError:
-        asyncio.run(coro)
+        asyncio.run(_safe_email(coro))
 
 
 async def _dispatch_check_in_confirmed_email(
@@ -58,7 +71,7 @@ async def _dispatch_check_in_confirmed_email(
             template_id="user.check_in_confirmed",
             to_email=user.email,
             variables={
-                "name": instance.issue_to if instance.issue_to else user.name,
+                "name": user.name,
                 "event_title": event_title,
                 "ticket_type_name": ticket_type_name,
                 "code": code,
@@ -68,8 +81,6 @@ async def _dispatch_check_in_confirmed_email(
     except Exception as exc:
         logger.warning(f"Could not schedule check_in_confirmed email for ticket instance {ticket_instance_id}: {exc}")
 
-
-# ── CRUD──────────────────────────────────────────────────
 
 async def create_ticket_instance(ticket_instance_create: TicketInstanceCreate) -> dict:
     """Create a new TicketInstance. event_id must be set on the create schema."""
