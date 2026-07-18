@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """TicketInstance services for MGLTickets."""
 
+import asyncio
 from uuid import uuid4
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.logging_config import logger
+from app.emails.email_manager import email_manager
 import app.db.repositories.ticket_instance_repo as ti_repo
+import app.db.repositories.user_repo as user_repo
 from app.schemas.ticket_instance import (
     TicketInstanceCreate,
     TicketInstanceUpdate,
@@ -14,6 +17,59 @@ from app.schemas.ticket_instance import (
     CheckInTicketInfo,
 )
 
+
+# ── Email background helper ───────────────────────────────────────────────────
+
+def _bg_email(coro) -> None:
+    """
+    Schedule an email coroutine as a background task.
+    Falls back to direct await if no running event loop exists (tests, CLI).
+    """
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(coro)
+    except RuntimeError:
+        asyncio.run(coro)
+
+
+async def _dispatch_check_in_confirmed_email(
+    ticket_instance_id: int,
+    event_title: str,
+    ticket_type_name: str,
+    code: str,
+) -> None:
+    """
+    Look up the ticket instance's owner and schedule user.check_in_confirmed
+    in the background. Wrapped so an email failure can never affect the
+    check-in outcome that's already been committed to the database.
+    """
+    try:
+        instance = await ti_repo.get_ticket_instance_by_id_repo(ticket_instance_id)
+        if not instance:
+            logger.warning(f"Could not send check_in_confirmed email — ticket instance {ticket_instance_id} not found")
+            return
+
+        user = await user_repo.get_user_by_id_repo(instance.user_id)
+        if not user:
+            logger.warning(f"Could not send check_in_confirmed email — user for ticket instance {ticket_instance_id} not found")
+            return
+
+        _bg_email(email_manager.send_from_template(
+            template_id="user.check_in_confirmed",
+            to_email=user.email,
+            variables={
+                "name": instance.issue_to if instance.issue_to else user.name,
+                "event_title": event_title,
+                "ticket_type_name": ticket_type_name,
+                "code": code,
+                "checked_in_at": datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC"),
+            },
+        ))
+    except Exception as exc:
+        logger.warning(f"Could not schedule check_in_confirmed email for ticket instance {ticket_instance_id}: {exc}")
+
+
+# ── CRUD──────────────────────────────────────────────────
 
 async def create_ticket_instance(ticket_instance_create: TicketInstanceCreate) -> dict:
     """Create a new TicketInstance. event_id must be set on the create schema."""
@@ -139,6 +195,7 @@ async def check_in_ticket_service(
     before the atomic check-in. Prevents a ticket for Event A being
     accepted at Event B's gate even though the signature is valid.
     scanned_by is the authenticated user's name, stored on the row for audit.
+    On acceptance, schedules a check-in confirmation email to the ticket holder.
     """
     from app.core.ticket_signing import verify_ticket_qr_payload
 
@@ -181,6 +238,12 @@ async def check_in_ticket_service(
             f"Checked in ticket {result['ticket_instance_id']} "
             f"(scanned_by={result.get('scanned_by')!r})"
         )
+        await _dispatch_check_in_confirmed_email(
+            ticket_instance_id=result["ticket_instance_id"],
+            event_title=result["event_title"],
+            ticket_type_name=result["ticket_type_name"],
+            code=result["code"],
+        )
         return CheckInResponse(accepted=True, ticket=ticket_info)
 
     logger.info(
@@ -203,6 +266,7 @@ async def check_in_ticket_by_code_service(
     Check in a ticket by its human-readable code (manual fallback).
     Scoped to event_id. Logged as method=manual_code in logs.
     scanned_by is stored on the ticket row for audit.
+    On acceptance, schedules a check-in confirmation email to the ticket holder.
     """
     result = await ti_repo.check_in_ticket_by_code_repo(
         code=code.strip().upper(),
@@ -230,6 +294,12 @@ async def check_in_ticket_by_code_service(
         logger.info(
             f"Manual check-in: ticket {result['ticket_instance_id']} admitted "
             f"(scanned_by={scanned_by!r})"
+        )
+        await _dispatch_check_in_confirmed_email(
+            ticket_instance_id=result["ticket_instance_id"],
+            event_title=result["event_title"],
+            ticket_type_name=result["ticket_type_name"],
+            code=result["code"],
         )
         return CheckInResponse(accepted=True, ticket=ticket_info)
 
@@ -260,6 +330,7 @@ async def check_in_ticket_admin_service(
     """
     Admin QR check-in. Verifies HMAC then confirms the payload's event_id
     matches the admin's selected event before the atomic update.
+    On acceptance, schedules a check-in confirmation email to the ticket holder.
     """
     from app.core.ticket_signing import verify_ticket_qr_payload
 
@@ -301,6 +372,12 @@ async def check_in_ticket_admin_service(
             f"Admin check-in: ticket {result['ticket_instance_id']} admitted "
             f"(scanned_by={scanned_by!r})"
         )
+        await _dispatch_check_in_confirmed_email(
+            ticket_instance_id=result["ticket_instance_id"],
+            event_title=result["event_title"],
+            ticket_type_name=result["ticket_type_name"],
+            code=result["code"],
+        )
         return CheckInResponse(accepted=True, ticket=ticket_info)
 
     return CheckInResponse(
@@ -316,7 +393,8 @@ async def check_in_ticket_admin_by_code_service(
     event_id: int,
     scanned_by: str = "",
 ) -> CheckInResponse:
-    """Admin manual code fallback — delegates to the shared by-code service."""
+    """Admin manual code fallback — delegates to the shared by-code service.
+    Check-in confirmation email is dispatched there too."""
     return await check_in_ticket_by_code_service(
         code, event_id, scanned_by, scan_method="manual_code"
     )

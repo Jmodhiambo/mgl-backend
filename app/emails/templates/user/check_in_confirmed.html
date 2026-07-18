@@ -1,0 +1,32 @@
+<!-- app/emails/templates/user/check_in_confirmed.html -->
+{% extends "base_email.html" %}
+
+{% block title %}You're Checked In – MGLTickets{% endblock %}
+{% block header_class %}green{% endblock %}
+{% block header_subtitle %}Check-In Confirmed{% endblock %}
+
+{% block content %}
+<h2>✅ You're Checked In!</h2>
+
+<p>Hi <strong>{{ name }}</strong>,</p>
+
+<p>This confirms your entry has been checked in for <strong>{{ event_title }}</strong>. Enjoy the event!</p>
+
+<div class="info-box green">
+    <h3 style="color: #065f46;">Check-In Details</h3>
+    <table class="detail-table">
+        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
+        <tr><td>Ticket Type:</td><td>{{ ticket_type_name }}</td></tr>
+        <tr><td>Ticket Code:</td><td>{{ code }}</td></tr>
+        <tr><td>Checked in at:</td><td>{{ checked_in_at }}</td></tr>
+    </table>
+</div>
+
+<div class="info-box blue">
+    <p><strong>Note:</strong> This ticket has now been used for entry and cannot be checked in again. If this wasn't you, contact us right away.</p>
+</div>
+
+<hr class="divider">
+
+<p class="muted">Questions about your check-in? Contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a> and quote code {{ code }}.</p>
+{% endblock %}

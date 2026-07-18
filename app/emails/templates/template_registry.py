@@ -31,6 +31,7 @@ class TemplateRegistry:
             OrderConfirmedEmailTemplate,
             PaymentFailedEmailTemplate,
             ContactConfirmationEmailTemplate,
+            CheckInConfirmedEmailTemplate,
         )
 
         # ── Organizer templates ────────────────────────────────────────────
@@ -67,6 +68,7 @@ class TemplateRegistry:
             OrderConfirmedEmailTemplate(),
             PaymentFailedEmailTemplate(),
             ContactConfirmationEmailTemplate(),
+            CheckInConfirmedEmailTemplate(),
             # Organizer
             BookingReminderTemplate(),
             EventUpdateTemplate(),

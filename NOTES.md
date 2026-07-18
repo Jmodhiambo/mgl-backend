@@ -60,3 +60,5 @@ Work on getting location field in the app.api.auth.auth under login route.
 Look into implementing audit logs for other user's apart from admin like in user_admin endpoint.
 
 The pending deletion for events with booking currently use booking. I need to refactor it to use order as it's the parent. It is quite a big change but worth it in the long run.
+
+Look into pagination implemented by Co-Organizzer and see if other pages can implement it too. It used schemas/pagination.py.

@@ -33,10 +33,46 @@ def _bg_email(coro) -> None:
         asyncio.run(coro)
 
 
+async def _notify_attendees_of_cancellation(event_id: int, event_title: str, organizer_name: str, cancellation_reason: str) -> None:
+    """
+    Fan out organizer.cancellation to every attendee with a booking on this
+    event. Reuses the same enriched-booking source and variable shape as
+    the manual bulk-send path in organizer_emails_services.py, so a
+    cancellation notice looks identical whether it was triggered
+    automatically (here) or sent manually by the organizer.
+    Never raises — a notification failure must not affect the status change
+    that already succeeded.
+    """
+    try:
+        bookings = await booking_repo.list_event_bookings_enriched_repo(event_id)
+        sent = 0
+        for booking in bookings:
+            if not booking.customer_email:
+                continue
+            _bg_email(email_manager.send_from_template(
+                template_id="organizer.cancellation",
+                to_email=booking.customer_email,
+                variables={
+                    "customer_name": booking.customer_name or "Valued Customer",
+                    "event_title": event_title,
+                    "ticket_type": booking.ticket_type_name or "General",
+                    "quantity": str(booking.quantity),
+                    "order_id": str(booking.order_id or booking.id),
+                    "total_price": f"{booking.total_price:,.0f}" if booking.total_price else "0",
+                    "cancellation_reason": cancellation_reason or "The event has been cancelled by the organizer.",
+                    "organizer_name": organizer_name,
+                },
+            ))
+            sent += 1
+        logger.info(f"Dispatched cancellation email to {sent} attendee(s) for event {event_id}")
+    except Exception as exc:
+        logger.warning(f"Could not schedule cancellation emails for event {event_id}: {exc}")
+
+
 # ── URL helpers ───────────────────────────────────────────────────────────────
 
 def _organizer_dashboard_url() -> str:
-    return f"{FRONTEND_URL}/organizer/dashboard"
+    return f"organizer.{FRONTEND_URL}/dashboard"
 
 
 def _event_public_url(slug: str) -> str:
@@ -112,10 +148,13 @@ async def delete_event_service(event_id: int):
     return deleted
 
 
-async def update_event_status_service(event_id: int, new_status: str):
+async def update_event_status_service(event_id: int, new_status: str, cancellation_reason: str = ""):
     """
     Update event status. Redirects delete requests to pending_deletion
     when unresolved bookings exist, and notifies the organizer in background.
+    When new_status is 'cancelled', every attendee with a booking on the
+    event is notified via organizer.cancellation in background (the same
+    template organizers can also send manually via the bulk-email tool).
     """
     valid = ["upcoming", "ongoing", "completed", "cancelled", "deleted", "pending_deletion"]
     if new_status not in valid:
@@ -144,7 +183,23 @@ async def update_event_status_service(event_id: int, new_status: str):
                 logger.warning(f"Could not schedule pending_deletion email for event {event_id}: {exc}")
             return result
 
-    return await event_repo.update_event_status_repo(event_id, new_status)
+    result = await event_repo.update_event_status_repo(event_id, new_status)
+
+    if new_status == "cancelled":
+        try:
+            event = await event_repo.get_event_by_id_repo(event_id)
+            if event:
+                organizer = await user_repo.get_user_by_id_repo(event.organizer_id)
+                await _notify_attendees_of_cancellation(
+                    event_id=event_id,
+                    event_title=event.title,
+                    organizer_name=organizer.name if organizer else "Your Organizer",
+                    cancellation_reason=cancellation_reason,
+                )
+        except Exception as exc:
+            logger.warning(f"Could not schedule cancellation emails for event {event_id}: {exc}")
+
+    return result
 
 
 async def confirm_event_deletion_ready_service(event_id: int):

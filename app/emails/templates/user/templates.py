@@ -141,3 +141,20 @@ class ContactConfirmationEmailTemplate(EmailTemplate):
 
     def get_subject(self, variables: Dict[str, str]) -> str:
         return f"We Received Your Message – Ref: {variables['reference_id']}"
+    
+class CheckInConfirmedEmailTemplate(EmailTemplate):
+ 
+    def __init__(self):
+        super().__init__(
+            id="user.check_in_confirmed",
+            name="Check-In Confirmed",
+            category="user",
+            description="Sent to the ticket holder immediately after a successful event check-in",
+            required_variables=[
+                "name", "event_title", "ticket_type_name", "code", "checked_in_at",
+            ],
+            template_file="user/check_in_confirmed.html",
+        )
+ 
+    def get_subject(self, variables: Dict[str, str]) -> str:
+        return f"You're Checked In – {variables['event_title']}"

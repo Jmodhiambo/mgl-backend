@@ -31,7 +31,7 @@ def _bg_email(coro) -> None:
 
 
 def _organizer_dashboard_url() -> str:
-    return f"{FRONTEND_URL}/organizer/dashboard"
+    return f"organizer.{FRONTEND_URL}/dashboard"
 
 
 # ── CRUD ──────────────────────────────────────────────────────────────────────
