@@ -268,11 +268,11 @@ async def admin_force_verify_email_service(user_id: int) -> dict:
     return user
 
 
-async def resend_verification_email_service(email: str) -> dict:
+async def resend_verification_email_service(user_id: int) -> dict:
     """Resend a verification email."""
-    logger.info(f"Resending verification email to: {email}")
+    logger.info(f"Resending verification email to user with ID: {user_id}")
 
-    user = await user_repo.get_user_by_email_repo(email)
+    user = await user_repo.get_user_by_id_repo(user_id)
     if not user:
         return {"success": True, "message": "If an account exists with this email, a verification link has been sent."}
 
@@ -288,7 +288,7 @@ async def resend_verification_email_service(email: str) -> dict:
         to_email=user.email,
         variables={
             "name": user.name,
-            "verification_url": f"{FRONTEND_URL}/verify?token={new_token}",
+            "verification_url": f"{FRONTEND_URL}/verify-email?token={new_token}",
         },
     ))
 
