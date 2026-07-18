@@ -47,11 +47,6 @@ app.add_middleware(
     expose_headers=["set-cookie", "Set-Cookie"],
 )
 
-# Debug print
-print("=" * 50)
-print(f"🌐 ALLOWED ORIGINS: {ALLOWED_ORIGINS}")
-print("=" * 50)
-
 # Add logging middleware
 app.add_middleware(LoggingMiddleware)
 
