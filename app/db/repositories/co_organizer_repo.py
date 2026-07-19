@@ -89,10 +89,13 @@ async def check_if_co_organizer_repo(user_id: int, event_id: int) -> bool:
 async def get_co_organizers_with_details_repo(
     organizer_id: Optional[int] = None,
     event_id: Optional[int] = None,
-) -> list[CoOrganizerWithUserAndEvent]:
+    limit: Optional[int] = None,
+    offset: int = 0,
+) -> tuple[list[CoOrganizerWithUserAndEvent], int]:
     """
     Return enriched co-organizer rows via a single JOIN across
-    CoOrganizer → User and CoOrganizer → Event.
+    CoOrganizer → User and CoOrganizer → Event, plus the total matching
+    row count (ignoring limit/offset) so callers can build pagination.
 
     Calling conventions:
       • organizer_id only  → all co-organizers across that organizer's events
@@ -102,22 +105,46 @@ async def get_co_organizers_with_details_repo(
     The ownership boundary for organizer calls is enforced here by filtering on
     organizer_id; admin callers omit it and rely on require_admin at the router.
 
+    limit/offset:
+      • limit=None (the default) returns every matching row, unpaginated —
+        this is what the admin caller uses today, so its behaviour is
+        unchanged by this signature.
+      • Passing an explicit limit applies LIMIT/OFFSET to the row query only;
+        the count query always reflects the full matching set regardless of
+        limit/offset, so `total` is stable across pages.
+
+    Returns (items, total). Ordered newest-first (created_at desc, id desc
+    as a tiebreaker) so pagination is stable even when multiple rows share
+    a created_at timestamp.
+
     The schema is built inside the session context so the eagerly-loaded
     related objects are still accessible after execute().
     """
     async with get_async_session() as session:
+        filters = []
+        if organizer_id is not None:
+            filters.append(CoOrganizer.organizer_id == organizer_id)
+        if event_id is not None:
+            filters.append(CoOrganizer.event_id == event_id)
+
+        count_stmt = select(func.count(CoOrganizer.id))
+        for f in filters:
+            count_stmt = count_stmt.where(f)
+        total = (await session.execute(count_stmt)).scalar_one()
+
         stmt = select(CoOrganizer).options(
             joinedload(CoOrganizer.user),
             joinedload(CoOrganizer.event),
         )
-        if organizer_id is not None:
-            stmt = stmt.where(CoOrganizer.organizer_id == organizer_id)
-        if event_id is not None:
-            stmt = stmt.where(CoOrganizer.event_id == event_id)
+        for f in filters:
+            stmt = stmt.where(f)
+        stmt = stmt.order_by(CoOrganizer.created_at.desc(), CoOrganizer.id.desc())
+        if limit is not None:
+            stmt = stmt.limit(limit).offset(offset)
 
         result = await session.execute(stmt)
         rows = result.scalars().unique().all()
-        return [
+        items = [
             CoOrganizerWithUserAndEvent(
                 id=row.id,
                 event_id=row.event_id,
@@ -133,6 +160,7 @@ async def get_co_organizers_with_details_repo(
             )
             for row in rows
         ]
+        return items, total
 
 
 async def get_user_co_organizing_events_with_details_repo(

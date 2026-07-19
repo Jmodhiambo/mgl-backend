@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Co-organizer routes for the organizer app."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.schemas.co_organizer import CoOrganizerOut, CoOrganizerWithUserAndEvent, CoOrganizerWithEvent
+from app.schemas.pagination import PaginatedResponse
 import app.services.co_organizer_services as co_services
 from app.core.security import require_organizer
 
@@ -45,29 +46,42 @@ async def update_create_co_organizer_status(
 
 @router.get(
     "/organizers/me/co-organizers",
-    response_model=list[CoOrganizerWithUserAndEvent],
+    response_model=PaginatedResponse[CoOrganizerWithUserAndEvent],
     status_code=status.HTTP_200_OK,
 )
-async def get_all_co_organizers(organizer=Depends(require_organizer)):
+async def get_all_co_organizers(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    organizer=Depends(require_organizer),
+):
     """
-    List co-organizers across ALL of the current organizer's events.
+    List co-organizers across ALL of the current organizer's events, paginated.
     One row per co-organizer/event pair — a user co-organising two events
     appears twice, matching the frontend table's event-name column.
     """
-    return await co_services.get_all_co_organizers_service(organizer.id)
+    return await co_services.get_all_co_organizers_service(
+        organizer.id, limit=limit, offset=offset
+    )
 
 
 @router.get(
     "/organizers/me/co-organizers/event/{event_id}",
-    response_model=list[CoOrganizerWithUserAndEvent],
+    response_model=PaginatedResponse[CoOrganizerWithUserAndEvent],
     status_code=status.HTTP_200_OK,
 )
-async def get_co_organizers_for_event(event_id: int, organizer=Depends(require_organizer)):
+async def get_co_organizers_for_event(
+    event_id: int,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    organizer=Depends(require_organizer),
+):
     """
-    List co-organizers for a single event owned by the current organizer.
+    List co-organizers for a single event owned by the current organizer, paginated.
     Path uses /event/{event_id} to avoid ambiguity with /{co_organizer_id}.
     """
-    return await co_services.get_co_organizers_for_event_service(organizer.id, event_id)
+    return await co_services.get_co_organizers_for_event_service(
+        organizer.id, event_id, limit=limit, offset=offset
+    )
 
 
 @router.delete(

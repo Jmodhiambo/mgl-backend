@@ -5,7 +5,8 @@ from datetime import datetime
 
 from app.core.logging_config import logger
 import app.db.repositories.booking_repo as booking_repo
-from app.schemas.booking import BookingUpdate
+from app.schemas.booking import BookingUpdate, BookingEnrichedOut
+from app.schemas.pagination import PaginatedResponse
 from typing import Optional
 
 # NOTE: create_booking_service was removed. Bookings are now created via
@@ -125,10 +126,28 @@ async def list_bookings_in_date_range_service(start_date: datetime, end_date: da
     logger.info("Listing bookings in date range", extra={"extra": {"start_date": start_date, "end_date": end_date}})
     return await booking_repo.list_bookings_in_date_range_repo(start_date, end_date)
 
-async def get_recent_bookings_by_organizer_service(organizer_id: int, limit: int = 10) -> list[dict]:
-    """Service to list the most recent bookings for a specific organizer."""
-    logger.info("Listing recent bookings by organizer", extra={"extra": {"organizer_id": organizer_id, "limit": limit}})
-    return await booking_repo.get_recent_bookings_by_organizer_repo(organizer_id, limit)
+async def get_recent_bookings_by_organizer_service(
+    organizer_id: int, limit: int = 20, offset: int = 0
+) -> PaginatedResponse[BookingEnrichedOut]:
+    """
+    Service to list enriched bookings across all of an organizer's events,
+    paginated. Backs GET /organizers/me/recent-bookings — the data source
+    for the BookingsView "Bookings" tab when no event filter is applied.
+    """
+    logger.info(
+        "Listing recent bookings by organizer",
+        extra={"extra": {"organizer_id": organizer_id, "limit": limit, "offset": offset}},
+    )
+    items, total = await booking_repo.get_recent_bookings_by_organizer_repo(
+        organizer_id, limit=limit, offset=offset
+    )
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=(offset + len(items)) < total,
+    )
 
 
 async def list_bookings_enriched_service() -> list[dict]:
@@ -138,8 +157,20 @@ async def list_bookings_enriched_service() -> list[dict]:
     return await booking_repo.list_bookings_enriched_repo()
  
  
-async def list_event_bookings_enriched_service(event_id: int) -> list[dict]:
-    """List bookings for an event with joined data.
-    Used by organizer event booking endpoints."""
-    logger.info(f"Listing enriched bookings for event {event_id}")
-    return await booking_repo.list_event_bookings_enriched_repo(event_id)
+async def list_event_bookings_enriched_service(
+    event_id: int, limit: int = 20, offset: int = 0
+) -> PaginatedResponse[BookingEnrichedOut]:
+    """List bookings for an event with joined data, paginated.
+    Used by organizer event booking endpoints — the data source for the
+    BookingsView "Bookings" tab when scoped to a single event."""
+    logger.info(f"Listing enriched bookings for event {event_id} (limit={limit}, offset={offset})")
+    items, total = await booking_repo.list_event_bookings_enriched_repo(
+        event_id, limit=limit, offset=offset
+    )
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=(offset + len(items)) < total,
+    )

@@ -365,19 +365,42 @@ async def calculate_revenue_by_organizer_repo(organizer_id: int) -> int:
         return revenue if revenue else 0
 
 
-async def get_recent_bookings_by_organizer_repo(organizer_id: int, limit: int = 10) -> list:
+async def get_recent_bookings_by_organizer_repo(
+    organizer_id: int, limit: int = 20, offset: int = 0
+) -> tuple[list, int]:
+    """
+    Paginated, enriched bookings across every event owned by this organizer,
+    newest first. Despite the "recent" name (kept for backwards-compat with
+    the /organizers/me/recent-bookings route), this is the query the
+    BookingsView "Bookings" tab uses for its no-event-filter view — the
+    frontend used to work around the lack of real pagination here by
+    requesting limit=100 and doing everything client-side.
+
+    Returns (bookings, total) — total is the full matching count across the
+    organizer's events, ignoring limit/offset, so the caller can render
+    "Showing X-Y of Z" and enable/disable Prev/Next.
+    """
     from app.db.models.event import Event
     from app.db.models.user import User
 
     async with get_async_session() as session:
+        count_stmt = (
+            select(func.count(Booking.id))
+            .select_from(Booking)
+            .join(Event, Booking.event_id == Event.id)
+            .where(Event.organizer_id == organizer_id)
+        )
+        total = (await session.execute(count_stmt)).scalar_one()
+
         result = await session.execute(
             select(Booking, User.name, User.email, Event.title, TicketType.name)
             .join(Event, Booking.event_id == Event.id)
             .join(User, Booking.user_id == User.id)
             .join(TicketType, Booking.ticket_type_id == TicketType.id)
             .where(Event.organizer_id == organizer_id)
-            .order_by(Booking.created_at.desc())
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
             .limit(limit)
+            .offset(offset)
         )
 
         bookings = []
@@ -398,7 +421,7 @@ async def get_recent_bookings_by_organizer_repo(organizer_id: int, limit: int = 
                 "created_at": booking.created_at,
                 "updated_at": booking.updated_at,
             })
-        return bookings
+        return bookings, total
 
 
 async def list_bookings_enriched_repo() -> list:
@@ -439,13 +462,29 @@ async def list_bookings_enriched_repo() -> list:
         return bookings
 
 
-async def list_event_bookings_enriched_repo(event_id: int) -> list:
-    """List all bookings for an event with joined user and ticket type data.
-    Used by organizer event booking endpoints."""
+async def list_event_bookings_enriched_repo(
+    event_id: int, limit: int = 20, offset: int = 0
+) -> tuple[list, int]:
+    """
+    Paginated, enriched bookings for a single event, newest first.
+    Used by the organizer event-booking endpoints (BookingsView "Bookings"
+    tab when scoped to one event).
+
+    Returns (bookings, total) — total is the full matching count for this
+    event, ignoring limit/offset, so the caller can render
+    "Showing X-Y of Z" and enable/disable Prev/Next.
+    """
     from app.db.models.event import Event
     from app.db.models.user import User
 
     async with get_async_session() as session:
+        count_stmt = (
+            select(func.count(Booking.id))
+            .select_from(Booking)
+            .where(Booking.event_id == event_id)
+        )
+        total = (await session.execute(count_stmt)).scalar_one()
+
         result = await session.execute(
             select(Booking, User.name, User.email, Event.title,
                    TicketType.name, Event.venue, Event.start_time)
@@ -453,7 +492,9 @@ async def list_event_bookings_enriched_repo(event_id: int) -> list:
             .join(Event, Booking.event_id == Event.id)
             .join(TicketType, Booking.ticket_type_id == TicketType.id)
             .where(Booking.event_id == event_id)
-            .order_by(Booking.created_at.desc())
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
+            .limit(limit)
+            .offset(offset)
         )
         bookings = []
         for booking, user_name, user_email, event_title, ticket_name, venue, start_time in result:
@@ -475,4 +516,4 @@ async def list_event_bookings_enriched_repo(event_id: int) -> list:
                 'created_at': booking.created_at,
                 'updated_at': booking.updated_at,
             })
-        return bookings
+        return bookings, total

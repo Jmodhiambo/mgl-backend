@@ -11,6 +11,7 @@ from app.core.config import FRONTEND_URL
 from app.core.logging_config import logger
 from app.emails.email_manager import email_manager
 from app.schemas.co_organizer import CoOrganizerOut, CoOrganizerWithEvent, CoOrganizerWithUserAndEvent
+from app.schemas.pagination import PaginatedResponse
 import app.db.repositories.co_organizer_repo as co_repo
 import app.db.repositories.event_repo as event_repo
 import app.db.repositories.user_repo as user_repo
@@ -56,7 +57,7 @@ async def create_co_organizer_service(
  
     event_title = event.title if event else "an event"
     venue = event.venue if event else "TBA"
-    event_date = event.start_date.strftime("%d %b %Y") if event and event.start_date else "TBA"
+    event_date = event.start_time.strftime("%d %b %Y") if event and event.start_time else "TBA"
     inviter_name = inviter.name if inviter else "An organizer"
  
     user = await get_user_by_email_repo(email=email)
@@ -142,33 +143,56 @@ async def get_co_organizer_by_id_service(co_organizer_id: int) -> CoOrganizerOut
     return record
 
 
-# ── Read — enriched lists ─────────────────────────────────────────────────────
+# ── Read — enriched lists (paginated) ─────────────────────────────────────────
 #
-# All three functions below delegate to the same repo function
+# Both functions below delegate to the same repo function
 # (get_co_organizers_with_details_repo) with different filter arguments.
-# The repo handles the JOIN in one query regardless of which args are provided.
+# The repo handles the JOIN, count, and LIMIT/OFFSET in one place; here we
+# just wrap the (items, total) tuple into the shared PaginatedResponse envelope.
 
 async def get_all_co_organizers_service(
-    organizer_id: int,
-) -> list[CoOrganizerWithUserAndEvent]:
+    organizer_id: int, limit: int = 20, offset: int = 0
+) -> PaginatedResponse[CoOrganizerWithUserAndEvent]:
     """
-    All co-organizers across every event owned by this organizer.
+    All co-organizers across every event owned by this organizer, paginated.
     Used by GET /organizers/me/co-organizers ("All Events" view).
     """
-    logger.info(f"Listing all co-organizers for organizer {organizer_id}")
-    return await co_repo.get_co_organizers_with_details_repo(organizer_id=organizer_id)
+    logger.info(
+        f"Listing co-organizers for organizer {organizer_id} "
+        f"(limit={limit}, offset={offset})"
+    )
+    items, total = await co_repo.get_co_organizers_with_details_repo(
+        organizer_id=organizer_id, limit=limit, offset=offset
+    )
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=(offset + len(items)) < total,
+    )
 
 
 async def get_co_organizers_for_event_service(
-    organizer_id: int, event_id: int
-) -> list[CoOrganizerWithUserAndEvent]:
+    organizer_id: int, event_id: int, limit: int = 20, offset: int = 0
+) -> PaginatedResponse[CoOrganizerWithUserAndEvent]:
     """
-    Co-organizers for one event, scoped to the requesting organizer.
+    Co-organizers for one event, scoped to the requesting organizer, paginated.
     Used by GET /organizers/me/co-organizers/event/{event_id}.
     """
-    logger.info(f"Listing co-organizers for organizer {organizer_id}, event {event_id}")
-    return await co_repo.get_co_organizers_with_details_repo(
-        organizer_id=organizer_id, event_id=event_id
+    logger.info(
+        f"Listing co-organizers for organizer {organizer_id}, event {event_id} "
+        f"(limit={limit}, offset={offset})"
+    )
+    items, total = await co_repo.get_co_organizers_with_details_repo(
+        organizer_id=organizer_id, event_id=event_id, limit=limit, offset=offset
+    )
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=(offset + len(items)) < total,
     )
 
 
@@ -179,9 +203,15 @@ async def get_all_event_co_organizers_service(
     All co-organizers for any event — no organizer ownership filter.
     Admin-only; access control is enforced by require_admin at the router.
     Used by GET /admin/me/co-organizers?event_id=X.
+
+    Not paginated — this endpoint wasn't in scope for the pagination work
+    on the organizer co-organizer/booking pages, so it keeps returning the
+    full list unchanged. It still goes through the same repo function,
+    which now returns (items, total); we simply discard total here.
     """
     logger.info(f"Admin: listing co-organizers for event {event_id}")
-    return await co_repo.get_co_organizers_with_details_repo(event_id=event_id)
+    items, _total = await co_repo.get_co_organizers_with_details_repo(event_id=event_id)
+    return items
 
 
 # ── Read — user's co-organising events ───────────────────────────────────────

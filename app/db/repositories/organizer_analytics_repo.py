@@ -11,6 +11,7 @@ Place at: app/db/repositories/organizer_repo.py
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 from sqlalchemy import func, select, and_
 
@@ -151,30 +152,68 @@ async def get_organizer_dashboard_stats_repo(organizer_id: int) -> DashboardStat
 
 # ─── Orders (organizer-scoped) ────────────────────────────────────────────────
 
-async def list_orders_by_organizer_repo(organizer_id: int) -> list[OrganizerOrderOut]:
+async def list_orders_by_organizer_repo(
+    organizer_id: int,
+    event_id: Optional[int] = None,
+    limit: Optional[int] = None,
+    offset: int = 0,
+) -> tuple[list[OrganizerOrderOut], int]:
     """
-    All orders (with nested booking line items) for events owned by
-    organizer_id, newest first.
+    Orders (with nested booking line items) for events owned by
+    organizer_id, newest first — optionally scoped to a single event_id.
 
-    Used by GET /organizers/me/orders (BookingsView — Orders tab).
+    event_id:
+      Added alongside pagination. Previously the frontend fetched every
+      order for the organizer and filtered by event_id client-side, which
+      only worked because the full unpaginated set was always in memory.
+      Once this query is paginated, that client-side filter would silently
+      miss orders that exist for the event but fall outside the current
+      page — so the filter now happens here, before LIMIT/OFFSET, to keep
+      the event-scoped BookingsView page correct.
+
+    limit/offset:
+      • limit=None (the default) returns every matching row, unpaginated —
+        this is what get_recent_orders_by_organizer_repo below relies on
+        when it wants "all orders, then take the top N" semantics... though
+        as of this change it instead passes limit directly (see below),
+        since the query itself can now do that more efficiently.
+      • Passing an explicit limit applies LIMIT/OFFSET to the Order query
+        only; the count query always reflects the full matching set
+        regardless of limit/offset, so `total` is stable across pages.
+
+    Returns (orders, total). Used by GET /organizers/me/orders
+    (BookingsView — Orders tab).
     """
     async with get_async_session() as session:
-        # Pull Orders joined to Event (ownership check) + User (customer) + Payment
-        from app.db.models.payment import Payment  # local to avoid circular at module level
+        filters = [Event.organizer_id == organizer_id]
+        if event_id is not None:
+            filters.append(Order.event_id == event_id)
 
-        rows = (await session.execute(
+        count_stmt = select(func.count(Order.id)).join(Event, Order.event_id == Event.id)
+        for f in filters:
+            count_stmt = count_stmt.where(f)
+        total = await session.scalar(count_stmt) or 0
+
+        # Pull Orders joined to Event (ownership check) + User (customer) + Payment
+        stmt = (
             select(Order, User, Event, Payment)
             .join(Event, Order.event_id == Event.id)
             .join(User,  Order.user_id  == User.id)
             .outerjoin(Payment, Payment.order_id == Order.id)
-            .where(Event.organizer_id == organizer_id)
-            .order_by(Order.created_at.desc())
-        )).all()
+        )
+        for f in filters:
+            stmt = stmt.where(f)
+        stmt = stmt.order_by(Order.created_at.desc(), Order.id.desc())
+        if limit is not None:
+            stmt = stmt.limit(limit).offset(offset)
+
+        rows = (await session.execute(stmt)).all()
 
         if not rows:
-            return []
+            return [], total
 
-        # Collect order IDs so we can batch-fetch bookings
+        # Collect order IDs so we can batch-fetch bookings — naturally
+        # scoped to just this page's orders since `rows` is already paginated.
         order_ids = [row.Order.id for row in rows]
 
         booking_rows = (await session.execute(
@@ -232,7 +271,7 @@ async def list_orders_by_organizer_repo(organizer_id: int) -> list[OrganizerOrde
                 bookings=bookings_by_order.get(order.id, []),
             ))
 
-        return result
+        return result, total
 
 
 async def get_recent_orders_by_organizer_repo(
@@ -241,6 +280,11 @@ async def get_recent_orders_by_organizer_repo(
     """
     Most recent N orders for the organizer's events.
     Used by the dashboard recent-activity widget.
+
+    Now passes limit straight through to the paginated query above instead
+    of fetching every order and slicing in Python — same result, one fewer
+    full-table scan. total is discarded here; this endpoint has never been
+    paginated and isn't part of this change.
     """
-    all_orders = await list_orders_by_organizer_repo(organizer_id)
-    return all_orders[:limit]
+    items, _total = await list_orders_by_organizer_repo(organizer_id, limit=limit, offset=0)
+    return items

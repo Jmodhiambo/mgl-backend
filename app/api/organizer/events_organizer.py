@@ -10,7 +10,7 @@ Route ordering rules (FastAPI matches top-to-bottom):
 
 from fastapi import (
     APIRouter, Depends, UploadFile, File, Form,
-    HTTPException, status, BackgroundTasks,
+    HTTPException, status, BackgroundTasks, Query,
 )
 from datetime import datetime
 from typing import Optional
@@ -24,6 +24,7 @@ from app.schemas.event import (
     EventUpdate,
 )
 from app.schemas.organizer import DashboardStats, OrganizerOrderOut
+from app.schemas.pagination import PaginatedResponse
 import app.services.event_services as event_services
 import app.services.organizer_analytics_services as oa_services
 from app.services.notification_services import notify_event_submitted
@@ -77,16 +78,27 @@ async def get_organizer_dashboard_stats(organizer: UserOut = Depends(require_org
 
 @router.get(
     "/organizers/me/orders",
-    response_model=list[OrganizerOrderOut],
+    response_model=PaginatedResponse[OrganizerOrderOut],
     status_code=status.HTTP_200_OK,
 )
-async def get_organizer_orders(organizer: UserOut = Depends(require_organizer)):
+async def get_organizer_orders(
+    event_id: Optional[int] = None,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    organizer: UserOut = Depends(require_organizer),
+):
     """
-    All orders for the current organizer's events, newest first.
+    Orders for the current organizer's events, newest first, paginated.
     Each order contains its nested booking line items and commission breakdown.
     Used by the BookingsView — Orders tab.
+
+    event_id is optional and scopes results to a single event — used by the
+    event-specific BookingsView route (/events/{event_id}/bookings) so that
+    page only ever sees that event's orders, not the organizer's full history.
     """
-    return await oa_services.list_orders_by_organizer_service(organizer.id)
+    return await oa_services.list_orders_by_organizer_service(
+        organizer.id, event_id=event_id, limit=limit, offset=offset
+    )
 
 
 @router.get(
