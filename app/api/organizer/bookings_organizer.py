@@ -3,6 +3,7 @@
 
 from fastapi import status
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from app.schemas.booking import BookingOut, BookingEnrichedOut
 from app.schemas.pagination import PaginatedResponse
@@ -18,10 +19,19 @@ async def get_bookings_by_event_organizer(
     event_id: int,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    search: Optional[str] = None,
+    booking_status: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     organizer: UserOut = Depends(require_organizer),
 ):
-    """Get enriched, paginated Bookings for a specific event for an organizer.
-    Data source for the BookingsView "Bookings" tab when scoped to one event.
+    """Get enriched, paginated, filterable Bookings for a specific event for
+    an organizer. Data source for the BookingsView "Bookings" tab when
+    scoped to one event.
+
+    search matches customer name, customer email, or ticket type name.
+    booking_status is named to avoid shadowing fastapi.status, matching the
+    convention already used in booking_admin.py.
 
     NOTE: this used to be declared twice in this router (an identical
     `get_all_bookings_for_an_event_organizer` handler further down shared the
@@ -31,7 +41,13 @@ async def get_bookings_by_event_organizer(
     change, since keeping it around with a stale, non-paginated signature
     would've been misleading."""
     return await booking_services.list_event_bookings_enriched_service(
-        event_id, limit=limit, offset=offset
+        event_id,
+        limit=limit,
+        offset=offset,
+        search=search,
+        booking_status=booking_status,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 @router.get("/organizers/me/bookings/{booking_id}",
@@ -51,18 +67,28 @@ async def get_bookings_by_ticket_type_organizer(event_id: int, ticket_type_id: i
 async def get_recent_bookings(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    search: Optional[str] = None,
+    booking_status: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     organizer: UserOut = Depends(require_organizer),
 ):
-    """Get paginated, enriched bookings across all of the current organizer's
-    events, newest first. Data source for the BookingsView "Bookings" tab
-    when no event filter is applied.
+    """Get paginated, filterable, enriched bookings across all of the
+    current organizer's events, newest first. Data source for the
+    BookingsView "Bookings" tab when no event filter is applied.
+
+    search matches customer name, customer email, or ticket type name.
 
     NOTE: despite the "recent" name (kept for URL backwards-compat), this is
-    a full paginated listing now, not a fixed top-N — the frontend used to
-    work around the lack of real pagination by requesting limit=100 and
-    filtering client-side."""
+    a full paginated, filterable listing now, not a fixed top-N."""
     return await booking_services.get_recent_bookings_by_organizer_service(
-        organizer.id, limit=limit, offset=offset
+        organizer.id,
+        limit=limit,
+        offset=offset,
+        search=search,
+        booking_status=booking_status,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 @router.get("/organizers/me/events/{event_id}/latest-bookings",

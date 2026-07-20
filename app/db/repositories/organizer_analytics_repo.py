@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from sqlalchemy import func, select, and_
+from sqlalchemy import func, select, and_, or_
 
 from app.db.models.booking import Booking
 from app.db.models.event import Event
@@ -157,10 +157,15 @@ async def list_orders_by_organizer_repo(
     event_id: Optional[int] = None,
     limit: Optional[int] = None,
     offset: int = 0,
+    search: Optional[str] = None,
+    order_status: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ) -> tuple[list[OrganizerOrderOut], int]:
     """
     Orders (with nested booking line items) for events owned by
-    organizer_id, newest first — optionally scoped to a single event_id.
+    organizer_id, newest first — optionally scoped to a single event_id and
+    filtered by search/order_status/date range.
 
     event_id:
       Added alongside pagination. Previously the frontend fetched every
@@ -170,6 +175,15 @@ async def list_orders_by_organizer_repo(
       miss orders that exist for the event but fall outside the current
       page — so the filter now happens here, before LIMIT/OFFSET, to keep
       the event-scoped BookingsView page correct.
+
+    search/order_status/start_date/end_date:
+      Same reasoning as event_id — these used to be applied client-side
+      over whatever page was loaded, which meant a search only ever
+      searched the current page rather than the organizer's full order
+      history. Moving them here means search actually searches everything.
+      search matches customer name, customer email, or event title
+      (case-insensitive substring match on each). order_status is named to
+      avoid colliding with Order.status / the `status` HTTP module.
 
     limit/offset:
       • limit=None (the default) returns every matching row, unpaginated —
@@ -188,8 +202,25 @@ async def list_orders_by_organizer_repo(
         filters = [Event.organizer_id == organizer_id]
         if event_id is not None:
             filters.append(Order.event_id == event_id)
+        if order_status:
+            filters.append(Order.status == order_status)
+        if start_date:
+            filters.append(Order.created_at >= start_date)
+        if end_date:
+            filters.append(Order.created_at <= end_date)
+        if search:
+            like = f"%{search}%"
+            filters.append(or_(
+                User.name.ilike(like),
+                User.email.ilike(like),
+                Event.title.ilike(like),
+            ))
 
-        count_stmt = select(func.count(Order.id)).join(Event, Order.event_id == Event.id)
+        count_stmt = (
+            select(func.count(Order.id))
+            .join(Event, Order.event_id == Event.id)
+            .join(User, Order.user_id == User.id)
+        )
         for f in filters:
             count_stmt = count_stmt.where(f)
         total = await session.scalar(count_stmt) or 0

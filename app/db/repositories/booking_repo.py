@@ -4,7 +4,7 @@
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from app.db.session import get_async_session
 from app.db.models.booking import Booking
 from app.db.models.ticket_type import TicketType
@@ -366,42 +366,75 @@ async def calculate_revenue_by_organizer_repo(organizer_id: int) -> int:
 
 
 async def get_recent_bookings_by_organizer_repo(
-    organizer_id: int, limit: int = 20, offset: int = 0
+    organizer_id: int,
+    limit: int = 20,
+    offset: int = 0,
+    search: Optional[str] = None,
+    booking_status: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ) -> tuple[list, int]:
     """
-    Paginated, enriched bookings across every event owned by this organizer,
-    newest first. Despite the "recent" name (kept for backwards-compat with
-    the /organizers/me/recent-bookings route), this is the query the
-    BookingsView "Bookings" tab uses for its no-event-filter view — the
-    frontend used to work around the lack of real pagination here by
-    requesting limit=100 and doing everything client-side.
+    Paginated, enriched, filterable bookings across every event owned by
+    this organizer, newest first. Despite the "recent" name (kept for
+    backwards-compat with the /organizers/me/recent-bookings route), this is
+    the query the BookingsView "Bookings" tab uses for its no-event-filter
+    view.
 
-    Returns (bookings, total) — total is the full matching count across the
-    organizer's events, ignoring limit/offset, so the caller can render
-    "Showing X-Y of Z" and enable/disable Prev/Next.
+    search/booking_status/start_date/end_date are all applied server-side
+    now — this used to be client-side filtering over whatever page happened
+    to be loaded, which silently missed matches on other pages once
+    pagination was introduced. Moving it here means search actually
+    searches the organizer's full booking history, not just the current 20.
+
+    search matches customer name, customer email, or ticket type name
+    (case-insensitive substring match on each).
+
+    Returns (bookings, total) — total reflects the full filtered count
+    across the organizer's events, ignoring limit/offset, so the caller can
+    render "Showing X-Y of Z" and enable/disable Prev/Next.
     """
     from app.db.models.event import Event
     from app.db.models.user import User
 
     async with get_async_session() as session:
+        filters = [Event.organizer_id == organizer_id]
+        if booking_status:
+            filters.append(Booking.status == booking_status)
+        if start_date:
+            filters.append(Booking.created_at >= start_date)
+        if end_date:
+            filters.append(Booking.created_at <= end_date)
+        if search:
+            like = f"%{search}%"
+            filters.append(or_(
+                User.name.ilike(like),
+                User.email.ilike(like),
+                TicketType.name.ilike(like),
+            ))
+
         count_stmt = (
             select(func.count(Booking.id))
             .select_from(Booking)
             .join(Event, Booking.event_id == Event.id)
-            .where(Event.organizer_id == organizer_id)
+            .join(User, Booking.user_id == User.id)
+            .join(TicketType, Booking.ticket_type_id == TicketType.id)
         )
+        for f in filters:
+            count_stmt = count_stmt.where(f)
         total = (await session.execute(count_stmt)).scalar_one()
 
-        result = await session.execute(
+        data_stmt = (
             select(Booking, User.name, User.email, Event.title, TicketType.name)
             .join(Event, Booking.event_id == Event.id)
             .join(User, Booking.user_id == User.id)
             .join(TicketType, Booking.ticket_type_id == TicketType.id)
-            .where(Event.organizer_id == organizer_id)
-            .order_by(Booking.created_at.desc(), Booking.id.desc())
-            .limit(limit)
-            .offset(offset)
         )
+        for f in filters:
+            data_stmt = data_stmt.where(f)
+        data_stmt = data_stmt.order_by(Booking.created_at.desc(), Booking.id.desc()).limit(limit).offset(offset)
+
+        result = await session.execute(data_stmt)
 
         bookings = []
         for booking, user_name, user_email, event_title, ticket_name in result:
@@ -463,12 +496,23 @@ async def list_bookings_enriched_repo() -> list:
 
 
 async def list_event_bookings_enriched_repo(
-    event_id: int, limit: int = 20, offset: int = 0
+    event_id: int,
+    limit: int = 20,
+    offset: int = 0,
+    search: Optional[str] = None,
+    booking_status: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ) -> tuple[list, int]:
     """
-    Paginated, enriched bookings for a single event, newest first.
-    Used by the organizer event-booking endpoints (BookingsView "Bookings"
-    tab when scoped to one event).
+    Paginated, enriched, filterable bookings for a single event, newest
+    first. Used by the organizer event-booking endpoints (BookingsView
+    "Bookings" tab when scoped to one event).
+
+    search/booking_status/start_date/end_date are all applied server-side —
+    see get_recent_bookings_by_organizer_repo above for why (same reasoning,
+    same filter shape, just scoped to one event instead of the whole
+    organizer).
 
     Returns (bookings, total) — total is the full matching count for this
     event, ignoring limit/offset, so the caller can render
@@ -478,24 +522,43 @@ async def list_event_bookings_enriched_repo(
     from app.db.models.user import User
 
     async with get_async_session() as session:
+        filters = [Booking.event_id == event_id]
+        if booking_status:
+            filters.append(Booking.status == booking_status)
+        if start_date:
+            filters.append(Booking.created_at >= start_date)
+        if end_date:
+            filters.append(Booking.created_at <= end_date)
+        if search:
+            like = f"%{search}%"
+            filters.append(or_(
+                User.name.ilike(like),
+                User.email.ilike(like),
+                TicketType.name.ilike(like),
+            ))
+
         count_stmt = (
             select(func.count(Booking.id))
             .select_from(Booking)
-            .where(Booking.event_id == event_id)
+            .join(User, Booking.user_id == User.id)
+            .join(TicketType, Booking.ticket_type_id == TicketType.id)
         )
+        for f in filters:
+            count_stmt = count_stmt.where(f)
         total = (await session.execute(count_stmt)).scalar_one()
 
-        result = await session.execute(
+        data_stmt = (
             select(Booking, User.name, User.email, Event.title,
                    TicketType.name, Event.venue, Event.start_time)
             .join(User, Booking.user_id == User.id)
             .join(Event, Booking.event_id == Event.id)
             .join(TicketType, Booking.ticket_type_id == TicketType.id)
-            .where(Booking.event_id == event_id)
-            .order_by(Booking.created_at.desc(), Booking.id.desc())
-            .limit(limit)
-            .offset(offset)
         )
+        for f in filters:
+            data_stmt = data_stmt.where(f)
+        data_stmt = data_stmt.order_by(Booking.created_at.desc(), Booking.id.desc()).limit(limit).offset(offset)
+
+        result = await session.execute(data_stmt)
         bookings = []
         for booking, user_name, user_email, event_title, ticket_name, venue, start_time in result:
             bookings.append({

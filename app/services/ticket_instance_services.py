@@ -4,7 +4,8 @@
 import asyncio
 from uuid import uuid4
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app.core.logging_config import logger
 from app.emails.email_manager import email_manager
@@ -75,7 +76,7 @@ async def _dispatch_check_in_confirmed_email(
                 "event_title": event_title,
                 "ticket_type_name": ticket_type_name,
                 "code": code,
-                "checked_in_at": datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC"),
+                "checked_in_at": datetime.now(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT"),
             },
         ))
     except Exception as exc:

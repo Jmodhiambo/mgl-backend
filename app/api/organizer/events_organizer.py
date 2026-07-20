@@ -85,19 +85,34 @@ async def get_organizer_orders(
     event_id: Optional[int] = None,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    search: Optional[str] = None,
+    order_status: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     organizer: UserOut = Depends(require_organizer),
 ):
     """
-    Orders for the current organizer's events, newest first, paginated.
-    Each order contains its nested booking line items and commission breakdown.
-    Used by the BookingsView — Orders tab.
+    Orders for the current organizer's events, newest first, paginated and
+    filterable server-side. Each order contains its nested booking line
+    items and commission breakdown. Used by the BookingsView — Orders tab.
 
     event_id is optional and scopes results to a single event — used by the
     event-specific BookingsView route (/events/{event_id}/bookings) so that
     page only ever sees that event's orders, not the organizer's full history.
+
+    search matches customer name, customer email, or event title.
+    order_status is named to avoid colliding with Order.status / the
+    `status` HTTP module already imported in this file.
     """
     return await oa_services.list_orders_by_organizer_service(
-        organizer.id, event_id=event_id, limit=limit, offset=offset
+        organizer.id,
+        event_id=event_id,
+        limit=limit,
+        offset=offset,
+        search=search,
+        order_status=order_status,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
