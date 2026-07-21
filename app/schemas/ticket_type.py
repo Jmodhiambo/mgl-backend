@@ -16,6 +16,7 @@ class TicketTypeBase(BaseModel):
     total_quantity: int        # the ceiling — never changes after creation
     quantity_available: int    # computed property: total_quantity - quantity_sold
     quantity_sold: int
+    max_per_booking: int       # cap on units of this type per single order
     created_at: datetime
     updated_at: datetime
 
@@ -62,6 +63,7 @@ class TicketTypeCreate(BaseModel):
     price: int
     is_active: Optional[bool] = True
     total_quantity: int        # maps directly to the model column
+    max_per_booking: int = 10  # prefilled default — organizer/admin may override
  
     class Config:
         from_attributes = True
@@ -75,6 +77,7 @@ class TicketTypeUpdate(BaseModel):
     price: Optional[int] = None
     is_active: Optional[bool] = None
     total_quantity: Optional[int] = None   # organizer can raise/lower the ceiling
+    max_per_booking: Optional[int] = None
  
     class Config:
         from_attributes = True

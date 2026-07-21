@@ -30,15 +30,17 @@ class TicketType(Base):
     total_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity_sold: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    # Per-booking cap — a SEPARATE constraint from total_quantity/quantity_sold.
+    # total_quantity governs overall stock for the event; max_per_booking
+    # governs how many of THIS ticket type a single buyer can take in one
+    # checkout (anti-scalping / fair-access control). Non-nullable with a
+    # server-side default so every ticket type — old or new — always has a
+    # sane cap without requiring organizer input.
+    max_per_booking: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=10, server_default="10"
+    )
+
     # ── Admin suspension (accountability trail) ─────────────────────────
-    # suspended_by_admin_id being non-NULL IS the "is suspended" flag — no
-    # separate boolean, so there's no way for a bool and the admin identity
-    # to drift out of sync with each other.
-    #
-    # ondelete="SET NULL": if the admin account is later deleted, that
-    # shouldn't cascade into deleting/corrupting the ticket type — the
-    # denormalized suspended_by_admin_name below preserves who it was even
-    # after the admin's row is gone.
     suspended_by_admin_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, default=None
     )
@@ -84,5 +86,6 @@ class TicketType(Base):
             f"<TicketType id={self.id} event_id={self.event_id} name={self.name!r} "
             f"price={self.price} total={self.total_quantity} "
             f"sold={self.quantity_sold} available={self.quantity_available} "
+            f"max_per_booking={self.max_per_booking} "
             f"suspended={self.is_suspended}>"
         )

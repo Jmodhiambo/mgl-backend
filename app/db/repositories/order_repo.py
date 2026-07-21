@@ -19,6 +19,14 @@ async def create_order_repo(order_data: OrderCreate, user_id: int) -> OrderOut:
       - Every ticket_type_id must exist and belong to order_data.event_id
       - Every ticket_type must be active
       - quantity must not exceed quantity_available for that ticket type
+      - quantity must not exceed that ticket type's max_per_booking cap
+
+    NOTE: both the availability and max_per_booking checks are evaluated
+    per line item, not aggregated across multiple line items referencing
+    the same ticket_type_id within one order. In practice the frontend
+    never sends duplicate ticket_type_id line items in a single order, so
+    this hasn't been an issue — flagging it here rather than silently
+    changing existing validation behavior.
 
     Pricing is computed entirely server-side from TicketType.price —
     the client never supplies a price. No processing fee is applied;
@@ -45,6 +53,12 @@ async def create_order_repo(order_data: OrderCreate, user_id: int) -> OrderOut:
                 raise ValueError(
                     f"Only {available} ticket(s) available for '{ticket_type.name}', "
                     f"requested {item.quantity}"
+                )
+
+            if item.quantity > ticket_type.max_per_booking:
+                raise ValueError(
+                    f"'{ticket_type.name}' is limited to {ticket_type.max_per_booking} "
+                    f"per booking, requested {item.quantity}"
                 )
 
             line_total = ticket_type.price * item.quantity
@@ -197,7 +211,6 @@ async def list_orders_enriched_admin_app_repo() -> list[OrderEnrichedOut]:
 
         orders_out = []
         for order, customer_name, customer_email, event_title, payment in rows:
-            # Fetch this order's booking line items with ticket type names
             b_result = await session.execute(
                 select(Booking, TicketType.name)
                 .join(TicketType, Booking.ticket_type_id == TicketType.id)
