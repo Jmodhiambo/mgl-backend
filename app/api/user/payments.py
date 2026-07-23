@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """User-facing payment routes for MGLTickets."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from app.schemas.payment import PaymentOut, MpesaStkPushRequest, MpesaStkPushResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from app.schemas.payment import (
+    PaymentOut,
+    MpesaStkPushRequest,
+    MpesaStkPushResponse,
+    PaymentStatusCheckResponse,
+    ReportManualPaymentRequest,
+)
 import app.services.payment_services as payment_services
+from app.services.notification_services import notify_manual_payment_reported
 from app.core.security import require_user
 
 router = APIRouter()
@@ -46,6 +53,50 @@ async def mpesa_callback(request: Request):
     await payment_services.handle_mpesa_callback_service(body)
     # Daraja expects a specific acknowledgement format
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+
+@router.get(
+    "/users/me/payments/{payment_id}/check-status",
+    response_model=PaymentStatusCheckResponse,
+)
+async def check_payment_status(payment_id: int, user=Depends(require_user)):
+    """
+    Layer 1 — called by the frontend when its own STK-push polling times
+    out, before ever surfacing the "report your M-Pesa code" fallback.
+    Queries Daraja directly by CheckoutRequestID — resolves the payment
+    automatically in most cases where the callback itself was delayed
+    or dropped, with no user input involved.
+    """
+    return await payment_services.check_payment_status_service(payment_id, user.id)
+
+
+@router.post(
+    "/users/me/payments/report-manual",
+    response_model=PaymentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def report_manual_payment(
+    request: ReportManualPaymentRequest,
+    background_tasks: BackgroundTasks,
+    user=Depends(require_user),
+):
+    """
+    Layer 2 — last-resort fallback: user submits their M-Pesa confirmation
+    code when both polling and the status check above are inconclusive.
+    This queues the payment for admin review — it does NOT auto-confirm
+    the order.
+    """
+    payment = await payment_services.report_manual_payment_service(user.id, request)
+
+    background_tasks.add_task(
+        notify_manual_payment_reported,
+        payment.id,
+        payment.order_id,
+        user.name,
+        request.mpesa_code,
+    )
+
+    return payment
 
 
 @router.get(

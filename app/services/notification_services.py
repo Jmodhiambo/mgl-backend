@@ -760,6 +760,60 @@ async def notify_payment_failure(
         return None
 
 
+# ── Manual Payment Review (STK timeout fallback) ─────────────────────────────
+
+async def notify_manual_payment_reported(
+    payment_id: int,
+    order_id: int,
+    user_name: str,
+    mpesa_code: str,
+) -> Optional[NotificationOut]:
+    """Register as a BackgroundTask in the report-manual-payment router endpoint."""
+    try:
+        logger.info(f"[notify] manual payment reported: payment {payment_id}, order {order_id}")
+        return await notification_repo.create_notification_repo(
+            title="M-Pesa payment reported — needs verification",
+            message=(
+                f"{user_name} reported M-Pesa code {mpesa_code} for order #{order_id} "
+                f"(Payment #{payment_id}). Verify against the M-Pesa statement before approving."
+            ),
+            category="payment",
+            priority="high",
+            recipient_role="admin",
+            source_type="payment",
+            source_id=payment_id,
+            action_url="/orders",
+            expires_at=_expiry(),
+        )
+    except Exception as exc:
+        logger.error(f"[notify] notify_manual_payment_reported failed: {exc}")
+        return None
+
+
+async def notify_manual_payment_resolved(
+    payment_id: int,
+    approved: bool,
+) -> Optional[NotificationOut]:
+    """Register as a BackgroundTask in the admin manual-review decision endpoint."""
+    try:
+        outcome = "approved" if approved else "rejected"
+        logger.info(f"[notify] manual payment review {outcome}: payment {payment_id}")
+        return await notification_repo.create_notification_repo(
+            title=f"Manual payment review {outcome}",
+            message=f"Payment #{payment_id}'s M-Pesa code was {outcome} by an admin.",
+            category="payment",
+            priority="medium",
+            recipient_role="admin",
+            source_type="payment",
+            source_id=payment_id,
+            action_url="/orders",
+            expires_at=_expiry(),
+        )
+    except Exception as exc:
+        logger.error(f"[notify] notify_manual_payment_resolved failed: {exc}")
+        return None
+
+
 # ── Contact Messages ──────────────────────────────────────────────────────────
 
 async def notify_new_contact_message(

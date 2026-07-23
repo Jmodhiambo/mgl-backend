@@ -30,6 +30,15 @@ class Payment(Base):
     mpesa_checkout_request_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, default=None)
     mpesa_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, default=None)  # MpesaReceiptNumber from callback
     callback_payload: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True, default=None)
+    # Manual review fallback (Layer 2) — used when both the Daraja callback
+    # and the on-demand/scheduled STK status query (Layer 1) fail to resolve
+    # a pending payment. The user can report their M-Pesa code, which queues
+    # this row for admin review; it never auto-confirms. See
+    # payment_services.report_manual_payment_service / approve_manual_payment_service /
+    # reject_manual_payment_service.
+    manual_review_status: Mapped[str] = mapped_column(String(20), nullable=False, default="none")  # none | pending | approved | rejected
+    user_reported_mpesa_code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, default=None)
+    user_reported_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

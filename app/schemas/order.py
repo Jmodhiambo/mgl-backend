@@ -64,6 +64,9 @@ class OrderEnrichedOut(BaseModel):
     event_title: str
     total_price: int
     status: str                # order status: pending | confirmed | cancelled
+    manual_review_status: str = "none"   # none | pending | approved | rejected
+    user_reported_mpesa_code: Optional[str] = None
+    user_reported_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
  

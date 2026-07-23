@@ -244,6 +244,9 @@ async def list_orders_enriched_admin_app_repo() -> list[OrderEnrichedOut]:
                 payment_status=payment.status if payment else None,
                 mpesa_ref=payment.mpesa_ref if payment else None,
                 mpesa_phone=payment.mpesa_phone if payment else None,
+                manual_review_status=payment.manual_review_status if payment else "none",
+                user_reported_mpesa_code=payment.user_reported_mpesa_code if payment else None,
+                user_reported_at=payment.user_reported_at if payment else None,
                 bookings=bookings,
             ))
 
@@ -255,7 +258,11 @@ async def list_orders_enriched_user_app_repo(user_id: int) -> list[OrderEnriched
     Scoped version of list_orders_enriched_repo() above — identical join
     shape and field mapping, with one added filter: Order.user_id == user_id.
     Used by GET /users/me/orders/enriched (Dashboard, My Tickets) so a user
-    only ever sees their own orders, never the full platform list."""
+    only ever sees their own orders, never the full platform list.
+
+    Deliberately does NOT include manual_review_status / user_reported_*
+    fields — those are admin-review-queue concerns the user app doesn't
+    currently surface. Add them here too if that changes."""
     from app.db.models.user import User
     from app.db.models.event import Event
     from app.db.models.payment import Payment

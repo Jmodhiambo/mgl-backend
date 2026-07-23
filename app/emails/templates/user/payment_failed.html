@@ -3,42 +3,42 @@
 
 {% block title %}Payment Failed – MGLTickets{% endblock %}
 {% block header_class %}red{% endblock %}
-{% block header_subtitle %}Payment Notice{% endblock %}
+{% block header_subtitle %}Payment Unsuccessful{% endblock %}
 
 {% block content %}
-<h2>❌ Payment Failed</h2>
+<h2>⚠️ Payment Failed</h2>
 
 <p>Hi <strong>{{ name }}</strong>,</p>
 
-<p>Unfortunately your M-Pesa payment for <strong>{{ event_title }}</strong> could not be processed.</p>
+<p>We were unable to process your payment for <strong>{{ event_title }}</strong>.</p>
 
 <div class="info-box red">
-    <h3 style="color: #991b1b;">Payment Details</h3>
+    <h3 style="color: #991b1b;">What Happened</h3>
+    <p style="color: #7f1d1d;">{{ failure_reason }}</p>
+</div>
+
+<div class="info-box blue">
+    <h3 style="color: #1e40af;">Order Information</h3>
     <table class="detail-table">
         <tr><td>Order:</td><td>#{{ order_id }}</td></tr>
-        <tr><td>Event:</td><td>{{ event_title }}</td></tr>
         <tr><td>Amount:</td><td>KES {{ amount }}</td></tr>
-        <tr><td>Reason:</td><td>{{ failure_reason }}</td></tr>
     </table>
 </div>
 
 <div class="info-box yellow">
-    <h3 style="color: #92400e;">Common Reasons</h3>
+    <h3 style="color: #92400e;">What you can do</h3>
     <ul style="margin: 0; padding-left: 20px; color: #78350f; font-size: 14px; line-height: 1.8;">
-        <li>Insufficient M-Pesa balance</li>
-        <li>Wrong PIN entered</li>
-        <li>STK push timed out without a response</li>
-        <li>M-Pesa service temporarily unavailable</li>
+        <li>Double-check your M-Pesa balance and PIN</li>
+        <li>Make sure your phone number was entered correctly</li>
+        <li>Try the payment again using the button below</li>
     </ul>
 </div>
 
-<p>Your order is still reserved. You can try paying again from your orders page.</p>
-
 <div class="btn-center">
-    <a href="{{ retry_url }}" class="btn">Try Again</a>
+    <a href="{{ retry_url }}" class="btn">Try Payment Again</a>
 </div>
 
 <hr class="divider">
 
-<p class="muted">If the problem persists, contact us at <a href="mailto:support@mgltickets.com" style="color: #ea580c;">support@mgltickets.com</a> quoting Order #{{ order_id }}.</p>
+<p class="muted">Your tickets are being held temporarily. If you continue to have trouble, contact us immediately and quote Order #{{ order_id }}.</p>
 {% endblock %}
