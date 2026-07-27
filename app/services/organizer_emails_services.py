@@ -28,7 +28,6 @@ from app.schemas.organizer_emails import (
     EmailDetailWithRecipients,
     OrganizerEmailOut,
     OrganizerEmailRecipientOut,
-    EmailTemplateStats,
 )
 import app.db.repositories.booking_repo as booking_repo
 import app.db.repositories.organizer_emails_repo as email_repo
