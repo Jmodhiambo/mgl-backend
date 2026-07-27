@@ -12,6 +12,7 @@ Architecture:
 
 import asyncio
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -46,6 +47,18 @@ def _bg_email(coro) -> None:
         loop.create_task(coro)
     except RuntimeError:
         asyncio.run(coro)
+
+
+def _format_eat(dt: datetime) -> str:
+    """
+    Render a UTC-stored datetime in Africa/Nairobi (EAT) for actual email
+    content. booking_repo.get_enriched_bookings_by_ids_repo returns the raw
+    UTC datetime — this is the one place that converts it for display,
+    keeping the repo layer free of formatting concerns (same separation
+    used in payment_services.py, event_services.py, and user_services.py).
+    dt is assumed to be timezone-aware.
+    """
+    return dt.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT")
 
 
 # ── Template mapping ──────────────────────────────────────────────────────────
@@ -289,7 +302,7 @@ def _build_base_variables(booking, extra: dict) -> dict:
         "ticket_type":    booking.ticket_type_name or "General",
         "quantity":       str(booking.quantity),
         "venue":          booking.venue or "TBA",
-        "event_date":     booking.event_date or "TBA",
+        "event_date":     _format_eat(booking.event_date) if booking.event_date else "TBA",
         "organizer_name": booking.organizer_name or "Your Organizer",
         "total_price":    f"{booking.total_price:,.0f}" if booking.total_price else "0",
     }

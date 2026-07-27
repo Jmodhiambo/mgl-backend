@@ -3,7 +3,6 @@
 """Async repository for Booking model operations."""
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from typing import Optional
 from sqlalchemy import select, func, or_
 from app.db.session import get_async_session
@@ -16,22 +15,6 @@ from app.schemas.booking import BookingOut, BookingUpdate
 # one transaction (one Booking per ticket type line item). This keeps
 # pricing validation, availability checks, and atomicity in one place.
 # BookingCreate/create_booking_repo were removed — see order_repo.py.
-
-
-def _format_event_date_eat(start_time: Optional[datetime]) -> Optional[str]:
-    """
-    Render an event's start_time in Africa/Nairobi (EAT) as a display
-    string, matching the format used across the email system (e.g.
-    user.check_in_confirmed, user.order_confirmed).
-
-    start_time is assumed to be timezone-aware (stored as UTC). If the
-    column is actually naive, astimezone() will silently treat it as the
-    server's local time instead of UTC — worth confirming against the
-    Event model/migration if displayed times look off by a fixed offset.
-    """
-    if not start_time:
-        return None
-    return start_time.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT")
 
 
 async def get_booking_by_id_repo(booking_id: int) -> Optional[BookingOut]:
@@ -95,7 +78,7 @@ async def get_enriched_bookings_by_ids_repo(ids: list[int]) -> list:
                 'event_title':      row.event_title,
                 'ticket_type_name': row.ticket_type_name,
                 'venue':            row.venue,
-                'event_date':       _format_event_date_eat(row.start_time),
+                'event_date':       row.start_time,
                 'quantity':         booking.quantity,
                 'total_price':      booking.total_price,
                 'status':           booking.status,
@@ -442,7 +425,8 @@ async def get_recent_bookings_by_organizer_repo(
         total = (await session.execute(count_stmt)).scalar_one()
 
         data_stmt = (
-            select(Booking, User.name, User.email, Event.title, TicketType.name)
+            select(Booking, User.name, User.email, Event.title, TicketType.name,
+                   Event.venue, Event.start_time)
             .join(Event, Booking.event_id == Event.id)
             .join(User, Booking.user_id == User.id)
             .join(TicketType, Booking.ticket_type_id == TicketType.id)
@@ -454,7 +438,7 @@ async def get_recent_bookings_by_organizer_repo(
         result = await session.execute(data_stmt)
 
         bookings = []
-        for booking, user_name, user_email, event_title, ticket_name in result:
+        for booking, user_name, user_email, event_title, ticket_name, venue, start_time in result:
             bookings.append({
                 "id": booking.id,
                 "user_id": booking.user_id,
@@ -465,6 +449,8 @@ async def get_recent_bookings_by_organizer_repo(
                 "customer_email": user_email,
                 "event_title": event_title,
                 "ticket_type_name": ticket_name,
+                "venue": venue,
+                "event_date": start_time.isoformat() if start_time else None,
                 "quantity": booking.quantity,
                 "total_price": booking.total_price,
                 "status": booking.status,
@@ -589,7 +575,7 @@ async def list_event_bookings_enriched_repo(
                 'event_title': event_title,
                 'ticket_type_name': ticket_name,
                 'venue': venue,
-                'event_date': _format_event_date_eat(start_time),
+                'event_date': start_time.isoformat() if start_time else None,
                 'quantity': booking.quantity,
                 'total_price': booking.total_price,
                 'status': booking.status,
