@@ -4,6 +4,7 @@
 
 import asyncio
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
 
@@ -13,7 +14,6 @@ from app.emails.email_manager import email_manager
 from app.schemas.event import EventCreateWithFlyer, EventDetails, EventStats, EventUpdate
 import app.db.repositories.booking_repo as booking_repo
 import app.db.repositories.event_repo as event_repo
-import app.db.repositories.order_repo as order_repo
 import app.db.repositories.settings_repo as settings_repo
 import app.db.repositories.ticket_type_repo as tt_repo
 import app.db.repositories.user_repo as user_repo
@@ -31,6 +31,19 @@ def _bg_email(coro) -> None:
         loop.create_task(coro)
     except RuntimeError:
         asyncio.run(coro)
+
+
+def _format_eat(dt: datetime) -> str:
+    """Render a UTC-stored datetime in Africa/Nairobi (EAT) for user-facing
+    emails — matches the format used by user.check_in_confirmed and
+    user.order_confirmed. dt is assumed to be timezone-aware."""
+    return dt.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT")
+
+
+def _format_eat_date(dt: datetime) -> str:
+    """Date-only EAT rendering for templates that display just the event
+    date, not a time (organizer.event_created, organizer.event_approved)."""
+    return dt.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y")
 
 
 async def _notify_attendees_of_cancellation(event_id: int, event_title: str, organizer_name: str, cancellation_reason: str) -> None:
@@ -110,7 +123,7 @@ async def create_event_service(event_data: EventCreateWithFlyer):
                     "organizer_name": organizer.name,
                     "event_title": full.title,
                     "venue": full.venue or "TBA",
-                    "event_date": full.start_date.strftime("%d %b %Y") if full.start_date else "TBA",
+                    "event_date": _format_eat_date(full.start_time) if full.start_time else "TBA",
                     "dashboard_url": _organizer_dashboard_url(),
                 },
             ))
@@ -229,7 +242,7 @@ async def confirm_event_deletion_ready_service(event_id: int):
                 variables={
                     "organizer_name": organizer.name,
                     "event_title": event.title,
-                    "deleted_at": datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC"),
+                    "deleted_at": _format_eat(datetime.now(timezone.utc)),
                     "refund_count": str(total_bookings),
                     "dashboard_url": _organizer_dashboard_url(),
                 },
@@ -262,7 +275,7 @@ async def approve_event_service(event_id: int, admin_name: str):
                         "organizer_name": organizer.name,
                         "event_title": event.title,
                         "venue": event.venue or "TBA",
-                        "event_date": event.start_date.strftime("%d %b %Y") if event.start_date else "TBA",
+                        "event_date": _format_eat_date(event.start_time) if event.start_time else "TBA",
                         "admin_name": admin_name,
                         "event_url": _event_public_url(event.slug),
                     },

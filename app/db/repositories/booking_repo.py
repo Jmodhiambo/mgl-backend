@@ -3,6 +3,7 @@
 """Async repository for Booking model operations."""
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Optional
 from sqlalchemy import select, func, or_
 from app.db.session import get_async_session
@@ -15,6 +16,22 @@ from app.schemas.booking import BookingOut, BookingUpdate
 # one transaction (one Booking per ticket type line item). This keeps
 # pricing validation, availability checks, and atomicity in one place.
 # BookingCreate/create_booking_repo were removed — see order_repo.py.
+
+
+def _format_event_date_eat(start_time: Optional[datetime]) -> Optional[str]:
+    """
+    Render an event's start_time in Africa/Nairobi (EAT) as a display
+    string, matching the format used across the email system (e.g.
+    user.check_in_confirmed, user.order_confirmed).
+
+    start_time is assumed to be timezone-aware (stored as UTC). If the
+    column is actually naive, astimezone() will silently treat it as the
+    server's local time instead of UTC — worth confirming against the
+    Event model/migration if displayed times look off by a fixed offset.
+    """
+    if not start_time:
+        return None
+    return start_time.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT")
 
 
 async def get_booking_by_id_repo(booking_id: int) -> Optional[BookingOut]:
@@ -78,7 +95,7 @@ async def get_enriched_bookings_by_ids_repo(ids: list[int]) -> list:
                 'event_title':      row.event_title,
                 'ticket_type_name': row.ticket_type_name,
                 'venue':            row.venue,
-                'event_date':       row.start_time.strftime('%d %b %Y at %H:%M') if row.start_time else None,
+                'event_date':       _format_event_date_eat(row.start_time),
                 'quantity':         booking.quantity,
                 'total_price':      booking.total_price,
                 'status':           booking.status,
@@ -572,7 +589,7 @@ async def list_event_bookings_enriched_repo(
                 'event_title': event_title,
                 'ticket_type_name': ticket_name,
                 'venue': venue,
-                'event_date': start_time.isoformat() if start_time else None,
+                'event_date': _format_event_date_eat(start_time),
                 'quantity': booking.quantity,
                 'total_price': booking.total_price,
                 'status': booking.status,

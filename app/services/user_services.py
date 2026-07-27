@@ -4,6 +4,7 @@
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
 from passlib.hash import argon2
@@ -37,6 +38,13 @@ def _bg_email(coro) -> None:
         asyncio.run(coro)
     except Exception as e:
         logger.error(f"Error sending email: {e}")
+
+
+def _format_eat(dt: datetime) -> str:
+    """Render a UTC-stored datetime in Africa/Nairobi (EAT) for user-facing
+    emails — matches the format used by user.check_in_confirmed and
+    user.order_confirmed. dt is assumed to be timezone-aware."""
+    return dt.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT")
 
 # ─── Registration ─────────────────────────────────────────────────────────────
 
@@ -209,7 +217,7 @@ async def change_user_password_service(
         variables={
             "name": full_user.name,
             "email": full_user.email,
-            "changed_at": datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC"),
+            "changed_at": _format_eat(datetime.now(timezone.utc)),
             "login_url": f"{FRONTEND_URL}/login",
         },
     ))
@@ -358,7 +366,7 @@ async def reset_password_with_token_service(token: str, new_password: str) -> di
         variables={
             "name": user.name,
             "email": user.email,
-            "changed_at": datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC"),
+            "changed_at": _format_eat(datetime.now(timezone.utc)),
             "login_url": f"{FRONTEND_URL}/login",
         },
     ))
