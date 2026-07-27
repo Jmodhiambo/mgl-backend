@@ -33,6 +33,7 @@ from app.api.organizer.ticket_types_organizer import router as organizer_tt_rout
 from app.api.organizer.co_organizer import router as co_organizer_organizer_router
 from app.api.organizer.contact_messages_organizer import router as organizer_contact_messages_router
 from app.api.organizer.sessions_organizer import router as organizer_session_router
+from app.api.organizer.organizer_emails import router as organizer_emails_router
 
 
 # Admin routes
@@ -86,7 +87,8 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(co_organizer_organizer_router, prefix="/api/v1", tags=["Co-Organizer-Organizer"])
     app.include_router(organizer_contact_messages_router, prefix="/api/v1", tags=["Contact Messages-Organizer"])
     app.include_router(organizer_session_router, prefix="/api/v1", tags=["Session-Organizer"])
-
+    app.include_router(organizer_emails_router, prefix="/api/v1", tags=["Emails-Organizer"])
+    
     # Admin routes
     app.include_router(admin_auth_router, prefix="/api/v1", tags=["Auth-Admin"])
     app.include_router(admin_user_router, prefix="/api/v1", tags=["User-Admin"])
