@@ -54,7 +54,7 @@ class ArticleFeedback(Base):
     article_slug: Mapped[str] = mapped_column(String(255), index=True, nullable=False)  # Referencces static article
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True) # Null if not logged in
     is_helpful: Mapped[bool] = mapped_column(Boolean, nullable=False)  # True or False
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f"<ArticleFeedback id={self.id} article_slug={self.article_slug} user_id={self.user_id} is_helpful={self.is_helpful} created_at={self.created_at}>"
@@ -72,7 +72,7 @@ class ArticleSearchQuery(Base):
     session_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     user_agent: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     clicks: Mapped[list["ArticleSearchClick"]] = relationship("ArticleSearchClick", back_populates="search_query")
@@ -99,7 +99,7 @@ class ArticleSearchClick(Base):
     time_to_click_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Timestamp
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     search_query: Mapped["ArticleSearchQuery"] = relationship("ArticleSearchQuery", back_populates="clicks")

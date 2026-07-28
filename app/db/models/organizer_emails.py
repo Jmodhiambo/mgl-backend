@@ -5,6 +5,7 @@ Stores all emails sent by organizers to attendees/customers.
 """
 
 from sqlalchemy import Integer, String, ForeignKey, DateTime, Text, BigInteger
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.session import Base
 from datetime import datetime, timezone
@@ -46,8 +47,8 @@ class OrganizerEmails(Base):
     template_used: Mapped[str] = mapped_column(String(50), nullable=False)  # 'reminder', 'update', 'thank_you', 'custom'
 
     # Recipient (for tracking)
-    booking_ids: Mapped[list[int]] = mapped_column(BigInteger, nullable=True, index=True)
-    recipient_emails: Mapped[list[str]] = mapped_column(Text, nullable=True)  # Array of recipient emails using Text
+    booking_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), nullable=True, index=True)
+    recipient_emails: Mapped[list[str]] = mapped_column(ARRAY(String(150)), nullable=True)
 
     # Status
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending", index=True)  # 'pending', 'sent', 'failed', 'partially_sent', 'cancelled'
@@ -56,8 +57,8 @@ class OrganizerEmails(Base):
     success_count: Mapped[int] = mapped_column(Integer, nullable=True, default=0)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False, index=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="organizer_emails")
