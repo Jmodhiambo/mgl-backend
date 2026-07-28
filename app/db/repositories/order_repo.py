@@ -191,26 +191,59 @@ async def count_orders_by_event_id_repo(event_id: int) -> int:
         return result.scalar()
 
 
+async def _get_latest_payment_for_order(session, order_id: int):
+    """
+    Return the most recent Payment row for an order, or None.
+
+    Introduced to fix a real bug: list_orders_enriched_*_repo used to
+    outerjoin(Payment, Payment.order_id == Order.id) directly, which
+    assumed exactly one Payment per Order. Since retrying a failed
+    payment (Checkout / OrderDetail "Retry Payment") creates a NEW Payment
+    row rather than reusing the old one, an order can now have 2+ Payment
+    rows — and that outerjoin would return one duplicated Order row per
+    Payment, silently breaking anything that expected one row per order
+    (pagination counts, "N orders" totals, React list keys, etc).
+
+    Fetching the latest Payment per order explicitly, in the same N+1
+    loop pattern already used here for bookings, avoids the join
+    ambiguity entirely and keeps the query shape consistent with the
+    rest of this file.
+    """
+    from app.db.models.payment import Payment
+
+    result = await session.execute(
+        select(Payment)
+        .where(Payment.order_id == order_id)
+        .order_by(Payment.created_at.desc())
+        .limit(1)
+    )
+    return result.scalars().first()
+
+
 async def list_orders_enriched_admin_app_repo() -> list[OrderEnrichedOut]:
     """List all orders with customer, event, payment, and line-item details.
-    Used by GET /admin/orders."""
+    Used by GET /admin/orders.
+
+    Joins Order/User/Event only — Payment is fetched separately per order
+    (see _get_latest_payment_for_order) since an order can now have more
+    than one Payment row across retries, and joining it directly would
+    duplicate the Order row per Payment."""
     from app.db.models.user import User
     from app.db.models.event import Event
-    from app.db.models.payment import Payment
-    from app.db.models.ticket_type import TicketType
 
     async with get_async_session() as session:
         result = await session.execute(
-            select(Order, User.name, User.email, Event.title, Payment)
+            select(Order, User.name, User.email, Event.title)
             .join(User, Order.user_id == User.id)
             .join(Event, Order.event_id == Event.id)
-            .outerjoin(Payment, Payment.order_id == Order.id)
             .order_by(Order.created_at.desc())
         )
         rows = result.all()
 
         orders_out = []
-        for order, customer_name, customer_email, event_title, payment in rows:
+        for order, customer_name, customer_email, event_title in rows:
+            payment = await _get_latest_payment_for_order(session, order.id)
+
             b_result = await session.execute(
                 select(Booking, TicketType.name)
                 .join(TicketType, Booking.ticket_type_id == TicketType.id)
@@ -255,32 +288,34 @@ async def list_orders_enriched_admin_app_repo() -> list[OrderEnrichedOut]:
 
 async def list_orders_enriched_user_app_repo(user_id: int) -> list[OrderEnrichedOut]:
     """List a single user's orders with event, payment, and line-item details.
-    Scoped version of list_orders_enriched_repo() above — identical join
-    shape and field mapping, with one added filter: Order.user_id == user_id.
-    Used by GET /users/me/orders/enriched (Dashboard, My Tickets) so a user
-    only ever sees their own orders, never the full platform list.
+    Scoped version of list_orders_enriched_admin_app_repo() above — same
+    per-order latest-payment lookup, with one added filter: Order.user_id
+    == user_id. Used by GET /users/me/orders/enriched (Dashboard, My
+    Tickets, the Orders list page) so a user only ever sees their own
+    orders, never the full platform list.
 
     Deliberately does NOT include manual_review_status / user_reported_*
     fields — those are admin-review-queue concerns the user app doesn't
-    currently surface. Add them here too if that changes."""
+    currently surface (OrderDetail.tsx gets that from GET
+    /users/me/orders/{id}/payments instead, which returns every Payment
+    row for the order, not just the latest)."""
     from app.db.models.user import User
     from app.db.models.event import Event
-    from app.db.models.payment import Payment
-    from app.db.models.ticket_type import TicketType
 
     async with get_async_session() as session:
         result = await session.execute(
-            select(Order, User.name, User.email, Event.title, Payment)
+            select(Order, User.name, User.email, Event.title)
             .join(User, Order.user_id == User.id)
             .join(Event, Order.event_id == Event.id)
-            .outerjoin(Payment, Payment.order_id == Order.id)
             .where(Order.user_id == user_id)
             .order_by(Order.created_at.desc())
         )
         rows = result.all()
 
         orders_out = []
-        for order, customer_name, customer_email, event_title, payment in rows:
+        for order, customer_name, customer_email, event_title in rows:
+            payment = await _get_latest_payment_for_order(session, order.id)
+
             b_result = await session.execute(
                 select(Booking, TicketType.name)
                 .join(TicketType, Booking.ticket_type_id == TicketType.id)
@@ -322,12 +357,17 @@ async def list_orders_enriched_user_app_repo(user_id: int) -> list[OrderEnriched
 
 async def delete_order_repo(order_id: int) -> bool:
     """
-    Delete an Order and its Bookings/Payment, cascading.
+    Delete an Order and its Bookings/Payment(s), cascading.
 
     Refuses to delete (returns False) if any Booking under this order has
     issued TicketInstances — i.e. the order was confirmed and tickets are
     already in customers' hands. In that case the order should be cancelled
     via status update instead, not deleted.
+
+    Deletes ALL Payment rows for the order, not just one — a retried order
+    can have more than one Payment row (e.g. an earlier failed attempt plus
+    a successful retry), and the old single .first() lookup here would have
+    silently left orphaned Payment rows behind after a "successful" delete.
     """
     from app.db.models.payment import Payment
     from app.db.models.ticket_instance import TicketInstance
@@ -356,8 +396,7 @@ async def delete_order_repo(order_id: int) -> bool:
         p_result = await session.execute(
             select(Payment).where(Payment.order_id == order_id)
         )
-        payment = p_result.scalars().first()
-        if payment:
+        for payment in p_result.scalars().all():
             await session.delete(payment)
 
         for booking in bookings:
