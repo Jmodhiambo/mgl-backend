@@ -19,6 +19,17 @@
 # success once it sees the SHA of the commit it just deployed. That's a real
 # guarantee that new code is live, not just that "a" process responded.
 #
+# SECOND PROBLEM THIS FILE SOLVES: code matching isn't the same as schema
+# matching. We had an incident where code was pulled, migrations ran fine
+# against the database, but the running gunicorn workers were never reloaded
+# to pick any of it up - `git rev-parse HEAD` on disk said one thing, the
+# live workers (still holding old code in memory) said another, and nothing
+# caught the gap because commit-matching alone can't see it. So this
+# endpoint also reports the database's current alembic revision, read
+# directly from the alembic_version table. The deploy script can then
+# confirm BOTH the code AND the schema the worker is actually using, instead
+# of just one.
+#
 # HOW A WORKER "KNOWS" ITS OWN COMMIT
 # -------------------------------------
 # Each gunicorn worker process re-imports the whole app fresh when it starts
@@ -31,6 +42,9 @@
 
 import subprocess
 from fastapi import APIRouter
+from sqlalchemy import text
+
+from app.db.session import async_engine
 
 router = APIRouter()
 
@@ -66,24 +80,56 @@ def _get_git_sha() -> str:
         return "unknown"
 
 
+async def _get_alembic_revision() -> str:
+    """
+    Ask the DATABASE ITSELF what migration revision it's currently on, by
+    reading the alembic_version table directly - not by shelling out to
+    `alembic current`.
+
+    Why not just run `alembic current` like a human would? Because that
+    command reloads the entire alembic environment (env.py, config, its own
+    engine) on every call - slow and overkill for something polled in a
+    tight loop during every deploy. Reading the table directly is a single
+    lightweight query using the connection pool the app already has open,
+    and it's the same table alembic itself writes to - so it's exactly as
+    authoritative, just cheaper to ask.
+
+    Returns "unknown" instead of raising if anything goes wrong (DB
+    unreachable, table doesn't exist yet on a brand-new database, etc.) -
+    same philosophy as _get_git_sha() above: a health endpoint should never
+    500 just because one of its checks had a bad day.
+    """
+    try:
+        async with async_engine.connect() as conn:
+            result = await conn.execute(
+                text("SELECT version_num FROM alembic_version LIMIT 1")
+            )
+            row = result.first()
+            return row[0] if row else "unknown"
+    except Exception:
+        return "unknown"
+
+
 @router.get("/health")
 async def health():
     """
     Health check endpoint for monitoring.
 
     Deploy script polls this after `systemctl reload mgltickets` and compares
-    the "commit" field against the SHA it just pulled. Once they match, it
-    knows the new code is actually the one answering requests.
+    both the "commit" field and the "alembic_revision" field against what it
+    just deployed and migrated to. Only once BOTH match does it know the new
+    code AND the matching schema are actually the ones being served - not
+    just that a worker process is alive.
 
-    NOTE: this only tells you a worker process is alive and reports the right
-    commit - it does NOT confirm the database connection pool, Resend API key,
-    or anything else is working. If you want a deeper check later (e.g. a
-    quick `SELECT 1` against the DB), add it here, but keep it fast - this
-    endpoint gets polled in a tight loop during every deploy.
+    NOTE: this confirms code + schema are aligned, but does NOT confirm
+    things like the Resend API key or Daraja credentials are valid. If you
+    want a deeper check later, add it here, but keep it fast - this endpoint
+    gets polled in a tight loop during every deploy.
     """
     return {
         "status": "healthy",
         "app": "MGLTickets API",
         "version": "1.0.0",
         "commit": _get_git_sha(),
+        "alembic_revision": await _get_alembic_revision(),
     }

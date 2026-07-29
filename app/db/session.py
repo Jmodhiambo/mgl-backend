@@ -4,18 +4,13 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import DATABASE_URL, SQLALCHEMY_ECHO
 
 
 engine_kwargs = {"echo": SQLALCHEMY_ECHO}
-
-if DATABASE_URL.startswith("sqlite"):
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
 
 
 # Use async driver in DATABASE_URL, e.g., postgresql+asyncpg://user:pass@host/db
@@ -24,11 +19,9 @@ async_engine = create_async_engine(
     **engine_kwargs,
 )
 
-# Async session factory
-AsyncSessionLocal = sessionmaker(
+# Async session factory.
+AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
-    class_=AsyncSession,
-    autocommit=False,
     autoflush=False,
     expire_on_commit=False,
 )

@@ -47,7 +47,7 @@ async def send_bulk_email(
         f"Organizer {organizer.id} sending '{data.template_used}' "
         f"to {len(data.booking_ids)} booking(s)"
     )
-    return await email_services.send_bulk_email_service(organizer.id, data)
+    return await email_services.send_bulk_email_service(organizer.id, organizer.name, data)
 
 
 @router.get(

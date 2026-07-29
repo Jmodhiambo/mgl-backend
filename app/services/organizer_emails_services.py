@@ -89,6 +89,7 @@ _EXTRA_REQUIRED: dict[str, list[str]] = {
 
 async def send_bulk_email_service(
     organizer_id: int,
+    organizer_name: str,
     data: SendEmailRequest,
 ) -> SendEmailResponse:
     """
@@ -180,10 +181,10 @@ async def send_bulk_email_service(
                     to_email=booking.customer_email,
                     subject=subject,
                     body=data.custom_message,
-                    organizer_name=booking.organizer_name or "Your Organizer",
+                    organizer_name=organizer_name or "Your Organizer",
                 ))
             else:
-                base_vars = _build_base_variables(booking, extra)
+                base_vars = _build_base_variables(organizer_name, booking, extra)
                 _bg_email(_send_template_and_update(
                     recipient_id=recipient.id,
                     template_id=_TEMPLATE_ID_MAP[template_used],
@@ -292,7 +293,7 @@ async def _send_custom_and_update(
 
 # ── Variable builders ─────────────────────────────────────────────────────────
 
-def _build_base_variables(booking, extra: dict) -> dict:
+def _build_base_variables(organizer_name: str, booking, extra: dict) -> dict:
     """Build the template variable dict from an enriched booking row."""
     base = {
         "customer_name":  booking.customer_name or "Valued Customer",
@@ -302,7 +303,7 @@ def _build_base_variables(booking, extra: dict) -> dict:
         "quantity":       str(booking.quantity),
         "venue":          booking.venue or "TBA",
         "event_date":     _format_eat(booking.event_date) if booking.event_date else "TBA",
-        "organizer_name": booking.organizer_name or "Your Organizer",
+        "organizer_name": organizer_name or "Your Organizer",
         "total_price":    f"{booking.total_price:,.0f}" if booking.total_price else "0",
     }
     base.update(extra)
