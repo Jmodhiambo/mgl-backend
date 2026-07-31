@@ -62,3 +62,5 @@ Look into implementing audit logs for other user's apart from admin like in user
 The pending deletion for events with booking currently use booking. I need to refactor it to use order as it's the parent. It is quite a big change but worth it in the long run.
 
 Look into pagination implemented by Co-Organizzer and see if other pages can implement it too. It used schemas/pagination.py.
+
+Work on manual review feedback to have the code checked with the safaricom database. Currently an TODO on the payment_services.py. Basically, Safaricom MSISDN for the stuck model in the checkout page.

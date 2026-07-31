@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 """Service layer for Payment operations."""
 
-import asyncio
 import json
 from typing import Optional
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from fastapi import HTTPException, status
 
-from app.core.config import FRONTEND_URL
 import app.db.repositories.payment_repo as payment_repo
 import app.db.repositories.order_repo as order_repo
 import app.db.repositories.ticket_type_repo as ticket_type_repo
-import app.db.repositories.event_repo as event_repo
-import app.db.repositories.user_repo as user_repo
 from app.schemas.payment import (
     PaymentCreate,
     PaymentUpdate,
@@ -25,17 +20,8 @@ from app.schemas.payment import (
 )
 from app.services.mpesa_services import initiate_stk_push, parse_mpesa_callback, query_stk_push_status
 from app.services.ticket_instance_services import create_ticket_instances_for_booking
-from app.emails.email_manager import email_manager
 from app.core.logging_config import logger
 
-
-# ── Email links ───────────────────────────────────────────────────────────────
-
-def _user_tickets_url() -> str:
-    return f"{FRONTEND_URL}/my-tickets"
-
-def _user_order_url(order_id: int) -> str:
-    return f"{FRONTEND_URL}/orders/{order_id}"
 
 # ── Core CRUD ─────────────────────────────────────────────────────────────────
 
@@ -121,143 +107,6 @@ async def list_payments_enriched_service() -> list[dict]:
     return await payment_repo.list_payments_enriched_repo()
 
 
-# ── Email background helpers ────────────────────────────────────────────────
-
-async def _safe_email(coro) -> None:
-    """Await an email coroutine and log — rather than silently swallow —
-    any failure. Without this, an exception raised inside a fire-and-forget
-    asyncio.Task never surfaces anywhere except an easy-to-miss 'exception
-    was never retrieved' warning from asyncio's default handler."""
-    try:
-        await coro
-    except Exception as exc:
-        logger.error(f"Background email task failed: {exc}")
-
-
-def _bg_email(coro) -> None:
-    """
-    Schedule an email coroutine as a background task.
-    Falls back to direct await if no running event loop exists (tests, CLI).
-    """
-    try:
-        loop = asyncio.get_running_loop()
-        loop.create_task(_safe_email(coro))
-    except RuntimeError:
-        asyncio.run(_safe_email(coro))
-
-
-def _format_eat(dt: datetime) -> str:
-    """Render a datetime in Africa/Nairobi (EAT) for user-facing emails —
-    matches the format used by user.check_in_confirmed. dt is assumed to be
-    timezone-aware (UTC, per how it's stored on the Event model)."""
-    return dt.astimezone(ZoneInfo("Africa/Nairobi")).strftime("%d %b %Y at %H:%M EAT")
-
-
-async def _dispatch_order_confirmed_email(
-    order_id: int,
-    mpesa_ref: Optional[str],
-    payment_method: str,
-) -> None:
-    """
-    Look up everything user.order_confirmed needs and schedule it in the
-    background.
-
-    Called only from the non-idempotent branch of
-    _confirm_paid_order_and_issue_tickets — so this fires exactly once per
-    order regardless of which of the three confirmation paths (real
-    callback, STK status query, manual admin approval) resolved it first.
-    """
-    try:
-        order = await order_repo.get_order_by_id_repo(order_id)
-        if not order:
-            logger.warning(f"Could not send order_confirmed email — order {order_id} not found")
-            return
-
-        user = await user_repo.get_user_by_id_repo(order.user_id)
-        if not user:
-            logger.warning(f"Could not send order_confirmed email — user for order {order_id} not found")
-            return
-
-        event = await event_repo.get_event_by_id_repo(order.event_id)
-        if not event:
-            logger.warning(f"Could not send order_confirmed email — event for order {order_id} not found")
-            return
-
-        ticket_lines = []
-        for booking in order.bookings:
-            ticket_type = await ticket_type_repo.get_ticket_type_by_id_repo(booking.ticket_type_id)
-            ticket_lines.append({
-                "ticket_type": ticket_type.name if ticket_type else "Ticket",
-                "quantity": booking.quantity,
-            })
-
-        _bg_email(email_manager.send_from_template(
-            template_id="user.order_confirmed",
-            to_email=user.email,
-            variables={
-                "name": user.name,
-                "order_id": order.id,
-                "event_title": event.title,
-                "venue": event.venue,
-                "event_date": _format_eat(event.start_time),
-                "total_price": order.total_price,
-                "payment_method": payment_method,
-                "mpesa_ref": mpesa_ref,
-                "ticket_lines": ticket_lines,
-                "tickets_url": _user_tickets_url(),
-            },
-        ))
-    except Exception as exc:
-        logger.warning(f"Could not schedule order_confirmed email for order {order_id}: {exc}")
-
-
-async def _dispatch_payment_failed_email(
-    order_id: int,
-    amount,
-    failure_reason: Optional[str],
-) -> None:
-    """
-    Look up everything user.payment_failed needs and schedule it in the
-    background.
-
-    Shared by both surfaces a payment can fail on: the real Daraja callback
-    (handle_mpesa_callback_service) and the STK status query, which is used
-    both on-demand (check_payment_status_service) and by the scheduled
-    reconciliation sweep (reconcile_stuck_payments_service) — via
-    _resolve_payment_via_query.
-    """
-    try:
-        order = await order_repo.get_order_by_id_repo(order_id)
-        if not order:
-            logger.warning(f"Could not send payment_failed email — order {order_id} not found")
-            return
-
-        user = await user_repo.get_user_by_id_repo(order.user_id)
-        if not user:
-            logger.warning(f"Could not send payment_failed email — user for order {order_id} not found")
-            return
-
-        event = await event_repo.get_event_by_id_repo(order.event_id)
-        if not event:
-            logger.warning(f"Could not send payment_failed email — event for order {order_id} not found")
-            return
-
-        _bg_email(email_manager.send_from_template(
-            template_id="user.payment_failed",
-            to_email=user.email,
-            variables={
-                "name": user.name,
-                "order_id": order.id,
-                "event_title": event.title,
-                "amount": amount,
-                "failure_reason": failure_reason or "Payment was not completed.",
-                "retry_url": _user_order_url(order_id),
-            },
-        ))
-    except Exception as exc:
-        logger.warning(f"Could not schedule payment_failed email for order {order_id}: {exc}")
-
-
 # ── Shared confirmation helper ────────────────────────────────────────────────
 #
 # Three different paths can resolve a pending payment:
@@ -313,12 +162,6 @@ async def _confirm_paid_order_and_issue_tickets(
         )
         await ticket_type_repo.increment_quantity_sold_repo(booking.ticket_type_id, booking.quantity)
         total_instances += booking.quantity
-
-    await _dispatch_order_confirmed_email(
-        order_id=order_id,
-        mpesa_ref=mpesa_ref,
-        payment_method=payment.method,
-    )
 
     logger.info(
         f"Payment {payment_id} confirmed (ref: {mpesa_ref}). "
@@ -430,9 +273,6 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
       4. On success, delegate to the shared confirm helper (idempotent —
          a no-op if the STK status check, the reconciliation sweep, or an
          admin's manual approval already resolved this payment first).
-      5. On failure, mark the payment failed and notify the user — guarded
-         by the same idempotency check, so a late callback arriving after
-         another path already completed the payment can't downgrade it.
     """
     parsed = parse_mpesa_callback(raw_body)
     checkout_request_id = parsed["checkout_request_id"]
@@ -454,11 +294,6 @@ async def handle_mpesa_callback_service(raw_body: dict) -> None:
     else:
         if payment.status != "completed":
             await payment_repo.update_payment_status_repo(payment.id, "failed")
-            await _dispatch_payment_failed_email(
-                order_id=payment.order_id,
-                amount=payment.amount,
-                failure_reason=parsed["result_desc"],
-            )
         logger.warning(f"Payment {payment.id} failed: {parsed['result_desc']}")
 
 
@@ -531,11 +366,6 @@ async def _resolve_payment_via_query(payment, order) -> PaymentStatusCheckRespon
 
     if query_result["status"] == "failed":
         await payment_repo.update_payment_status_repo(payment.id, "failed")
-        await _dispatch_payment_failed_email(
-            order_id=payment.order_id,
-            amount=payment.amount,
-            failure_reason=query_result["result_desc"],
-        )
         return PaymentStatusCheckResponse(
             payment_id=payment.id,
             resolved=True,
@@ -595,6 +425,20 @@ async def reconcile_stuck_payments_service(
 
 
 # ── Layer 2: manual review fallback ────────────────────────────────────────────
+#
+# TODO (deferred, discussed 2026-07-23): approve_manual_payment_service below
+# trusts whatever code the admin types — it never calls Safaricom to verify
+# it's real. For now this is intentional: verified manually against the
+# paybill statement before clicking approve. The real fix, if/when revisited,
+# is Safaricom's Transaction Status API (/mpesa/transactionstatus/v1/query),
+# which needs:
+#   - Initiator credentials (separate from the Consumer Key/Secret used for
+#     STK push/query — a dedicated API user with transaction-query rights)
+#   - A Security Credential (initiator password encrypted with Safaricom's
+#     public cert)
+#   - A new public ResultURL callback endpoint, since this API is
+#     asynchronous like the STK callback, not synchronous like STK Push Query
+# Come back to this once those credentials are provisioned.
 
 async def report_manual_payment_service(
     user_id: int, request: ReportManualPaymentRequest
@@ -662,8 +506,7 @@ async def approve_manual_payment_service(
 
     Either way, the admin is asserting they've independently verified the
     code against the actual statement. Confirms the order and issues
-    tickets via the same shared helper the callback uses (which also
-    dispatches the order_confirmed email).
+    tickets via the same shared helper the callback uses.
     """
     payment = await payment_repo.get_payment_by_id_repo(payment_id)
     if not payment:
