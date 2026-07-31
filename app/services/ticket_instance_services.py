@@ -151,6 +151,23 @@ async def get_ticket_instances_by_user_enriched(user_id: int) -> list[dict]:
     return await ti_repo.get_ticket_instances_by_user_enriched_repo(user_id)
 
 
+# ── User-facing holder rename ─────────────────────────────────────────────────
+
+async def update_ticket_holder_name_service(
+    ticket_instance_id: int,
+    user_id: int,
+    issued_to: str,
+) -> dict:
+    """Rename the holder of a ticket the user owns, while it's still 'issued'.
+    Ownership and status are enforced atomically in the repo layer — this
+    just trims input and passes through. Returns a dict with 'outcome' of
+    'updated' | 'not_found' | 'invalid_status'."""
+    logger.info(f"Renaming holder for ticket instance {ticket_instance_id}")
+    return await ti_repo.update_ticket_holder_name_repo(
+        ticket_instance_id, user_id, issued_to.strip()
+    )
+
+
 # ── Ticket issuance after payment confirmation ────────────────────────────────
 
 async def create_ticket_instances_for_booking(

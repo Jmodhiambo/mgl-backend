@@ -225,6 +225,51 @@ async def get_ticket_instances_by_user_enriched_repo(user_id: int) -> list:
         return instances
 
 
+# ── User-facing holder rename ─────────────────────────────────────────────────
+
+async def update_ticket_holder_name_repo(
+    ticket_instance_id: int,
+    user_id: int,
+    issued_to: str,
+) -> dict:
+    """
+    Rename the holder of a ticket instance the caller owns, only while
+    status == 'issued'. Ownership + status are both enforced inside the
+    WHERE clause of a single atomic UPDATE — mirrors the check-in pattern
+    used elsewhere in this file, so there's no read-then-write race and no
+    way to rename someone else's ticket or one that's already been used
+    or cancelled.
+
+    Returns a dict with one of:
+        {"outcome": "updated", "ticket_instance": TicketInstanceOut}
+        {"outcome": "not_found"}      — doesn't exist, or belongs to another user
+        {"outcome": "invalid_status"} — exists and is owned, but not 'issued'
+    """
+    async with get_async_session() as session:
+        result = await session.execute(
+            update(TicketInstance)
+            .where(
+                TicketInstance.id == ticket_instance_id,
+                TicketInstance.user_id == user_id,
+                TicketInstance.status == "issued",
+            )
+            .values(issued_to=issued_to)
+            .returning(TicketInstance)
+        )
+        updated = result.scalar_one_or_none()
+        await session.commit()
+
+        if updated is not None:
+            return {"outcome": "updated", "ticket_instance": _build_out(updated)}
+
+        # 0 rows affected — find out why, without leaking existence of
+        # tickets that belong to someone else.
+        existing = await session.get(TicketInstance, ticket_instance_id)
+        if existing is None or existing.user_id != user_id:
+            return {"outcome": "not_found"}
+        return {"outcome": "invalid_status"}
+
+
 # ── Atomic check-in ───────────────────────────────────────────────────────────
 
 async def check_in_ticket_instance_repo(

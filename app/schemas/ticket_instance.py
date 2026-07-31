@@ -3,7 +3,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TicketInstanceOut(BaseModel):
@@ -80,6 +80,21 @@ class TicketInstanceEnrichedOut(BaseModel):
     venue: str
     event_date: Optional[str] = None
     ticket_type_name: str
+
+    class Config:
+        from_attributes = True
+
+
+# ── User-facing holder rename ─────────────────────────────────────────────────
+
+class TicketHolderNameUpdate(BaseModel):
+    """Body for the user-facing 'rename ticket holder' endpoint
+
+    Deliberately narrow — unlike TicketInstanceUpdate, a user can only ever
+    touch issued_to this way, never status, scanned_by, or anything else on
+    the row. The backend additionally only applies this while the ticket's
+    status is still 'issued'."""
+    issued_to: str = Field(..., min_length=1, max_length=150)
 
     class Config:
         from_attributes = True
