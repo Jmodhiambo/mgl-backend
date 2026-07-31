@@ -9,6 +9,8 @@ from app.schemas.user import UserOut
 from app.schemas.organizer_emails import (
     SendEmailRequest,
     SendEmailResponse,
+    PreviewEmailRequest,
+    PreviewEmailResponse,
     EmailHistoryResponse,
     EmailStatsResponse,
     EmailDetailWithRecipients,
@@ -36,18 +38,38 @@ async def send_bulk_email(
     Send email to one or multiple booking recipients.
 
     template_used options: reminder, update, thank_you, cancellation,
-    venue_change, time_change, custom.
+    venue_change, time_change, custom. This only selects the header colour
+    and which extra_variables are required — subject and body are always
+    the organizer's own text, sent as-is aside from {{token}} substitution
+    (customer_name, order_id, ticket_type, etc.) applied per recipient.
 
-    Named templates resolve subject automatically. Custom requires
-    subject and custom_message. Templates that need extra context
-    (e.g. update_message, old_venue/new_venue) must include those
-    keys in extra_variables.
+    Call POST /organizers/me/emails/preview first to see exactly what a
+    given subject/body will render to before sending.
     """
     logger.info(
         f"Organizer {organizer.id} sending '{data.template_used}' "
         f"to {len(data.booking_ids)} booking(s)"
     )
     return await email_services.send_bulk_email_service(organizer.id, organizer.name, data)
+
+
+@router.post(
+    "/organizers/me/emails/preview",
+    response_model=PreviewEmailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Preview an email before sending",
+)
+async def preview_email(
+    data: PreviewEmailRequest,
+    organizer: UserOut = Depends(require_organizer),
+):
+    """
+    Render exactly what send_bulk_email would dispatch for one representative
+    booking — same branded wrapper, same {{token}} substitution — without
+    sending anything or creating any log/recipient rows.
+    """
+    logger.info(f"Organizer {organizer.id} previewing '{data.template_used}' email")
+    return await email_services.preview_email_service(organizer.id, organizer.name, data)
 
 
 @router.get(
@@ -184,9 +206,10 @@ async def get_email_templates():
 )
 async def get_template_variables():
     """
-    All variables available for use in email templates.
-    Base variables are resolved from booking data automatically.
-    Extra variables must be supplied in extra_variables on the send request.
+    All {{token}} variables available for use in subject/body text.
+    Base variables are resolved from booking data automatically and
+    substituted per recipient. Extra variables must be supplied in
+    extra_variables on the send/preview request.
     """
     return {
         "base_variables": [

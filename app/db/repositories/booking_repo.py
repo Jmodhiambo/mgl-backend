@@ -32,19 +32,31 @@ async def get_bookings_by_ids_repo(ids: list[int]) -> list[BookingOut]:
         return [BookingOut.model_validate(booking) for booking in bookings]
 
 
-async def get_enriched_bookings_by_ids_repo(ids: list[int]) -> list:
+async def get_enriched_bookings_by_ids_repo(
+    ids: list[int],
+    organizer_id: Optional[int] = None,
+) -> list:
     """
     Fetch enriched booking rows for a list of booking IDs.
     Joins User, Event, TicketType, and Order to resolve display fields.
     Includes order_id so the email service can reference the parent order.
-    Used by organizer_emails_services.send_bulk_email_service.
+    Used by organizer_emails_services.send_bulk_email_service and
+    preview_email_service.
+
+    organizer_id: when provided, scopes results to bookings whose event
+    belongs to this organizer — any requested id belonging to someone
+    else's event is silently excluded from the returned list rather than
+    raising here. Callers are responsible for checking that every
+    requested id came back (send_bulk_email_service / preview_email_service
+    both do this) so a cross-organizer booking_id reads as "not found"
+    rather than leaking whether it exists.
     """
     from app.db.models.event import Event
     from app.db.models.user import User
     from app.db.models.order import Order
 
     async with get_async_session() as session:
-        result = await session.execute(
+        stmt = (
             select(
                 Booking,
                 User.name.label("customer_name"),
@@ -60,8 +72,12 @@ async def get_enriched_bookings_by_ids_repo(ids: list[int]) -> list:
             .join(TicketType, Booking.ticket_type_id == TicketType.id)
             .join(Order, Booking.order_id == Order.id)
             .where(Booking.id.in_(ids))
-            .order_by(Booking.id)
         )
+        if organizer_id is not None:
+            stmt = stmt.where(Event.organizer_id == organizer_id)
+        stmt = stmt.order_by(Booking.id)
+
+        result = await session.execute(stmt)
 
         rows = result.all()
         bookings = []

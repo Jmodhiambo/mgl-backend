@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -13,8 +13,14 @@ class EmailTemplate(ABC):
     Base class for all email templates.
 
     Each concrete subclass declares its required variables and the name of its
-    Jinja2 HTML template file.  Rendering (Jinja2 + premailer CSS inlining) is
+    Jinja2 HTML template file. Rendering (Jinja2 + premailer CSS inlining) is
     handled centrally by EmailManager so individual templates stay thin.
+
+    header_class / header_subtitle are branding metadata only — they describe
+    the header colour and subtitle used when a template is rendered through
+    the generic branded wrapper (organizer/branded_message.html). They're
+    left as None for templates that render their own fixed HTML, such as the
+    user/admin account templates, which don't use the branded wrapper.
     """
 
     id: str                        # e.g. 'user.verification'
@@ -23,6 +29,8 @@ class EmailTemplate(ABC):
     description: str
     required_variables: List[str]  # Variables the caller must supply
     template_file: str             # Relative path under templates/, e.g. 'user/verification_email.html'
+    header_class: Optional[str] = None       # e.g. 'blue', 'red', 'green' — see base_email.html
+    header_subtitle: Optional[str] = None    # e.g. 'Important Notice'
 
     @abstractmethod
     def get_subject(self, variables: Dict[str, str]) -> str:
@@ -55,4 +63,6 @@ class EmailTemplate(ABC):
             "description": self.description,
             "required_variables": self.required_variables,
             "template_file": self.template_file,
+            "header_class": self.header_class,
+            "header_subtitle": self.header_subtitle,
         }

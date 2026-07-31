@@ -13,22 +13,30 @@ class SendEmailRequest(BaseModel):
     """
     Payload for POST /organizers/me/emails/send.
 
-    booking_ids    — Booking IDs whose attendees receive the email. The service
-                     resolves customer_name, customer_email, order_id,
-                     ticket_type, quantity, venue, event_date from each row.
-    template_used  — registered template suffix after 'organizer.'
-                     e.g. 'reminder', 'update', 'cancellation', 'venue_change',
-                     'time_change', 'thank_you', 'custom'
-    subject        — required only for 'custom'; ignored for named templates.
-    custom_message — body text for 'custom' only.
-    extra_variables — additional variables merged into the template context
+    booking_ids     — Booking IDs whose attendees receive the email. The
+                      service resolves customer_name, customer_email,
+                      order_id, ticket_type, quantity, venue, event_date
+                      from each row and substitutes them into subject/body
+                      wherever {{token}} placeholders appear, per recipient.
+    template_used   — registered template suffix after 'organizer.'
+                      e.g. 'reminder', 'update', 'cancellation', 'venue_change',
+                      'time_change', 'thank_you', 'custom'. This only picks
+                      the header colour/subtitle and which extra_variables
+                      are required — it no longer locks the content.
+    subject         — required for every template_used. The organizer's own
+                      text; {{tokens}} are substituted per recipient.
+    body            — required for every template_used. Same substitution
+                      behaviour as subject.
+    extra_variables — additional {{token}} values available for substitution,
                       e.g. update_message, cancellation_reason, old_venue,
-                      new_venue, old_date_time, new_date_time.
+                      new_venue, old_date_time, new_date_time. Still required
+                      per-template even though content is free-form — see
+                      _EXTRA_REQUIRED in organizer_emails_services.py.
     """
     booking_ids: list[int]
     template_used: str
-    subject: Optional[str] = None
-    custom_message: Optional[str] = None
+    subject: str
+    body: str
     extra_variables: Optional[dict] = None
 
 
@@ -39,6 +47,29 @@ class SendEmailResponse(BaseModel):
     failed: int
     email_id: Optional[int] = None
     message: str
+
+
+# ── Preview request / response ────────────────────────────────────────────────
+
+class PreviewEmailRequest(BaseModel):
+    """
+    Payload for POST /organizers/me/emails/preview.
+
+    Mirrors SendEmailRequest but targets a single representative booking —
+    a preview is always "what would this one recipient see" — and never
+    sends anything or writes any log/recipient rows.
+    """
+    booking_id: int
+    template_used: str
+    subject: str
+    body: str
+    extra_variables: Optional[dict] = None
+
+
+class PreviewEmailResponse(BaseModel):
+    """Rendered output — byte-for-byte what send_bulk_email_service would dispatch."""
+    subject: str
+    html: str
 
 
 # ── Recipient schemas ─────────────────────────────────────────────────────────

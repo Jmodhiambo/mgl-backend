@@ -20,22 +20,33 @@ app/emails/
     │   └── account_reactivation.html
     │
     └── organizer/
-        ├── templates.py              # All organizer template classes
-        ├── booking_reminder.html
-        ├── event_update.html
-        ├── thank_you.html
-        ├── event_cancellation.html
-        ├── venue_change.html
-        ├── time_change.html
-        ├── co_organizer_invitation.html
-        └── custom_email.html
+        ├── templates.py                          # All organizer template classes
+        ├── branded_message.html                  # Generic wrapper — every bulk-send
+        │                                          # template (named or custom) renders
+        │                                          # through this one file now
+        ├── co_organizer_invitation_existing.html
+        ├── co_organizer_invitation_new_user.html
+        ├── event_created.html
+        ├── event_approved.html
+        ├── event_rejected.html
+        ├── event_pending_deletion.html
+        ├── event_deletion_confirmed.html
+        ├── ticket_type_suspended.html
+        └── ticket_type_unsuspended.html
 ```
+
+> The six named bulk-send templates (`reminder`, `update`, `thank_you`,
+> `cancellation`, `venue_change`, `time_change`) and `custom` no longer have
+> their own `.html` files — see "Organizer bulk-send emails" below. All the
+> other organizer templates (co-organizer invitations, event lifecycle
+> notices, ticket type suspension) are unaffected — still one fixed `.html`
+> file each, rendered via `send_from_template()` exactly as before.
 
 ---
 
 ## 🗑️ Files to DELETE
 
-These were replaced by the new structure:
+### Original cleanup (SendGrid → Resend migration)
 
 ```bash
 rm app/emails/sendgrid_service.py
@@ -49,6 +60,18 @@ rm app/emails/templates/organizer/event_cancellation.py
 rm app/emails/templates/organizer/venue_change.py
 rm app/emails/templates/organizer/time_change.py
 rm app/emails/templates/organizer/co_organizer_invitation.py
+```
+
+### Branded-message consolidation (superseded by `branded_message.html`)
+
+```bash
+rm app/emails/templates/organizer/booking_reminder.html
+rm app/emails/templates/organizer/event_update.html
+rm app/emails/templates/organizer/thank_you.html
+rm app/emails/templates/organizer/event_cancellation.html
+rm app/emails/templates/organizer/venue_change.html
+rm app/emails/templates/organizer/time_change.html
+rm app/emails/templates/organizer/custom_email.html
 ```
 
 ---
@@ -116,27 +139,90 @@ Templates are `.html` files rendered via Jinja2's `Environment`. After rendering
 `premailer.transform()` converts `<style>` block CSS to inline `style` attributes
 so Gmail, Outlook, and Apple Mail all render the design correctly.
 
-### Header colour via CSS modifier classes
+### Header colour: two mechanisms now
 
-Each child template overrides `{% block header_class %}` with a colour name
-(`green`, `blue`, `red`, `purple`, `amber`, `pink`). The base layout applies
-this as a CSS class on the `.header` div. This keeps Jinja2 out of `style`
-attributes, eliminating CSS linter errors in VS Code.
+**Fixed templates** (user/admin account emails, organizer system emails like
+event approval or co-organizer invitations) still set their header colour at
+*template-definition* time — each `.html` file overrides
+`{% block header_class %}green{% endblock %}` directly:
 
-To add a new header colour, add one CSS rule to `base_email.html`:
 ```css
 .header.teal {
     background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
 }
 ```
-Then use `{% block header_class %}teal{% endblock %}` in the child template.
+
+**Organizer bulk-send templates** (the six named presets plus `custom`) set
+their header colour at *render* time instead, since they all share the one
+`branded_message.html` file. `header_class`/`header_subtitle` are declared as
+plain fields on each preset's `EmailTemplate` class in `organizer/templates.py`
+and passed into the Jinja render as variables:
+
+```html
+{% block header_class %}{{ header_class }}{% endblock %}
+{% block header_subtitle %}{{ header_subtitle }}{% endblock %}
+```
+
+Available header colours (either mechanism): `green`, `blue`, `red`, `purple`,
+`amber`, `pink` (default is orange/red — omit to use it).
+
+### Organizer bulk-send emails: branded wrapper, free text
+
+This is the biggest structural change. Previously, the six named templates
+(`reminder`, `update`, `thank_you`, `cancellation`, `venue_change`,
+`time_change`) each had their own fixed `.html` file with structured content
+(info-boxes, tables) built from booking variables — and critically, whatever
+subject/body an organizer typed into the send-email modal for a *named*
+template was silently discarded; only `extra_variables` (e.g.
+`cancellation_reason`) actually reached the sent email.
+
+That's gone. Now:
+
+- **One render path for every bulk-send template.** `reminder`, `update`,
+  `thank_you`, `cancellation`, `venue_change`, `time_change`, and `custom` all
+  render through `organizer/branded_message.html` via
+  `EmailManager.send_branded_message()` / `render_branded_message()`. Subject
+  and body are always the organizer's own text — nothing is discarded.
+- **`template_used` now only selects two things:** the header colour/subtitle
+  (via the preset's `header_class`/`header_subtitle`, or a fixed default for
+  `custom`), and which `extra_variables` are required before sending (see
+  `_EXTRA_REQUIRED` in `organizer_emails_services.py` — unchanged from before,
+  e.g. `cancellation` still requires `cancellation_reason` and `total_price`).
+- **Per-recipient personalisation is preserved via `{{token}}` substitution.**
+  The organizer's subject/body can contain tokens like `{{customer_name}}`,
+  `{{order_id}}`, `{{ticket_type}}`, `{{quantity}}`, `{{venue}}`,
+  `{{event_date}}`, `{{organizer_name}}`, `{{total_price}}`, plus whatever
+  `extra_variables` were supplied. `_substitute_tokens()` fills these in per
+  booking at send time — mirrors the frontend's `fillTokens()` in
+  `BookingsView.tsx` exactly (same `{{key}}` syntax, unmatched tokens left
+  as-is).
+- **Selecting a template in the UI only pre-fills a starting draft.** The
+  `EMAIL_TEMPLATES` array in `BookingsView.tsx` still has default
+  subject/body copy per preset, purely as a convenience starting point —
+  it's not authoritative and isn't rendered by the backend. Organizers can
+  edit freely from there.
+- **Preview is the real thing, not a lookalike.** `render_branded_message()`
+  is the one function both the preview endpoint and the actual send path
+  call — given the same subject/body/branding inputs, preview returns
+  byte-for-byte what would be sent.
+- **Booking lookups are scoped to the calling organizer.**
+  `booking_repo.get_enriched_bookings_by_ids_repo()` now takes an optional
+  `organizer_id` — both `send_bulk_email_service` and `preview_email_service`
+  pass their caller's id, so a `booking_id` belonging to another organizer's
+  event is excluded from the query results and surfaces as a plain 404
+  rather than leaking whether it exists.
 
 ### Template classes are thin
 
 Each template class holds only:
 - Metadata (`id`, `name`, `category`, `description`, `required_variables`)
-- `template_file` path pointing to its `.html` file
-- `get_subject()` — the subject line, optionally using variables
+- `template_file` path pointing to its `.html` file (for organizer bulk-send
+  presets, this is always `"organizer/branded_message.html"`)
+- `header_class` / `header_subtitle` — branding metadata, `None` for fixed
+  templates that set their header colour directly in their own `.html` file
+- `get_subject()` — the subject line, optionally using variables (only
+  actually called for fixed templates now — bulk-send subjects come from
+  the organizer)
 
 All rendering logic lives in `EmailManager`. Templates never touch HTML directly.
 
@@ -170,7 +256,7 @@ needed, no send quota consumed. Check `app/logs/app.jsonl` to inspect output.
 
 ## 🚀 Usage
 
-### Send a templated email
+### Send a templated email (fixed templates — user/admin/system)
 
 ```python
 from app.emails.email_manager import email_manager
@@ -185,16 +271,37 @@ await email_manager.send_from_template(
 )
 ```
 
-### Send a custom freeform email (organizers)
+### Send an organizer bulk-send email (branded wrapper, free text)
 
 ```python
-await email_manager.send_custom(
+await email_manager.send_branded_message(
     to_email="attendee@example.com",
     subject="Quick update about tomorrow",
     body="Hi there, just a heads up that...",
-    organizer_name="Events by Wanjiku",
+    header_class="amber",
+    header_subtitle="Important Event Update",
 )
 ```
+
+In practice this is always called from `organizer_emails_services.py`, which
+resolves `header_class`/`header_subtitle` from `template_used` and
+personalises subject/body per recipient first — see
+`send_bulk_email_service()`.
+
+### Preview an organizer bulk-send email before sending
+
+```python
+html = email_manager.render_branded_message(
+    subject="Reminder: {{event_title}} is Coming Up!",
+    body="Dear {{customer_name}}, ...",
+    header_class="blue",
+    header_subtitle="Your event is coming up soon!",
+)
+```
+
+Exposed to the frontend as `POST /organizers/me/emails/preview` — same
+`SendEmailRequest`-shaped payload as `/emails/send`, but targeting a single
+`booking_id` and never writing any log/recipient rows.
 
 ### List available templates
 
@@ -221,17 +328,79 @@ email_manager.get_template_info("organizer.reminder")
 | `user.password_reset`        | Reset Your MGLTickets Password                   | `name`, `reset_url`            |
 | `user.account_reactivation`  | Your MGLTickets Account Has Been Reactivated     | `name`, `login_url`            |
 
-### Organizer templates (`organizer/templates.py`)
+### Organizer bulk-send presets (`organizer/templates.py`)
 
-| ID                                  | Subject                                        | Required variables |
-|-------------------------------------|------------------------------------------------|--------------------|
-| `organizer.reminder`                | Reminder: {event_title} is Coming Up!          | `customer_name`, `event_title`, `ticket_type`, `quantity`, `order_id`, `venue`, `event_date`, `organizer_name` |
-| `organizer.update`                  | Important Update: {event_title}                | `customer_name`, `event_title`, `ticket_type`, `quantity`, `order_id`, `update_message`, `organizer_name` |
-| `organizer.thank_you`               | Thank You for Attending {event_title}!         | `customer_name`, `event_title`, `organizer_name` |
-| `organizer.cancellation`            | Important: {event_title} Has Been Cancelled    | `customer_name`, `event_title`, `ticket_type`, `quantity`, `order_id`, `total_price`, `cancellation_reason`, `organizer_name` |
-| `organizer.venue_change`            | Venue Change: {event_title}                    | `customer_name`, `event_title`, `ticket_type`, `quantity`, `order_id`, `old_venue`, `new_venue`, `event_date`, `organizer_name` |
-| `organizer.time_change`             | Time Change: {event_title}                     | `customer_name`, `event_title`, `ticket_type`, `quantity`, `order_id`, `old_date_time`, `new_date_time`, `venue`, `organizer_name` |
-| `organizer.co_organizer_invitation` | You've Been Invited to Co-Organise: {event_title} | `recipient_name`, `inviter_name`, `event_title`, `event_id`, `activation_url` |
+Subject/body columns below are **default starting drafts only** — organizers
+can edit both freely before sending; what actually goes out is their edited
+text, personalised per recipient. `template_used` only determines the header
+colour/subtitle and which extra variables are required.
+
+| `template_used` | Header             | Default subject draft                    | Required `extra_variables`              |
+|------------------|--------------------|-------------------------------------------|------------------------------------------|
+| `reminder`       | blue               | Reminder: {event_title} is Coming Up!     | —                                        |
+| `update`         | amber              | Important Update: {event_title}           | `update_message`                         |
+| `thank_you`      | green              | Thank You for Attending {event_title}!    | —                                        |
+| `cancellation`   | red                | Important: {event_title} Has Been Cancelled | `cancellation_reason`, `total_price`   |
+| `venue_change`   | purple             | Venue Change: {event_title}               | `old_venue`, `new_venue`                 |
+| `time_change`    | pink               | Time Change: {event_title}                | `old_date_time`, `new_date_time`         |
+| `custom`         | blue (fixed)       | — (organizer writes their own)            | —                                        |
+
+Base tokens available in subject/body for every preset (resolved per booking
+automatically, no `extra_variables` needed): `customer_name`, `order_id`,
+`event_title`, `ticket_type`, `quantity`, `venue`, `event_date`,
+`organizer_name`, `total_price`.
+
+### Organizer system templates (fixed HTML, unaffected by the above)
+
+| ID                                          | Subject                                              | Required variables |
+|----------------------------------------------|-------------------------------------------------------|---------------------|
+| `organizer.co_organizer_invitation`           | You've Been Invited to Co-Organise: {event_title}      | `recipient_name`, `inviter_name`, `event_title`, `venue`, `event_date`, `accept_url` |
+| `organizer.co_organizer_invitation_new_user`  | You're Invited to Co-Organise: {event_title} on MGLTickets | `recipient_name`, `inviter_name`, `event_title`, `venue`, `event_date`, `signup_url` |
+| `organizer.event_created`                     | Event Submitted: {event_title} is Under Review         | `organizer_name`, `event_title`, `venue`, `event_date`, `dashboard_url` |
+| `organizer.event_approved`                    | 🎉 Your Event Has Been Approved: {event_title}          | `organizer_name`, `event_title`, `venue`, `event_date`, `admin_name`, `event_url` |
+| `organizer.event_rejected`                    | Event Submission Not Approved: {event_title}            | `organizer_name`, `event_title`, `admin_name`, `dashboard_url` |
+| `organizer.event_pending_deletion`            | Action Required: {event_title} is Pending Deletion       | `organizer_name`, `event_title`, `unresolved_count` |
+| `organizer.event_deletion_confirmed`          | Event Permanently Deleted: {event_title}                | `organizer_name`, `event_title`, `deleted_at`, `refund_count`, `dashboard_url` |
+| `organizer.ticket_type_suspended`             | Ticket Type Suspended: {ticket_type_name} – {event_title} | `organizer_name`, `event_title`, `ticket_type_name`, `admin_name`, `suspension_reason` |
+| `organizer.ticket_type_unsuspended`           | Suspension Lifted: {ticket_type_name} – {event_title}   | `organizer_name`, `event_title`, `ticket_type_name`, `dashboard_url` |
+
+> This table (and the co-organizer invitation split into "existing user" vs
+> "new user" variants above) reflects what's actually registered in
+> `organizer/templates.py`. It was out of sync with the previous version of
+> this doc even before the branded-message change — worth a periodic
+> re-check against the actual template classes rather than trusting this
+> table blindly as the codebase grows.
+
+---
+
+## 🔌 API Endpoints (organizer bulk-send)
+
+### `POST /organizers/me/emails/preview`
+
+Renders exactly what `/emails/send` would dispatch for one representative
+booking. Never sends anything, never writes a log/recipient row.
+
+```json
+{
+  "booking_id": 4821,
+  "template_used": "cancellation",
+  "subject": "Important: {{event_title}} Has Been Cancelled",
+  "body": "Dear {{customer_name}}, ...",
+  "extra_variables": { "cancellation_reason": "Venue double-booked", "total_price": "4500" }
+}
+```
+
+→ `{ "subject": "...", "html": "..." }`
+
+### `POST /organizers/me/emails/send`
+
+Same shape, plus `booking_ids` (list) instead of `booking_id`. `subject` and
+`body` are required for every `template_used`, including named presets —
+this is the change from the old API, where they were silently ignored
+outside of `custom`.
+
+Both endpoints 404 if any referenced booking doesn't belong to one of the
+calling organizer's own events.
 
 ---
 
@@ -257,15 +426,17 @@ dummy-data pattern used across the codebase. Flip them live by uncommenting.
 These are not yet wired but are the natural trigger points for order-related emails:
 
 | Trigger                                          | Suggested template           | Key variables to pass               |
-|--------------------------------------------------|------------------------------|-------------------------------------|
+|--------------------------------------------------|------------------------------|--------------------------------------|
 | `handle_mpesa_callback_service` — success path   | `organizer.reminder` (queued for day-before send) or a new `user.order_confirmed` template | `order_id`, `event_title`, `ticket_type`, `quantity` |
-| Free order fast-path in `initiate_mpesa_payment_service` | Same as above       | Same                                |
+| Free order fast-path in `initiate_mpesa_payment_service` | Same as above       | Same                                 |
 
 ---
 
 ## ➕ Adding a new template
 
-### 1. Create the HTML file
+### Fixed template (user/admin/organizer system emails)
+
+**1. Create the HTML file**
 
 ```
 app/emails/templates/<role>/<template_name>.html
@@ -285,10 +456,7 @@ Extend the base layout:
 {% endblock %}
 ```
 
-Available header colours: `green`, `blue`, `red`, `purple`, `amber`, `pink`
-(default is orange/red — omit the block to use it).
-
-### 2. Add the class to the role templates file
+**2. Add the class to the role templates file**
 
 ```python
 # In app/emails/templates/<role>/templates.py
@@ -309,7 +477,7 @@ class MyNewTemplate(EmailTemplate):
         return f"Something happened, {variables['name']}!"
 ```
 
-### 3. Register it in the registry
+**3. Register it in the registry**
 
 ```python
 # In template_registry.py _register_all()
@@ -323,7 +491,7 @@ from app.emails.templates.user.templates import (
 MyNewTemplate(),
 ```
 
-### 4. Use it
+**4. Use it**
 
 ```python
 await email_manager.send_from_template(
@@ -332,3 +500,50 @@ await email_manager.send_from_template(
     variables={"name": "Jane", "some_url": "https://..."},
 )
 ```
+
+### Organizer bulk-send preset
+
+No new HTML file needed — every preset shares `branded_message.html`.
+
+**1. Add the class to `organizer/templates.py`**
+
+```python
+class RefundIssuedTemplate(EmailTemplate):
+
+    def __init__(self):
+        super().__init__(
+            id="organizer.refund_issued",
+            name="Refund Issued",
+            category="organizer",
+            description="Sent when a refund has been processed for an attendee",
+            required_variables=[
+                "customer_name", "event_title", "ticket_type",
+                "quantity", "order_id", "refund_amount", "organizer_name",
+            ],
+            template_file="organizer/branded_message.html",
+            header_class="green",
+            header_subtitle="Refund Confirmation",
+        )
+
+    def get_subject(self, variables: Dict[str, str]) -> str:
+        return f"Refund Issued: {variables['event_title']}"
+```
+
+**2. Register it in `template_registry.py`** — same as the fixed-template flow.
+
+**3. If it needs a required extra field** (like `cancellation_reason`), add
+it to `_EXTRA_REQUIRED` in `organizer_emails_services.py`:
+
+```python
+_EXTRA_REQUIRED = {
+    ...,
+    "refund_issued": ["refund_amount"],
+}
+```
+
+**4. Add it to `_VALID_TEMPLATES`** in the same file, and to the
+`EMAIL_TEMPLATES` array in `BookingsView.tsx` with a default draft
+subject/body and any `extraFields` UI inputs it needs.
+
+That's it — no HTML file, no changes to `EmailManager`, no changes to the
+send/preview endpoints. The new preset is usable immediately.

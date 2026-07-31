@@ -1,0 +1,10 @@
+<!-- app/emails/templates/organizer/branded_message.html -->
+{% extends "base_email.html" %}
+
+{% block title %}{{ subject }} – MGLTickets{% endblock %}
+{% block header_class %}{{ header_class }}{% endblock %}
+{% block header_subtitle %}{{ header_subtitle }}{% endblock %}
+
+{% block content %}
+<div style="color: #4b5563; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">{{ body }}</div>
+{% endblock %}

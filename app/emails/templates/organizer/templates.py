@@ -18,7 +18,9 @@ class BookingReminderTemplate(EmailTemplate):
                 "customer_name", "event_title", "ticket_type",
                 "quantity", "order_id", "venue", "event_date", "organizer_name",
             ],
-            template_file="organizer/booking_reminder.html",
+            template_file="organizer/branded_message.html",
+            header_class="blue",
+            header_subtitle="Your event is coming up soon!",
         )
 
     def get_subject(self, variables: Dict[str, str]) -> str:
@@ -37,7 +39,9 @@ class EventUpdateTemplate(EmailTemplate):
                 "customer_name", "event_title", "ticket_type",
                 "quantity", "order_id", "update_message", "organizer_name",
             ],
-            template_file="organizer/event_update.html",
+            template_file="organizer/branded_message.html",
+            header_class="amber",
+            header_subtitle="Important Event Update",
         )
 
     def get_subject(self, variables: Dict[str, str]) -> str:
@@ -53,7 +57,9 @@ class ThankYouTemplate(EmailTemplate):
             category="organizer",
             description="Post-event thank you message sent to attendees",
             required_variables=["customer_name", "event_title", "organizer_name"],
-            template_file="organizer/thank_you.html",
+            template_file="organizer/branded_message.html",
+            header_class="green",
+            header_subtitle="We hope you had a great time!",
         )
 
     def get_subject(self, variables: Dict[str, str]) -> str:
@@ -73,7 +79,9 @@ class EventCancellationTemplate(EmailTemplate):
                 "quantity", "order_id", "total_price",
                 "cancellation_reason", "organizer_name",
             ],
-            template_file="organizer/event_cancellation.html",
+            template_file="organizer/branded_message.html",
+            header_class="red",
+            header_subtitle="Important Notice",
         )
 
     def get_subject(self, variables: Dict[str, str]) -> str:
@@ -93,7 +101,9 @@ class VenueChangeTemplate(EmailTemplate):
                 "quantity", "order_id", "old_venue", "new_venue",
                 "event_date", "organizer_name",
             ],
-            template_file="organizer/venue_change.html",
+            template_file="organizer/branded_message.html",
+            header_class="purple",
+            header_subtitle="Important Update",
         )
 
     def get_subject(self, variables: Dict[str, str]) -> str:
@@ -113,7 +123,9 @@ class TimeChangeTemplate(EmailTemplate):
                 "quantity", "order_id", "old_date_time", "new_date_time",
                 "venue", "organizer_name",
             ],
-            template_file="organizer/time_change.html",
+            template_file="organizer/branded_message.html",
+            header_class="pink",
+            header_subtitle="Important Schedule Update",
         )
 
     def get_subject(self, variables: Dict[str, str]) -> str:
