@@ -52,7 +52,38 @@ async def list_orders_enriched_user_app_service(user_id: int) -> list[OrderEnric
 
  
 async def delete_order_service(order_id: int) -> bool:
-    """Delete an order. Raises ValueError if the order has issued ticket
+    """Admin-initiated order deletion — no ownership check, any order.
+    Raises ValueError if the order is confirmed or has issued ticket
     instances (router converts this to a 400)."""
     logger.info(f"Deleting order {order_id}")
+    return await order_repo.delete_order_repo(order_id)
+
+
+async def delete_own_order_service(order_id: int, user_id: int) -> bool:
+    """
+    User-initiated deletion of their own order.
+
+    Raises ValueError if:
+      - the order doesn't belong to the requesting user (router returns 403)
+      - the order is confirmed, or has issued ticket instances — enforced
+        by order_repo.delete_order_repo (router returns 400 either way)
+
+    Deliberately a thin wrapper: the ownership check lives here since the
+    repo has no concept of "who's asking"; everything else delegates to
+    the same delete_order_repo the admin path uses, so there's exactly one
+    place that decides what's safe to delete.
+    """
+    order = await order_repo.get_order_by_id_repo(order_id)
+    if not order:
+        raise ValueError("Order not found")
+    if order.user_id != user_id:
+        raise ValueError("Not authorized to delete this order")
+
+    if order.status == "confirmed":
+        raise ValueError(
+            f"Order {order_id} is confirmed and cannot be deleted. "
+            f"Cancel it instead to preserve audit history."
+        )
+
+    logger.info(f"User {user_id} deleting their own order {order_id}")
     return await order_repo.delete_order_repo(order_id)
