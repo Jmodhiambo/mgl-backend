@@ -7,8 +7,13 @@ Two consumers:
   1. Other admin services call log_admin_action_service() to write entries.
   2. The router calls list_audit_logs_service() / list_my_activity_service()
      to read them back to the frontend.
+
+Canonical action-string reference lives in the frontend at
+src/apps/admin/constants/auditLog.ts — that file is reconciled directly
+against every log_admin_action_service(action=..., target_type=...) call
+site in the backend. If you add a new action here, add it there too, in
+the same change.
 """
-# Make sure to add all the action to the frontend filter list in AuditLogs.tsx when you add new ones here. This helps with filtering and display on the frontend.
 from __future__ import annotations
 
 from datetime import datetime
@@ -36,21 +41,20 @@ async def log_admin_action_service(
         await log_admin_action_service(
             admin_id=current_user.id,
             admin_name=current_user.name,
-            action="event_approved",
+            action="approve_event",
             target_type="event",
             target_id=event.id,
             details={"event_title": event.title},
         )
 
-    Recognised action strings (extend freely — the frontend filter list
-    in AuditLogs.tsx must stay in sync):
+    `action` must always be a STABLE key (verb_noun, e.g. "approve_event",
+    "delete_user") — never an f-string with entity-specific data baked in
+    (e.g. f"Approved an event: {event.title}"). Entity-specific data goes
+    in `details`. A non-stable action string can never be filtered on, and
+    silently defeats every dropdown/filter built against it.
 
-        user_deactivated    user_activated      user_role_changed
-        user_verified       user_deleted        user_created
-        event_approved      event_rejected      event_deleted
-        booking_refunded    booking_deleted
-        message_marked_spam message_closed      message_responded
-        session_revoked     settings_updated
+    See src/apps/admin/constants/auditLog.ts on the frontend for the full,
+    reconciled list of every action string currently in use.
     """
     data = AuditLogCreate(
         admin_id=admin_id,
@@ -81,7 +85,7 @@ async def list_audit_logs_service(
 ) -> AuditLogListResponse:
     """Filtered + paginated list with a total count.
 
-    Used by GET /admin/audit-logs (the main Audit Logs admin page).
+    Used by GET /admin/audit-logs (the Audit Logs page's 'All Activity' tab).
     All query params are optional — omitting them returns everything.
     """
     logger.info("Listing audit logs...")
@@ -104,15 +108,19 @@ async def list_audit_logs_service(
     return AuditLogListResponse(total=total, items=items)
 
 
-async def list_my_activity_service(admin_id: int, limit: int = 15) -> AuditLogListResponse:
+async def list_my_activity_service(
+    admin_id: int, limit: int = 15, offset: int = 0
+) -> AuditLogListResponse:
     """Most recent actions performed by one admin, newest-first, plus the
     admin's total lifetime action count (for display purposes — the list
-    itself stays capped at `limit`).
+    itself stays capped at `limit`, paginated via `offset`).
 
-    Used by GET /admin/audit-logs/my (the 'My Activity' profile tab).
+    Used by GET /admin/audit-logs/my — both the My Profile 'My Activity'
+    tab (small limit, offset always 0) and the Audit Logs page's
+    'My Activity' tab (paginated).
     """
-    logger.info(f"Fetching activity for admin_id={admin_id} (limit={limit})")
-    items = await repo.list_audit_logs_for_admin_repo(admin_id, limit=limit)
+    logger.info(f"Fetching activity for admin_id={admin_id} (limit={limit}, offset={offset})")
+    items = await repo.list_audit_logs_for_admin_repo(admin_id, limit=limit, offset=offset)
     total = await repo.count_audit_logs_repo(admin_id=admin_id)
     return AuditLogListResponse(total=total, items=items)
 

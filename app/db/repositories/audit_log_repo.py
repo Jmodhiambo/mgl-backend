@@ -106,7 +106,13 @@ async def count_audit_logs_repo(
         return result.scalar_one()
 
 
-async def list_audit_logs_for_admin_repo(admin_id: int, limit: int = 15) -> list[AuditLogOut]:
-    """Most recent entries for one admin, newest-first — used by the profile
-    'My Activity' tab."""
-    return await list_audit_logs_repo(admin_id=admin_id, limit=limit)
+async def list_audit_logs_for_admin_repo(
+    admin_id: int, limit: int = 15, offset: int = 0
+) -> list[AuditLogOut]:
+    """Most recent entries for one admin, newest-first.
+
+    Used by:
+      - the My Profile 'My Activity' tab (small limit, offset always 0)
+      - the Audit Logs page's 'My Activity' tab (paginated, offset varies)
+    """
+    return await list_audit_logs_repo(admin_id=admin_id, limit=limit, offset=offset)

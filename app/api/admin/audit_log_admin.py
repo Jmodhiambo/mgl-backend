@@ -14,7 +14,7 @@ import app.services.audit_log_services as audit_log_services
 router = APIRouter()
 
 
-# ─── My Activity (Profile page — My Activity tab) ────────────────────────────
+# ─── My Activity (Profile page — My Activity tab; Audit Logs page — My Activity tab) ─
 # IMPORTANT: this route MUST come before /{log_id} so FastAPI does not try to
 # cast the literal "my" to an integer and return 422.
 
@@ -23,19 +23,22 @@ router = APIRouter()
     response_model=AuditLogListResponse,
     summary="My admin activity feed",
     description=(
-        "Returns the currently authenticated admin's most recent audit-log "
-        "entries, ordered newest-first, capped by `limit` (default 15), "
-        "along with the admin's total lifetime action count. "
-        "Used by the 'My Activity' tab on the My Profile page."
+        "Returns the currently authenticated admin's audit-log entries, "
+        "newest-first, paginated via `limit`/`offset` (default limit 15), "
+        "along with the admin's total lifetime action count.\n\n"
+        "**Used by:** the 'My Activity' tab on the My Profile page "
+        "(small limit, offset always 0), and the Audit Logs page's "
+        "'My Activity' tab (paginated, offset varies)."
     ),
 )
 async def get_my_activity(
     limit: int = Query(default=15, ge=1, le=100, description="Max rows to return."),
+    offset: int = Query(default=0, ge=0, description="Rows to skip for pagination."),
     current_user=Depends(require_admin),
 ):
-    """Return the current admin's most recent activity, newest-first, with total count."""
+    """Return the current admin's activity, newest-first, paginated, with total count."""
     return await audit_log_services.list_my_activity_service(
-        admin_id=current_user.id, limit=limit
+        admin_id=current_user.id, limit=limit, offset=offset
     )
 
 
@@ -49,7 +52,7 @@ async def get_my_activity(
         "Returns a paginated list of audit-log entries with an optional set of "
         "filters.  All query params are optional — omitting them returns all "
         "entries ordered newest-first.\n\n"
-        "**Used by:** AuditLogs.tsx main table."
+        "**Used by:** AuditLogs.tsx 'All Activity' tab."
     ),
 )
 async def list_audit_logs(
@@ -60,7 +63,9 @@ async def list_audit_logs(
     action: Optional[str] = Query(
         default=None,
         description=(
-            "Filter by action string, e.g. 'event_approved', 'user_deactivated'."
+            "Filter by action string, e.g. 'approve_event', 'deactivate_user'. "
+            "See src/apps/admin/constants/auditLog.ts on the frontend for the "
+            "full canonical list."
         ),
     ),
     target_type: Optional[str] = Query(

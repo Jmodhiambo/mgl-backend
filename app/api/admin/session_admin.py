@@ -9,7 +9,7 @@ DELETE /admin/sessions                  → sign out all other devices
 
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 
 from app.core.security import require_admin
 from app.schemas.refresh_session import RefreshSessionOut, RevokeAllOtherSessionsRequest, RevokeAllOtherSessionsResponse
@@ -18,6 +18,7 @@ from app.services.ref_session_services import (
     revoke_single_session_service,
     revoke_all_other_sessions_service,
 )
+from app.services.audit_log_services import log_admin_action_service
 
 router = APIRouter()
 
@@ -50,12 +51,23 @@ async def get_my_sessions(current_user=Depends(require_admin)):
 )
 async def revoke_session(
     session_id: str,
+    background_tasks: BackgroundTasks,
     current_user=Depends(require_admin),
 ):
     """Revoke one specific session, ownership-checked."""
     await revoke_single_session_service(
         user_id=current_user.id,
         session_id=session_id,
+    )
+
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=current_user.id,
+        admin_name=current_user.name,
+        action="revoke_session",
+        target_type="session",
+        target_id=None,
+        details={"session_id": session_id},
     )
 
 
@@ -71,6 +83,7 @@ async def revoke_session(
 )
 async def revoke_all_other_sessions(
     body: RevokeAllOtherSessionsRequest,
+    background_tasks: BackgroundTasks,
     current_user=Depends(require_admin),
 ):
     """Revoke all sessions EXCEPT the one currently in use."""
@@ -78,4 +91,15 @@ async def revoke_all_other_sessions(
         user_id=current_user.id,
         current_session_id=body.current_session_id,
     )
+
+    background_tasks.add_task(
+        log_admin_action_service,
+        admin_id=current_user.id,
+        admin_name=current_user.name,
+        action="revoke_all_other_sessions",
+        target_type="session",
+        target_id=None,
+        details={"revoked_count": result.get("revoked_count")},
+    )
+
     return RevokeAllOtherSessionsResponse(**result)

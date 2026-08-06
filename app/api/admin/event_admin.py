@@ -95,7 +95,7 @@ async def create_event(
         action="create_event",
         target_type="event",
         target_id=event.id,
-        details={"event_title": event.title, "status": "created"},
+        details={"event_title": event.title},
     )
 
     return event
@@ -162,39 +162,6 @@ async def count_events_by_organizer(organizer_id: int, user=Depends(require_admi
     """Get the total number of events for a specific organizer."""
     return await event_services.count_events_by_organizer_service(organizer_id)
 
-# These needs to be removed. The frontend already does this.
-
-# @router.get("/admin/events/date-range/{start_date}/{end_date}", response_model=list[EventOut])
-# async def get_events_in_date_range(
-#     start_date: datetime, end_date: datetime, user=Depends(require_admin)
-# ):
-#     """Get all events within a specific date range."""
-#     return await event_services.get_events_in_date_range_service(start_date, end_date)
-
-
-# @router.get("/admin/events/created-after/{date}", response_model=list[EventOut])
-# async def get_events_created_after(date: datetime, user=Depends(require_admin)):
-#     """Get events created after a specific date."""
-#     return await event_services.get_events_created_after_service(date)
-
-
-# @router.get("/admin/events/created-before/{date}", response_model=list[EventOut])
-# async def get_events_created_before(date: datetime, user=Depends(require_admin)):
-#     """Get events created before a specific date."""
-#     return await event_services.get_events_created_before_service(date)
-
-
-# @router.get("/admin/events/updated-after/{date}", response_model=list[EventOut])
-# async def get_events_updated_after(date: datetime, user=Depends(require_admin)):
-#     """Get events updated after a specific date."""
-#     return await event_services.get_events_updated_after_service(date)
-
-
-# @router.get("/admin/events/updated-before/{date}", response_model=list[EventOut])
-# async def get_events_updated_before(date: datetime, user=Depends(require_admin)):
-#     """Get events updated before a specific date."""
-#     return await event_services.get_events_updated_before_service(date)
-
 
 # ── Parameterised routes (/{event_id}) — AFTER all fixed paths ───────────────
 
@@ -211,14 +178,15 @@ async def approve_event(
     background_tasks.add_task(
         notify_event_approved, event.id, event.title, event.slug, user.name, event.organizer_id
     )
+    
     background_tasks.add_task(
         log_admin_action_service,
         admin_id=user.id,
         admin_name=user.name,
-        action=f"Approved an event: {event.title}",
+        action="approve_event",
         target_type="event",
         target_id=event.id,
-        details={"approved_event": event.title},
+        details={"event_title": event.title},
     )
     return event
 
@@ -228,7 +196,8 @@ async def reject_event(
     event_id: int, background_tasks: BackgroundTasks, user=Depends(require_admin)
 ):
     """Reject an event by its ID."""
-    event = await event_services.reject_event_service(event_id, user.name, reason="Your event did not meet our guidelines. Please review and resubmit.")
+    reason = "Your event did not meet our guidelines. Please review and resubmit."
+    event = await event_services.reject_event_service(event_id, user.name, reason=reason)
 
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.")
@@ -236,16 +205,16 @@ async def reject_event(
     background_tasks.add_task(
         notify_event_rejected,
         event.id, event.title, event.slug, user.name, event.organizer_id,
-        reason="Your event did not meet our guidelines. Please review and resubmit.",
+        reason=reason,
     )
     background_tasks.add_task(
         log_admin_action_service,
         admin_id=user.id,
         admin_name=user.name,
-        action=f"Rejected an event: {event.title}",
+        action="reject_event",
         target_type="event",
         target_id=event.id,
-        details={"rejected_event": event.title},
+        details={"event_title": event.title, "reason": reason},
     )
     return event
 
@@ -268,10 +237,10 @@ async def update_event_status(
         log_admin_action_service,
         admin_id=user.id,
         admin_name=user.name,
-        action=f"Updated an event's status: {event.title}",
+        action="update_event_status",
         target_type="event",
         target_id=event.id,
-        details={"updated_event": event.title, "status": status},
+        details={"event_title": event.title, "new_status": status},
     )
     return event
 
@@ -282,12 +251,12 @@ async def confirm_event_deletion_ready(
 ):
     """
     Move an event from 'pending_deletion' to 'deleted'.
- 
+
     Admin-only, manual. Call this once refunds for the event's bookings
     have actually been processed — the service re-checks bookings at
     click-time and refuses if any booking row still exists, so this never
     silently fast-forwards past unresolved refunds.
- 
+
     Plain DELETE /admin/events/{event_id} still performs the actual
     hard-delete and still RESTRICTs at the DB level if bookings/orders
     exist; this endpoint exists purely to move the status flag forward
@@ -295,16 +264,17 @@ async def confirm_event_deletion_ready(
     from "purge it" into two deliberate admin actions.
     """
     event = await event_services.confirm_event_deletion_ready_service(event_id)
- 
-    background_tasks.add_task(
-        log_admin_action_service,
-        admin_id=user.id,
-        admin_name=user.name,
-        action=f"Confirmed event ready for deletion: {event.title}",
-        target_type="event",
-        target_id=event.id,
-        details={"event_title": event.title, "status": "deleted"},
-    )
+
+    if event:
+        background_tasks.add_task(
+            log_admin_action_service,
+            admin_id=user.id,
+            admin_name=user.name,
+            action="confirm_event_deletion_ready",
+            target_type="event",
+            target_id=event.id,
+            details={"event_title": event.title},
+        )
     return True if event else False
 
 
@@ -332,13 +302,14 @@ async def delete_event(
     deleted = await event_services.delete_event_service(event_id)
 
     if deleted:
+        
         background_tasks.add_task(
             log_admin_action_service,
             admin_id=user.id,
             admin_name=user.name,
-            action="event_deleted",
+            action="delete_event",
             target_type="event",
             target_id=event_id,
-            details={"deleted_event": event_id},
+            details={"deleted_event_id": event_id},
         )
     return True if deleted else False
